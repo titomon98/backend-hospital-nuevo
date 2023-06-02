@@ -9,36 +9,6 @@ module.exports = (sequelize, DataTypes) => {
       usuario.belongsTo(models.tipo_usuarios, {
         foreignKey: "id_tipo_usuario",
       });
-      usuario.hasMany(models.alergias, {
-        foreignKey: "id_usuario",
-      })
-      usuario.hasMany(models.signos_vitales, {
-        foreignKey: "id_usuario",
-      })
-      usuario.hasMany(models.vitales_neuros, {
-        foreignKey: "id_usuario",
-      })
-      usuario.hasMany(models.vitales_glicemias, {
-        foreignKey: "id_usuario",
-      })
-      usuario.hasMany(models.recetas, {
-        foreignKey: "id_usuario",
-      })
-      usuario.hasMany(models.documentos, {
-        foreignKey: "id_usuario",
-      })
-      usuario.hasMany(models.cargos, {
-        foreignKey: "id_usuario",
-      })
-      usuario.hasMany(models.pagos, {
-        foreignKey: "id_usuario",
-      })
-      usuario.hasMany(models.diagnosticos, {
-        foreignKey: "id_usuario",
-      })
-      usuario.hasMany(models.ordenes, {
-        foreignKey: "id_usuario",
-      })
     }
   };
   usuario.init({

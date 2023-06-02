@@ -2,7 +2,7 @@
   "development": {
     "username": "root",
     "password": null,
-    "database": "prueba_token",
+    "database": "zapateria",
     "host": "127.0.0.1",
     "dialect": "mysql",
     "operatorAliases": false
@@ -10,14 +10,14 @@
   "test": {
     "username": "root",
     "password": null,
-    "database": "centro_galo",
+    "database": "zapateria",
     "host": "127.0.0.1",
     "dialect": "mysql"
   },
   "production": {
     "username": "root",
     "password": null,
-    "database": "centro_galo",
+    "database": "zapateria",
     "host": "127.0.0.1",
     "dialect": "mysql"
   }

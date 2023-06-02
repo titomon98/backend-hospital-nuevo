@@ -2,7 +2,7 @@
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('tipo_usuarios', {
+    await queryInterface.createTable('colores', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -12,6 +12,9 @@ module.exports = {
       nombre: {
         type: Sequelize.STRING,
         allowNull: false
+      },
+      codigo: {
+        type: Sequelize.STRING,
       },
       estado: {
         type: Sequelize.INTEGER,
@@ -26,20 +29,8 @@ module.exports = {
         type: Sequelize.DATE
       }
     });
-    await queryInterface.bulkInsert('tipo_usuarios', [{
-      nombre: 'Administración',
-      estado: 1,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    },{
-      nombre: 'Caja',
-      estado: 1,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }]);
   },
-
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable('tipo_usuarios');
+    await queryInterface.dropTable('colores');
   }
 };

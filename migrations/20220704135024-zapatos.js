@@ -2,32 +2,36 @@
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('usuarios', {
+    await queryInterface.createTable('zapatos', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      user: {
+      estilo: {
         type: Sequelize.STRING,
         allowNull: false
       },
-      password: {
+      caracteristicas: {
         type: Sequelize.STRING,
         allowNull: false
       },
-      nombre: {
+      precio_costo: {
         type: Sequelize.STRING,
+        allowNull: false
       },
-      apellidos: {
+      precio_venta: {
         type: Sequelize.STRING,
+        allowNull: false
       },
-      telefono: {
+      precio_minimo: {
         type: Sequelize.STRING,
+        allowNull: false
       },
-      correo: {
+      precio_mayorista: {
         type: Sequelize.STRING,
+        allowNull: false
       },
       estado: {
         type: Sequelize.INTEGER,
@@ -41,30 +45,30 @@ module.exports = {
         allowNull: false,
         type: Sequelize.DATE
       },
-      id_tipo_usuario: {
-        allowNull: false,
+      id_color: {
         type: Sequelize.INTEGER,
         references: {
-            model: 'tipo_usuarios',
+            model: 'colores',
+            key: 'id'
+        }
+      },
+      id_marca: {
+        type: Sequelize.INTEGER,
+        references: {
+            model: 'marcas',
+            key: 'id'
+        }
+      },
+      id_clasificacion: {
+        type: Sequelize.INTEGER,
+        references: {
+            model: 'clasificaciones',
             key: 'id'
         }
       },
     });
-    await queryInterface.bulkInsert('usuarios', [{
-      user: 'Zapateria',
-      password: '$2a$10$LcjUIbHBczz1//t7fqC98OFAyK.c2EE4bUcQ4BrulqJ.ItEXk82Lq',
-      nombre: 'Zapateria',
-      apellidos: 'El Centro',
-      telefono: '5000000',
-      correo: null,
-      estado: 1,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      id_tipo_usuario: 1,
-    }]);
   },
-
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable('usuarios');
+    await queryInterface.dropTable('zapatos');
   }
 };
