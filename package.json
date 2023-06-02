@@ -1,0 +1,32 @@
+{
+  "name": "hospital",
+  "version": "1.0.0",
+  "description": "Backend creado para el hospital de especialidades de occidente",
+  "main": "app.js",
+  "scripts": {
+    "start": "nodemon /app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Arturo Monterroso",
+  "license": "ISC",
+  "dependencies": {
+    "base64-img": "^1.0.4",
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.19.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.17.1",
+    "express-validator": "^6.14.2",
+    "jsonwebtoken": "^8.5.1",
+    "md5": "^2.3.0",
+    "moment": "^2.29.4",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "mysql2": "^2.3.2",
+    "sequelize": "^6.8.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.14",
+    "sequelize-cli": "^6.3.0"
+  }
+}
