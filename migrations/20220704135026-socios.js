@@ -2,20 +2,28 @@
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('colores', {
+    await queryInterface.createTable('socios', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      nombre: {
+      acciones: {
         type: Sequelize.STRING,
         allowNull: false
       },
-      codigo: {
-        type: Sequelize.STRING,
-      },
+      inicio: {
+          type: Sequelize.STRING,
+          allowNull: false
+        },
+        final: {
+          type: Sequelize.STRING,
+          allowNull: false
+        },
+        observaciones: {
+          type: Sequelize.STRING,
+        },
       estado: {
         type: Sequelize.INTEGER,
         allowNull: false
@@ -27,10 +35,18 @@ module.exports = {
       updatedAt: {
         allowNull: false,
         type: Sequelize.DATE
-      }
+      },
+      id_medico: {
+        allowNull: false,
+        type: Sequelize.INTEGER,
+        references: {
+            model: 'medicos',
+            key: 'id'
+        }
+      },
     });
   },
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable('colores');
+    await queryInterface.dropTable('socios');
   }
 };

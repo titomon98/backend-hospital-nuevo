@@ -2,7 +2,7 @@
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('tiendas', {
+    await queryInterface.createTable('medicos', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -13,10 +13,19 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false
       },
-      direccion: {
-        type: Sequelize.STRING,
-        allowNull: false
-      },
+      nit: {
+          type: Sequelize.STRING,
+        },
+        telefono: {
+          type: Sequelize.STRING,
+          allowNull: false
+        },
+        correo: {
+          type: Sequelize.STRING,
+        },
+        observaciones: {
+          type: Sequelize.TEXT,
+        },
       estado: {
         type: Sequelize.INTEGER,
         allowNull: false
@@ -28,10 +37,18 @@ module.exports = {
       updatedAt: {
         allowNull: false,
         type: Sequelize.DATE
-      }
+      },
+      id_especialidad: {
+        allowNull: false,
+        type: Sequelize.INTEGER,
+        references: {
+            model: 'especialidades',
+            key: 'id'
+        }
+      },
     });
   },
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable('tiendas');
+    await queryInterface.dropTable('medicos');
   }
 };
