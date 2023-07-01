@@ -15,6 +15,19 @@ const upload = multer({storage:storage})
 const authController = require('../controllers/authController');
 
 //FAVOR DE DEJAR ORGANIZADO POR CARPETAS EN ORDEN ALFABETICO
+//CARPETA DE CAJA
+
+//CARPETA DE ENFERMERIA
+
+
+//CARPETA DE FARMACIA
+
+//CARPETA DE INVENTARIO
+
+//CARPETA DE LIQUIDACIONES
+
+//CARPETA DE MEDICOS
+
 //CARPETA DE EMPLEADOS
 const detalle_permisosController = require('../controllers/empleados/detalle_permisosController');
 const userController = require('../controllers/empleados/usuarioController');
@@ -28,6 +41,57 @@ const userTypeController = require('../controllers/empleados/tipoUsuarioControll
 module.exports = (app) => {
 
     //FAVOR DE DEJAR ORGANIZADO POR CARPETAS EN ORDEN ALFABETICO
+
+    //CARPETA DE CAJA
+
+    //CARPETA DE ENFERMERIA
+    
+    //CARPETA DE FARMACIA
+    //casa_medica
+
+    //casa_medica_movimientos
+
+    //comun
+
+    //comun_movimientos
+
+    //marca
+
+    //marca_movimientos
+
+    //medicamentos
+
+    //medicamentos_movimientos
+
+    //muestras
+
+    //muestras_movimientos
+
+    //presentacion
+
+    //proveedor
+
+    //quirurgico
+
+    //quirurgico_movimientos
+
+    //CARPETA DE INVENTARIO
+    //alimentacion
+    
+    //alimentacion_movimientos
+
+    //equipos
+
+    //equipos_movimientos
+
+    //CARPETA DE LIQUIDACIONES
+
+    //CARPETA DE MEDICOS
+    //especialidades
+
+    //medicos
+
+    //socios
 
     //CARPETA DE EMPLEADOS
     //detalle_permisos
