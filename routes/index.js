@@ -21,7 +21,6 @@ const authController = require('../controllers/authController');
 
 //CARPETA DE FARMACIA
 const casaMedicaController = require('../controllers/farmacia/casaMedicaController')
-const casaMedicaMovimientosController = require('../controllers/farmacia/casaMedicaMovimientosController')
 const comunController = require('../controllers/farmacia/comunController')
 const comunMovimientosController = require('../controllers/farmacia/comunMovimientosController')
 const marcaController = require('../controllers/farmacia/marcaController')
@@ -68,20 +67,12 @@ module.exports = (app) => {
     
     //CARPETA DE FARMACIA
     //casa_medica
-    router.get('/user/list', userController.list);
-    router.post('/user/create', userController.create);
-    router.put('/user/update', userController.update);
-    router.put('/user/activate', userController.activate);
-    router.put('/user/deactivate', userController.deactivate);
-    router.get('/user/getSearch', userController.getSearch);
-
-    //casa_medica_movimientos
-    router.get('/user/list', userController.list);
-    router.post('/user/create', userController.create);
-    router.put('/user/update', userController.update);
-    router.put('/user/activate', userController.activate);
-    router.put('/user/deactivate', userController.deactivate);
-    router.get('/user/getSearch', userController.getSearch);
+    router.get('/casa_medica/list', casaMedicaController.list);
+    router.post('/casa_medica/create', casaMedicaController.create);
+    router.put('/casa_medica/update', casaMedicaController.update);
+    router.put('/casa_medica/activate', casaMedicaController.activate);
+    router.put('/casa_medica/deactivate', casaMedicaController.deactivate);
+    router.get('/casa_medica/getSearch', casaMedicaController.getSearch);
 
     //comun
     router.get('/user/list', userController.list);
@@ -100,20 +91,12 @@ module.exports = (app) => {
     router.get('/user/getSearch', userController.getSearch);
 
     //marca
-    router.get('/user/list', userController.list);
-    router.post('/user/create', userController.create);
-    router.put('/user/update', userController.update);
-    router.put('/user/activate', userController.activate);
-    router.put('/user/deactivate', userController.deactivate);
-    router.get('/user/getSearch', userController.getSearch);
-
-    //marca_movimientos
-    router.get('/user/list', userController.list);
-    router.post('/user/create', userController.create);
-    router.put('/user/update', userController.update);
-    router.put('/user/activate', userController.activate);
-    router.put('/user/deactivate', userController.deactivate);
-    router.get('/user/getSearch', userController.getSearch);
+    router.get('/marca/list', marcaController.list);
+    router.post('/marca/create', marcaController.create);
+    router.put('/marca/update', marcaController.update);
+    router.put('/marca/activate', marcaController.activate);
+    router.put('/marca/deactivate', marcaController.deactivate);
+    router.get('/marca/getSearch', marcaController.getSearch);
 
     //medicamentos
     router.get('/user/list', userController.list);
@@ -148,20 +131,20 @@ module.exports = (app) => {
     router.get('/user/getSearch', userController.getSearch);
 
     //presentacion
-    router.get('/user/list', userController.list);
-    router.post('/user/create', userController.create);
-    router.put('/user/update', userController.update);
-    router.put('/user/activate', userController.activate);
-    router.put('/user/deactivate', userController.deactivate);
-    router.get('/user/getSearch', userController.getSearch);
+    router.get('/presentacion/list', presentacionController.list);
+    router.post('/presentacion/create', presentacionController.create);
+    router.put('/presentacion/update', presentacionController.update);
+    router.put('/presentacion/activate', presentacionController.activate);
+    router.put('/presentacion/deactivate', presentacionController.deactivate);
+    router.get('/presentacion/getSearch', presentacionController.getSearch);
 
     //proveedor
-    router.get('/user/list', userController.list);
-    router.post('/user/create', userController.create);
-    router.put('/user/update', userController.update);
-    router.put('/user/activate', userController.activate);
-    router.put('/user/deactivate', userController.deactivate);
-    router.get('/user/getSearch', userController.getSearch);
+    router.get('/proveedor/list', proveedorController.list);
+    router.post('/proveedor/create', proveedorController.create);
+    router.put('/proveedor/update', proveedorController.update);
+    router.put('/proveedor/activate', proveedorController.activate);
+    router.put('/proveedor/deactivate', proveedorController.deactivate);
+    router.get('/proveedor/getSearch', proveedorController.getSearch);
 
     //quirurgico
     router.get('/user/list', userController.list);
