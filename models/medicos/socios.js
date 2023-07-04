@@ -22,7 +22,6 @@ module.exports = (sequelize, DataTypes) => {
       },
       final: {
         type: DataTypes.STRING,
-        allowNull: false
       },
       observaciones: {
         type: DataTypes.STRING,

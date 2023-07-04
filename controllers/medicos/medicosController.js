@@ -2,6 +2,7 @@
 const Sequelize     = require('sequelize');
 const db = require("../../models");
 const Medico = db.medicos;
+const Especialidad = db.especialidades;
 const Op = db.Sequelize.Op;
 
 module.exports = {
@@ -13,7 +14,7 @@ module.exports = {
             telefono: form.telefono,
             correo: form.correo,
             observaciones: form.observaciones,
-            id_especialidad: form.id_especialidad,
+            id_especialidad: form.especialidad.id,
             estado: 1
         };
 
@@ -58,7 +59,12 @@ module.exports = {
 
         var condition = busqueda ? { [Op.or]: [{ nombre: { [Op.like]: `%${busqueda}%` } }] } : null ;
 
-        Medico.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        Medico.findAndCountAll({ include: [
+            {
+                model: Especialidad,
+                require: true
+            }
+        ],where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
         console.log('data: '+JSON.stringify(data))
@@ -91,7 +97,7 @@ module.exports = {
                 telefono: form.telefono,
                 correo: form.correo,
                 observaciones: form.observaciones,
-                id_especialidad: form.id_especialidad,
+                id_especialidad: form.especialidad.id,
             },
             { where: { 
                 id: form.id 
