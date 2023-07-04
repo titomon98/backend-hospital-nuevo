@@ -9,6 +9,14 @@ module.exports = (sequelize, DataTypes) => {
       
     }
   };
+  /* Nombre
+Representante(s)
+Nit
+Total de adquirido
+Teléfono(s)
+Correo(s)
+Empresa
+Dirección */
   proveedores.init({
     nombre: {
       type: DataTypes.STRING,
