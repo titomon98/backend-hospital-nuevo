@@ -4,14 +4,12 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class especialidades extends Model {
+  class marcas extends Model {
     static associate(models) {
-      especialidades.hasMany(models.medicos, {
-        foreignKey: "id_especialidad",
-      });
+      
     }
   };
-  especialidades.init({
+  marcas.init({
     nombre: {
       type: DataTypes.STRING,
       allowNull: false
@@ -22,7 +20,7 @@ module.exports = (sequelize, DataTypes) => {
     },
   }, {
     sequelize,
-    modelName: 'especialidades',
+    modelName: 'marcas',
   });
-  return especialidades;
+  return marcas;
 };
