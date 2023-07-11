@@ -75,12 +75,12 @@ module.exports = (app) => {
     router.get('/casa_medica/getSearch', casaMedicaController.getSearch);
 
     //comun
-    router.get('/user/list', userController.list);
-    router.post('/user/create', userController.create);
-    router.put('/user/update', userController.update);
-    router.put('/user/activate', userController.activate);
-    router.put('/user/deactivate', userController.deactivate);
-    router.get('/user/getSearch', userController.getSearch);
+    router.get('/comun/list', comunController.list);
+    router.post('/comun/create', comunController.create);
+    router.put('/comun/update', comunController.update);
+    router.put('/comun/activate', comunController.activate);
+    router.put('/comun/deactivate', comunController.deactivate);
+    router.get('/comun/getSearch', comunController.getSearch);
 
     //comun_movimientos
     router.get('/user/list', userController.list);
@@ -99,12 +99,12 @@ module.exports = (app) => {
     router.get('/marca/getSearch', marcaController.getSearch);
 
     //medicamentos
-    router.get('/user/list', userController.list);
-    router.post('/user/create', userController.create);
-    router.put('/user/update', userController.update);
-    router.put('/user/activate', userController.activate);
-    router.put('/user/deactivate', userController.deactivate);
-    router.get('/user/getSearch', userController.getSearch);
+    router.get('/medicamentos/list', medicamentosController.list);
+    router.post('/medicamentos/create', medicamentosController.create);
+    router.put('/medicamentos/update', medicamentosController.update);
+    router.put('/medicamentos/activate', medicamentosController.activate);
+    router.put('/medicamentos/deactivate', medicamentosController.deactivate);
+    router.get('/medicamentos/getSearch', medicamentosController.getSearch);
 
     //medicamentos_movimientos
     router.get('/user/list', userController.list);
@@ -115,12 +115,12 @@ module.exports = (app) => {
     router.get('/user/getSearch', userController.getSearch);
 
     //muestras
-    router.get('/user/list', userController.list);
-    router.post('/user/create', userController.create);
-    router.put('/user/update', userController.update);
-    router.put('/user/activate', userController.activate);
-    router.put('/user/deactivate', userController.deactivate);
-    router.get('/user/getSearch', userController.getSearch);
+    router.get('/muestras/list', muestrasController.list);
+    router.post('/muestras/create', muestrasController.create);
+    router.put('/muestras/update', muestrasController.update);
+    router.put('/muestras/activate', muestrasController.activate);
+    router.put('/muestras/deactivate', muestrasController.deactivate);
+    router.get('/muestras/getSearch', muestrasController.getSearch);
 
     //muestras_movimientos
     router.get('/user/list', userController.list);
@@ -147,12 +147,12 @@ module.exports = (app) => {
     router.get('/proveedor/getSearch', proveedorController.getSearch);
 
     //quirurgico
-    router.get('/user/list', userController.list);
-    router.post('/user/create', userController.create);
-    router.put('/user/update', userController.update);
-    router.put('/user/activate', userController.activate);
-    router.put('/user/deactivate', userController.deactivate);
-    router.get('/user/getSearch', userController.getSearch);
+    router.get('/quirurgico/list', quirurgicoController.list);
+    router.post('/quirurgico/create', quirurgicoController.create);
+    router.put('/quirurgico/update', quirurgicoController.update);
+    router.put('/quirurgico/activate', quirurgicoController.activate);
+    router.put('/quirurgico/deactivate', quirurgicoController.deactivate);
+    router.get('/quirurgico/getSearch', quirurgicoController.getSearch);
 
     //quirurgico_movimientos
     router.get('/user/list', userController.list);
@@ -164,12 +164,12 @@ module.exports = (app) => {
 
     //CARPETA DE INVENTARIO
     //alimentacion
-    router.get('/user/list', userController.list);
-    router.post('/user/create', userController.create);
-    router.put('/user/update', userController.update);
-    router.put('/user/activate', userController.activate);
-    router.put('/user/deactivate', userController.deactivate);
-    router.get('/user/getSearch', userController.getSearch);
+    router.get('/alimentacion/list', alimentacionController.list);
+    router.post('/alimentacion/create', alimentacionController.create);
+    router.put('/alimentacion/update', alimentacionController.update);
+    router.put('/alimentacion/activate', alimentacionController.activate);
+    router.put('/alimentacion/deactivate', alimentacionController.deactivate);
+    router.get('/alimentacion/getSearch', alimentacionController.getSearch);
     
     //alimentacion_movimientos
     router.get('/user/list', userController.list);
@@ -180,12 +180,12 @@ module.exports = (app) => {
     router.get('/user/getSearch', userController.getSearch);
 
     //equipos
-    router.get('/user/list', userController.list);
-    router.post('/user/create', userController.create);
-    router.put('/user/update', userController.update);
-    router.put('/user/activate', userController.activate);
-    router.put('/user/deactivate', userController.deactivate);
-    router.get('/user/getSearch', userController.getSearch);
+    router.get('/equipos/list', equiposController.list);
+    router.post('/equipos/create', equiposController.create);
+    router.put('/equipos/update', equiposController.update);
+    router.put('/equipos/activate', equiposController.activate);
+    router.put('/equipos/deactivate', equiposController.deactivate);
+    router.get('/equipos/getSearch', equiposController.getSearch);
 
     //equipos_movimientos
     router.get('/user/list', userController.list);

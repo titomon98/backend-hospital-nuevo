@@ -6,7 +6,18 @@ const {
 module.exports = (sequelize, DataTypes) => {
   class marcas extends Model {
     static associate(models) {
-      
+      marcas.hasMany(models.medicamentos, {
+        foreignKey: "id_marca",
+      });
+      marcas.hasMany(models.muestras_medicas, {
+        foreignKey: "id_marca",
+      });
+      marcas.hasMany(models.comunes, {
+        foreignKey: "id_marca",
+      });
+      marcas.hasMany(models.quirurgicos, {
+        foreignKey: "id_marca",
+      });
     }
   };
   marcas.init({
