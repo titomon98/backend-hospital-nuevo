@@ -2,7 +2,7 @@
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('presentaciones', {
+    await queryInterface.createTable('proveedores', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -12,6 +12,30 @@ module.exports = {
       nombre: {
         type: Sequelize.STRING,
         allowNull: false
+      },
+      representante: {
+        type: Sequelize.STRING,
+        allowNull: false
+      },
+      nit: {
+        type: Sequelize.STRING,
+        allowNull: false
+      },
+      total_adquirido: {
+        type: Sequelize.DECIMAL(10,2),
+        allowNull: false
+      },
+      telefono: {
+        type: Sequelize.STRING,
+      },
+      correo: {
+        type: Sequelize.STRING,
+      },
+      empresa: {
+        type: Sequelize.STRING,
+      },
+      direccion: {
+        type: Sequelize.STRING,
       },
       estado: {
         type: Sequelize.INTEGER,
@@ -28,6 +52,6 @@ module.exports = {
     });
   },
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable('presentaciones');
+    await queryInterface.dropTable('proveedores');
   }
 };
