@@ -1,18 +1,30 @@
 'use strict'
 const Sequelize     = require('sequelize');
 const db = require("../../models");
-const Banco = db.bancos;
+const Medicamento = db.medicamentos;
+const Marca = db.marcas;
+const Presentacion = db.presentaciones;
+const Proveedor = db.proveedores;
 const Op = db.Sequelize.Op;
 
 module.exports = {
     create(req, res) {
         let form = req.body.form
         const datos = {
-            nombre: form.name,
+            nombre: form.nombre,
+            anestesico: form.anestesico,
+            controlado: form.controlado,
+            precio_costo: form.precio_costo,
+            precio_venta: form.precio_venta,
+            existencia_minima: form.existencia_minima,
+            existencia_actual: form.existencia_actual,
+            id_presentacion: form.presentacion.id,
+            id_proveedor: form.proveedor.id,
+            id_marca: form.marca.id,
             estado: 1
         };
 
-        Banco.create(datos)
+        Medicamento.create(datos)
         .then(tipo => {
             res.send(tipo);
         })
@@ -53,7 +65,19 @@ module.exports = {
 
         var condition = busqueda ? { [Op.or]: [{ nombre: { [Op.like]: `%${busqueda}%` } }] } : null ;
 
-        Banco.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        Medicamento.findAndCountAll({ 
+            include: [
+                {
+                    model: Marca,
+                },
+                {
+                    model: Presentacion
+                },
+                {
+                    model: Proveedor
+                },
+            ],
+            where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
         console.log('data: '+JSON.stringify(data))
@@ -72,20 +96,31 @@ module.exports = {
     find (req, res) {
         const id = req.params.id;
 
-        return Banco.findByPk(id)
-        .then(banco => res.status(200).send(banco))
+        return Medicamento.findByPk(id)
+        .then(medicamento => res.status(200).send(medicamento))
         .catch(error => res.status(400).send(error))
     },
 
     update (req, res) {
         let form = req.body.form
-        Banco.update(
-            { nombre: form.name },
+        Medicamento.update(
+            { 
+                nombre: form.nombre,
+                anestesico: form.anestesico,
+                controlado: form.controlado,
+                precio_costo: form.precio_costo,
+                precio_venta: form.precio_venta,
+                existencia_minima: form.existencia_minima,
+                existencia_actual: form.existencia_actual,
+                id_presentacion: form.presentacion.id,
+                id_proveedor: form.proveedor.id,
+                id_marca: form.marca.id,
+            },
             { where: { 
                 id: form.id 
             } }
         )
-        .then(banco => res.status(200).send('El registro ha sido actualizado'))
+        .then(medicamento => res.status(200).send('El registro ha sido actualizado'))
         .catch(error => {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
@@ -93,13 +128,13 @@ module.exports = {
     },
 
     activate (req, res) {
-        Banco.update(
+        Medicamento.update(
             { estado: 1 },
             { where: { 
                 id: req.body.id 
             } }
         )
-        .then(banco => res.status(200).send('El registro ha sido activado'))
+        .then(medicamento => res.status(200).send('El registro ha sido activado'))
         .catch(error => {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
@@ -107,20 +142,20 @@ module.exports = {
     },
 
     deactivate (req, res) {
-        Banco.update(
+        Medicamento.update(
             { estado: 0 },
             { where: { 
                 id: req.body.id 
             } }
         )
-        .then(banco =>res.status(200).send('El registro ha sido desactivado'))
+        .then(medicamento =>res.status(200).send('El registro ha sido desactivado'))
         .catch(error => {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
     get (req, res) {
-        Banco.findAll({attributes: ['id', 'nombre']})
+        Medicamento.findAll({attributes: ['id', 'nombre']})
         .then(data => {
             res.send(data);
         })
@@ -132,7 +167,18 @@ module.exports = {
     getSearch (req, res) {
         var busqueda = req.query.search;
         var condition = busqueda?{ [Op.or]:[ {nombre: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
-        Banco.findAll({
+        Medicamento.findAll({
+            include: [
+                {
+                    model: Marca,
+                },
+                {
+                    model: Presentacion
+                },
+                {
+                    model: Proveedor
+                },
+            ],
             where: condition})
         .then(data => {
             res.send(data);

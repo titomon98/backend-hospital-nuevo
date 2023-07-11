@@ -38,6 +38,18 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false
     },
+    id_presentacion: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    id_proveedor: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    id_marca: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
   }, {
     sequelize,
     modelName: 'comunes',
