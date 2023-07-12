@@ -34,11 +34,11 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     total_adquirido: {
-      type: DataTypes.DECIMAL(10,2),
-      allowNull: false
+      type: DataTypes.DECIMAL(10,2)
     },
     telefono: {
       type: DataTypes.STRING,
+      allowNull: false
     },
     correo: {
       type: DataTypes.STRING,

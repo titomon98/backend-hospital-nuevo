@@ -11,7 +11,7 @@ module.exports = {
     create(req, res) {
         let form = req.body.form
         const datos = {
-            nombre: form.nombre,
+            nombre: form.name,
             anestesico: form.anestesico,
             controlado: form.controlado,
             precio_costo: form.precio_costo,
@@ -105,7 +105,7 @@ module.exports = {
         let form = req.body.form
         Medicamento.update(
             { 
-                nombre: form.nombre,
+                nombre: form.name,
                 anestesico: form.anestesico,
                 controlado: form.controlado,
                 precio_costo: form.precio_costo,

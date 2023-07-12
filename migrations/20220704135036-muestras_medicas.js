@@ -45,14 +45,6 @@ module.exports = {
         allowNull: false,
         type: Sequelize.DATE
       },
-      id_medico: {
-        allowNull: false,
-        type: Sequelize.INTEGER,
-        references: {
-            model: 'medicos',
-            key: 'id'
-        }
-      },
       id_marca: {
         allowNull: false,
         type: Sequelize.INTEGER,

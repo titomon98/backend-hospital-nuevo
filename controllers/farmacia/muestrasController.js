@@ -2,13 +2,17 @@
 const Sequelize     = require('sequelize');
 const db = require("../../models");
 const Muestras = db.muestras_medicas;
+const Marca = db.marcas;
+const Presentacion = db.presentaciones;
+const Proveedor = db.proveedores;
+const CasasMedicas = db.casa_medicas;
 const Op = db.Sequelize.Op;
 
 module.exports = {
     create(req, res) {
         let form = req.body.form
         const datos = {
-            nombre: form.nombre,
+            nombre: form.name,
             controlado: form.controlado,
             precio_costo: form.precio_costo,
             precio_venta: form.precio_venta,
@@ -73,6 +77,9 @@ module.exports = {
                 {
                     model: Proveedor
                 },
+                {
+                    model: CasasMedicas
+                },
             ],
             where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
@@ -102,7 +109,7 @@ module.exports = {
         let form = req.body.form
         Muestras.update(
             { 
-                nombre: form.nombre,
+                nombre: form.name,
                 controlado: form.controlado,
                 precio_costo: form.precio_costo,
                 precio_venta: form.precio_venta,
@@ -174,6 +181,9 @@ module.exports = {
                 },
                 {
                     model: Proveedor
+                },
+                {
+                    model: CasasMedicas
                 },
             ],
             where: condition})

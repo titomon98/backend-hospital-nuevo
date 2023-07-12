@@ -2,13 +2,16 @@
 const Sequelize     = require('sequelize');
 const db = require("../../models");
 const Quirurgico = db.quirurgicos;
+const Marca = db.marcas;
+const Presentacion = db.presentaciones;
+const Proveedor = db.proveedores;
 const Op = db.Sequelize.Op;
 
 module.exports = {
     create(req, res) {
         let form = req.body.form
         const datos = {
-            nombre: form.nombre,
+            nombre: form.name,
             precio_costo: form.precio_costo,
             existencia_minima: form.existencia_minima,
             existencia_actual: form.existencia_actual,
@@ -98,7 +101,7 @@ module.exports = {
         let form = req.body.form
         Quirurgico.update(
             { 
-                nombre: form.nombre,
+                nombre: form.name,
                 precio_costo: form.precio_costo,
                 existencia_minima: form.existencia_minima,
                 existencia_actual: form.existencia_actual,

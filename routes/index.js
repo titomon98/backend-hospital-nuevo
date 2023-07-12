@@ -164,12 +164,12 @@ module.exports = (app) => {
 
     //CARPETA DE INVENTARIO
     //alimentacion
-    router.get('/alimentacion/list', alimentacionController.list);
-    router.post('/alimentacion/create', alimentacionController.create);
-    router.put('/alimentacion/update', alimentacionController.update);
-    router.put('/alimentacion/activate', alimentacionController.activate);
-    router.put('/alimentacion/deactivate', alimentacionController.deactivate);
-    router.get('/alimentacion/getSearch', alimentacionController.getSearch);
+    router.get('/alimentos/list', alimentacionController.list);
+    router.post('/alimentos/create', alimentacionController.create);
+    router.put('/alimentos/update', alimentacionController.update);
+    router.put('/alimentos/activate', alimentacionController.activate);
+    router.put('/alimentos/deactivate', alimentacionController.deactivate);
+    router.get('/alimentos/getSearch', alimentacionController.getSearch);
     
     //alimentacion_movimientos
     router.get('/user/list', userController.list);
