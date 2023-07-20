@@ -13,6 +13,10 @@ module.exports = {
         const datos = {
             nombre: form.name,
             precio_costo: form.precio_costo,
+            existencia_minima_quirofano: form.existencia_minima_quirofano,
+            existencia_actual_quirofano: form.existencia_actual_quirofano,
+            existencia_minima_farmacia: form.existencia_minima_farmacia,
+            existencia_actual_farmacia: form.existencia_actual_farmacia,
             existencia_minima: form.existencia_minima,
             existencia_actual: form.existencia_actual,
             inventariado: form.inventariado,
@@ -104,6 +108,10 @@ module.exports = {
             { 
                 nombre: form.name,
                 precio_costo: form.precio_costo,
+                existencia_minima_quirofano: form.existencia_minima_quirofano,
+                existencia_actual_quirofano: form.existencia_actual_quirofano,
+                existencia_minima_farmacia: form.existencia_minima_farmacia,
+                existencia_actual_farmacia: form.existencia_actual_farmacia,
                 existencia_minima: form.existencia_minima,
                 existencia_actual: form.existencia_actual,
                 inventariado: form.inventariado,

@@ -26,6 +26,22 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DECIMAL(10,2),
       allowNull: false
     },
+    existencia_minima_quirofano: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    existencia_actual_quirofano: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    existencia_minima_farmacia: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    existencia_actual_farmacia: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
     existencia_minima: {
       type: DataTypes.INTEGER,
       allowNull: false
