@@ -1,18 +1,24 @@
 'use strict'
 const Sequelize     = require('sequelize');
 const db = require("../../models");
-const Banco = db.bancos;
+const Movimiento = db.muestras_movimientos;
+const Quirurgico = db.quirurgicos;
 const Op = db.Sequelize.Op;
 
 module.exports = {
     create(req, res) {
         let form = req.body.form
         const datos = {
-            nombre: form.name,
+            cantidad: form.cantidad,
+            existencia_previa: form.existencia_previa,
+            precio_costo: form.precio_costo,
+            precio_venta: form.precio_venta,
+            movimiento: form.movimiento,
+            id_muestra: form.muestra.id,
             estado: 1
         };
 
-        Banco.create(datos)
+        Movimiento.create(datos)
         .then(tipo => {
             res.send(tipo);
         })
@@ -53,7 +59,7 @@ module.exports = {
 
         var condition = busqueda ? { [Op.or]: [{ nombre: { [Op.like]: `%${busqueda}%` } }] } : null ;
 
-        Banco.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        Movimiento.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
         console.log('data: '+JSON.stringify(data))
@@ -72,15 +78,22 @@ module.exports = {
     find (req, res) {
         const id = req.params.id;
 
-        return Banco.findByPk(id)
+        return Movimiento.findByPk(id)
         .then(banco => res.status(200).send(banco))
         .catch(error => res.status(400).send(error))
     },
 
     update (req, res) {
         let form = req.body.form
-        Banco.update(
-            { nombre: form.name },
+        Movimiento.update(
+            { 
+                cantidad: form.cantidad,
+                existencia_previa: form.existencia_previa,
+                precio_costo: form.precio_costo,
+                precio_venta: form.precio_venta,
+                movimiento: form.movimiento,
+                id_muestra: form.muestra.id,
+            },
             { where: { 
                 id: form.id 
             } }
@@ -93,7 +106,7 @@ module.exports = {
     },
 
     activate (req, res) {
-        Banco.update(
+        Movimiento.update(
             { estado: 1 },
             { where: { 
                 id: req.body.id 
@@ -107,7 +120,7 @@ module.exports = {
     },
 
     deactivate (req, res) {
-        Banco.update(
+        Movimiento.update(
             { estado: 0 },
             { where: { 
                 id: req.body.id 
@@ -120,7 +133,7 @@ module.exports = {
         });
     },
     get (req, res) {
-        Banco.findAll({attributes: ['id', 'nombre']})
+        Movimiento.findAll({attributes: ['id', 'nombre']})
         .then(data => {
             res.send(data);
         })
@@ -132,7 +145,7 @@ module.exports = {
     getSearch (req, res) {
         var busqueda = req.query.search;
         var condition = busqueda?{ [Op.or]:[ {nombre: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
-        Banco.findAll({
+        Movimiento.findAll({
             where: condition})
         .then(data => {
             res.send(data);

@@ -40,7 +40,7 @@ module.exports = (sequelize, DataTypes) => {
     },
   }, {
     sequelize,
-    modelName: 'muestras_movimientos',
+    modelName: '',
   });
   return muestras_movimientos;
 };

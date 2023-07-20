@@ -123,12 +123,12 @@ module.exports = (app) => {
     router.get('/muestras/getSearch', muestrasController.getSearch);
 
     //muestras_movimientos
-    router.get('/user/list', userController.list);
-    router.post('/user/create', userController.create);
-    router.put('/user/update', userController.update);
-    router.put('/user/activate', userController.activate);
-    router.put('/user/deactivate', userController.deactivate);
-    router.get('/user/getSearch', userController.getSearch);
+    router.get('/muestras_movimientos/list', muestrasMovimientosController.list);
+    router.post('/muestras_movimientos/create', muestrasMovimientosController.create);
+    router.put('/muestras_movimientos/update', muestrasMovimientosController.update);
+    router.put('/muestras_movimientos/activate', muestrasMovimientosController.activate);
+    router.put('/muestras_movimientos/deactivate', muestrasMovimientosController.deactivate);
+    router.get('/muestras_movimientos/getSearch', muestrasMovimientosController.getSearch);
 
     //presentacion
     router.get('/presentacion/list', presentacionController.list);
