@@ -38,7 +38,6 @@ module.exports = (sequelize, DataTypes) => {
     },
     telefono: {
       type: DataTypes.STRING,
-      allowNull: false
     },
     correo: {
       type: DataTypes.STRING,

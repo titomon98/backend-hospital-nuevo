@@ -4,15 +4,29 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class especialidades extends Model {
+  class quirurgico_movimientos extends Model {
     static associate(models) {
-      especialidades.hasMany(models.medicos, {
-        foreignKey: "id_especialidad",
+      quirurgico_movimientos.belongsTo(models.quirurgicos, {
+        foreignKey: "id_quirurgico",
       });
     }
   };
-  especialidades.init({
-    nombre: {
+  quirurgico_movimientos.init({
+    cantidad: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    existencia_previa: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    precio_costo: {
+      type: DataTypes.STRING,
+    },
+    precio_venta: {
+      type: DataTypes.STRING,
+    },
+    movimiento: {
       type: DataTypes.STRING,
       allowNull: false
     },
@@ -20,9 +34,13 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false
     },
+    id_quirurgico: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
   }, {
     sequelize,
-    modelName: 'especialidades',
+    modelName: 'quirurgico_movimientos',
   });
-  return especialidades;
+  return quirurgico_movimientos;
 };

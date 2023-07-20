@@ -34,6 +34,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false
     },
+    inventariado: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
     estado: {
       type: DataTypes.INTEGER,
       allowNull: false
