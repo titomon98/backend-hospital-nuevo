@@ -83,12 +83,12 @@ module.exports = (app) => {
     router.get('/comun/getSearch', comunController.getSearch);
 
     //comun_movimientos
-    router.get('/user/list', userController.list);
-    router.post('/user/create', userController.create);
-    router.put('/user/update', userController.update);
-    router.put('/user/activate', userController.activate);
-    router.put('/user/deactivate', userController.deactivate);
-    router.get('/user/getSearch', userController.getSearch);
+    router.get('/comun_movimientos/list', comunMovimientosController.list);
+    router.post('/comun_movimientos/create', comunMovimientosController.create);
+    router.put('/comun_movimientos/update', comunMovimientosController.update);
+    router.put('/comun_movimientos/activate', comunMovimientosController.activate);
+    router.put('/comun_movimientos/deactivate', comunMovimientosController.deactivate);
+    router.get('/comun_movimientos/getSearch', comunMovimientosController.getSearch);
 
     //marca
     router.get('/marca/list', marcaController.list);
@@ -107,12 +107,12 @@ module.exports = (app) => {
     router.get('/medicamentos/getSearch', medicamentosController.getSearch);
 
     //medicamentos_movimientos
-    router.get('/user/list', userController.list);
-    router.post('/user/create', userController.create);
-    router.put('/user/update', userController.update);
-    router.put('/user/activate', userController.activate);
-    router.put('/user/deactivate', userController.deactivate);
-    router.get('/user/getSearch', userController.getSearch);
+    router.get('/medicamentos_movimientos/list', medicamentosMovimientosController.list);
+    router.post('/medicamentos_movimientos/create', medicamentosMovimientosController.create);
+    router.put('/medicamentos_movimientos/update', medicamentosMovimientosController.update);
+    router.put('/medicamentos_movimientos/activate', medicamentosMovimientosController.activate);
+    router.put('/medicamentos_movimientos/deactivate', medicamentosMovimientosController.deactivate);
+    router.get('/medicamentos_movimientos/getSearch', medicamentosMovimientosController.getSearch);
 
     //muestras
     router.get('/muestras/list', muestrasController.list);
@@ -155,12 +155,12 @@ module.exports = (app) => {
     router.get('/quirurgico/getSearch', quirurgicoController.getSearch);
 
     //quirurgico_movimientos
-    router.get('/user/list', userController.list);
-    router.post('/user/create', userController.create);
-    router.put('/user/update', userController.update);
-    router.put('/user/activate', userController.activate);
-    router.put('/user/deactivate', userController.deactivate);
-    router.get('/user/getSearch', userController.getSearch);
+    router.get('/quirurgico_movimientos/list', quirurgicoMovimientosController.list);
+    router.post('/quirurgico_movimientos/create', quirurgicoMovimientosController.create);
+    router.put('/quirurgico_movimientos/update', quirurgicoMovimientosController.update);
+    router.put('/quirurgico_movimientos/activate', quirurgicoMovimientosController.activate);
+    router.put('/quirurgico_movimientos/deactivate', quirurgicoMovimientosController.deactivate);
+    router.get('/quirurgico_movimientos/getSearch', quirurgicoMovimientosController.getSearch);
 
     //CARPETA DE INVENTARIO
     //alimentacion

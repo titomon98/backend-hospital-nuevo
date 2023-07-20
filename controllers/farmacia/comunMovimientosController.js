@@ -1,25 +1,47 @@
 'use strict'
 const Sequelize     = require('sequelize');
 const db = require("../../models");
-const Movimiento = db.muestras_movimientos;
+const Movimiento = db.comun_movimientos;
 const Comun = db.comunes;
 const Op = db.Sequelize.Op;
 
 module.exports = {
     create(req, res) {
         let form = req.body.form
+        let currentUser = req.body.currentUser
+        let existencia_nueva
+        let descripcion
+
+        if (form.movimiento === 'SALIDA') {
+            descripcion = 'Retiro de medicamentos realizado a través de menú de movimientos por ' + currentUser.user
+            existencia_nueva = parseInt(form.comun.existencia_actual) - parseInt(form.cantidad)
+        } else if (form.movimiento === 'ENTRADA') {
+            descripcion = 'Ingreso de medicamentos realizado a través de menú de movimientos por ' + currentUser.user
+            existencia_nueva = parseInt(form.comun.existencia_actual) + parseInt(form.cantidad)
+        }
+
         const datos = {
             cantidad: form.cantidad,
-            existencia_previa: form.existencia_previa,
+            existencia_previa: form.comun.existencia_actual,
+            existencia_nueva: existencia_nueva,
             precio_costo: form.precio_costo,
             precio_venta: form.precio_venta,
             movimiento: form.movimiento,
-            id_muestra: form.muestra.id,
+            id_comun: form.comun.id,
+            descripcion: descripcion,
             estado: 1
         };
 
+        Comun.update({ 
+            existencia_actual: existencia_nueva
+        },
+        { where: { 
+            id: form.comun.id 
+        }})
+
         Movimiento.create(datos)
         .then(tipo => {
+            
             res.send(tipo);
         })
         .catch(error => {
@@ -92,7 +114,7 @@ module.exports = {
                 precio_costo: form.precio_costo,
                 precio_venta: form.precio_venta,
                 movimiento: form.movimiento,
-                id_muestra: form.muestra.id,
+                id_comun: form.comun.id,
             },
             { where: { 
                 id: form.id 

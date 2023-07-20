@@ -2,31 +2,46 @@
 const Sequelize     = require('sequelize');
 const db = require("../../models");
 const Movimiento = db.muestras_movimientos;
-const Muestra = db.muestras;
+const Muestra = db.muestras_medicas;
 const Op = db.Sequelize.Op;
 
 module.exports = {
     create(req, res) {
         let form = req.body.form
+        let currentUser = req.body.currentUser
+        let existencia_nueva
+        let descripcion
+
+        if (form.movimiento === 'SALIDA') {
+            descripcion = 'Retiro de muestras medicas realizado a través de menú de movimientos por ' + currentUser.user
+            existencia_nueva = parseInt(form.muestra.existencia_actual) - parseInt(form.cantidad)
+        } else if (form.movimiento === 'ENTRADA') {
+            descripcion = 'Ingreso de muestras medicas realizado a través de menú de movimientos por ' + currentUser.user
+            existencia_nueva = parseInt(form.muestra.existencia_actual) + parseInt(form.cantidad)
+        }
+
         const datos = {
             cantidad: form.cantidad,
-            existencia_previa: form.existencia_previa,
+            existencia_previa: form.muestra.existencia_actual,
+            existencia_nueva: existencia_nueva,
             precio_costo: form.precio_costo,
             precio_venta: form.precio_venta,
             movimiento: form.movimiento,
             id_muestra: form.muestra.id,
+            descripcion: descripcion,
             estado: 1
         };
 
-        if (form.movimiento === 'SALIDA') {
-
-        } else if (form.movimiento === 'ENTRADA') {
-
-        }
+        Muestra.update({ 
+            existencia_actual: existencia_nueva
+        },
+        { where: { 
+            id: form.muestra.id 
+        }})
 
         Movimiento.create(datos)
         .then(tipo => {
-
+            
             res.send(tipo);
         })
         .catch(error => {
