@@ -148,7 +148,9 @@ module.exports = {
     getSearch (req, res) {
         var busqueda = req.query.search;
         var condition = busqueda?{ [Op.or]:[ {nombre: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
+        console.log(condition)
         Proveedor.findAll({
+            
             where: condition})
         .then(data => {
             res.send(data);

@@ -17,6 +17,10 @@ module.exports = {
         type: Sequelize.DECIMAL(10,2),
         allowNull: false
       },
+      precio_venta: {
+        type: Sequelize.DECIMAL(10,2),
+        allowNull: false
+      },
       existencia_minima: {
         type: Sequelize.INTEGER,
         allowNull: false
