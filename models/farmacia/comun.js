@@ -15,6 +15,12 @@ module.exports = (sequelize, DataTypes) => {
       comunes.belongsTo(models.proveedores, {
         foreignKey: "id_proveedor",
       });
+      comunes.hasMany(models.detalle_paquetes, {
+        foreignKey: "id_comun",
+      });
+      comunes.hasMany(models.detalle_facturas, {
+        foreignKey: "id_comun",
+      });
     }
   };
   comunes.init({

@@ -9,6 +9,12 @@ module.exports = (sequelize, DataTypes) => {
       usuario.belongsTo(models.tipo_usuarios, {
         foreignKey: "id_tipo_usuario",
       });
+      usuario.hasMany(models.paquetes, {
+        foreignKey: "id_usuario",
+      });
+      usuario.hasMany(models.facturas, {
+        foreignKey: "id_usuario",
+      });
     }
   };
   usuario.init({

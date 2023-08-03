@@ -15,6 +15,12 @@ module.exports = (sequelize, DataTypes) => {
       medicamentos.belongsTo(models.proveedores, {
         foreignKey: "id_proveedor",
       });
+      medicamentos.hasMany(models.detalle_paquetes, {
+        foreignKey: "id_medicamento",
+      });
+      medicamentos.hasMany(models.detalle_facturas, {
+        foreignKey: "id_medicamento",
+      });
     }
   };
   medicamentos.init({
