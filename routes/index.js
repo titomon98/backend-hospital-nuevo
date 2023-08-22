@@ -28,6 +28,7 @@ const medicamentosController = require('../controllers/farmacia/medicamentosCont
 const medicamentosMovimientosController = require('../controllers/farmacia/medicamentosMovimientosController')
 const muestrasController = require('../controllers/farmacia/muestrasController')
 const muestrasMovimientosController = require('../controllers/farmacia/muestrasMovimientosController')
+const paquetesController = require('../controllers/farmacia/paquetesController')
 const presentacionController = require('../controllers/farmacia/presentacionController')
 const proveedorController = require('../controllers/farmacia/proveedorController')
 const quirurgicoController = require('../controllers/farmacia/quirurgicoController')
@@ -129,6 +130,14 @@ module.exports = (app) => {
     router.put('/muestras_movimientos/activate', muestrasMovimientosController.activate);
     router.put('/muestras_movimientos/deactivate', muestrasMovimientosController.deactivate);
     router.get('/muestras_movimientos/getSearch', muestrasMovimientosController.getSearch);
+
+    //paquetes
+    router.get('/paquetes/list', paquetesController.list);
+    router.post('/paquetes/create', paquetesController.create);
+    router.put('/paquetes/update', paquetesController.update);
+    router.put('/paquetes/activate', paquetesController.activate);
+    router.put('/paquetes/deactivate', paquetesController.deactivate);
+    router.get('/paquetes/getSearch', paquetesController.getSearch);
 
     //presentacion
     router.get('/presentacion/list', presentacionController.list);
