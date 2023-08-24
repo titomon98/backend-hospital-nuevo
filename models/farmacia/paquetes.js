@@ -4,21 +4,17 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class venta extends Model {
+  class paquete extends Model {
     static associate(models) {
-      venta.belongsTo(models.usuarios, {
+      paquete.belongsTo(models.usuarios, {
         foreignKey: "id_usuario",
       });
-      venta.hasMany(models.detalle_paquetes, {
+      paquete.hasMany(models.detalle_paquetes, {
         foreignKey: "id_paquete",
       });
     }
   };
-  venta.init({
-    fecha: {
-      type: DataTypes.DATE,
-      allowNull: false
-    },
+  paquete.init({
     total: {
       type: DataTypes.STRING,
       allowNull: false
@@ -34,12 +30,9 @@ module.exports = (sequelize, DataTypes) => {
     id_usuario: {
       type: DataTypes.INTEGER,
     },
-    direccion: {
-      type: DataTypes.STRING,
-    },
   }, {
     sequelize,
     modelName: 'paquetes',
   });
-  return venta;
+  return paquete;
 };
