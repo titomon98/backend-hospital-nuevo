@@ -23,6 +23,7 @@ const authController = require('../controllers/authController');
 const casaMedicaController = require('../controllers/farmacia/casaMedicaController')
 const comunController = require('../controllers/farmacia/comunController')
 const comunMovimientosController = require('../controllers/farmacia/comunMovimientosController')
+const ingresosController = require('../controllers/farmacia/ingresosController')
 const marcaController = require('../controllers/farmacia/marcaController')
 const medicamentosController = require('../controllers/farmacia/medicamentosController')
 const medicamentosMovimientosController = require('../controllers/farmacia/medicamentosMovimientosController')
@@ -90,6 +91,14 @@ module.exports = (app) => {
     router.put('/comun_movimientos/activate', comunMovimientosController.activate);
     router.put('/comun_movimientos/deactivate', comunMovimientosController.deactivate);
     router.get('/comun_movimientos/getSearch', comunMovimientosController.getSearch);
+
+    //ingresos
+    router.get('/ingresos/list', ingresosController.list);
+    router.post('/ingresos/create', ingresosController.create);
+    router.put('/ingresos/update', ingresosController.update);
+    router.put('/ingresos/activate', ingresosController.activate);
+    router.put('/ingresos/deactivate', ingresosController.deactivate);
+    router.get('/ingresos/getSearch', ingresosController.getSearch);
 
     //marca
     router.get('/marca/list', marcaController.list);
