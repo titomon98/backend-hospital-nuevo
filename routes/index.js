@@ -99,6 +99,7 @@ module.exports = (app) => {
     router.put('/ingresos/activate', ingresosController.activate);
     router.put('/ingresos/deactivate', ingresosController.deactivate);
     router.get('/ingresos/getSearch', ingresosController.getSearch);
+    router.put('/ingresos/confirm', ingresosController.confirm)
 
     //marca
     router.get('/marca/list', marcaController.list);

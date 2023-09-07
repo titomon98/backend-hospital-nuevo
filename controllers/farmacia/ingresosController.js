@@ -15,7 +15,7 @@ module.exports = {
             descripcion: form.descripcion,
             id_usuario: form.id_usuario,
             total: form.total,
-            estado: 1
+            estado: 2
         };
 
         Ingreso.create(datos)
@@ -31,7 +31,7 @@ module.exports = {
                         cantidad: detalles[i].cantidad,
                         descripcion: detalles[i].descripcion,
                         subtotal: detalles[i].total,
-                        estado: 1,
+                        estado: 2,
                         id_ingreso: ingreso_id,
                         id_medicamento: id_medicine
                     }
@@ -44,7 +44,7 @@ module.exports = {
                         cantidad: detalles[i].cantidad,
                         descripcion: detalles[i].descripcion,
                         subtotal: detalles[i].total,
-                        estado: 1,
+                        estado: 2,
                         id_ingreso: ingreso_id,
                         id_quirurgico: id_medicine
                     }
@@ -57,7 +57,7 @@ module.exports = {
                         cantidad: detalles[i].cantidad,
                         descripcion: detalles[i].descripcion,
                         subtotal: detalles[i].total,
-                        estado: 1,
+                        estado: 2,
                         id_ingreso: ingreso_id,
                         id_comun: id_medicine
                     }
@@ -185,6 +185,34 @@ module.exports = {
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
+
+    async confirm (req, res) {
+        const detalles = await DetalleIngreso.findAll({ where: { 
+            id_ingreso: req.body.id 
+        }});
+        console.log(detalles)
+        Ingreso.update(
+            { estado: 1 },
+            { where: { 
+                id: req.body.id 
+            }}
+        )
+        .then(ingreso => {
+            DetalleIngreso.update({ estado: 1 },
+            { where: { 
+                id_ingreso: req.body.id 
+            }})
+            detalles.forEach(element => {
+                
+            });
+            res.status(200).send('El registro ha sido desactivado')
+        })
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
+
     get (req, res) {
         Ingreso.findAll({attributes: ['id', 'nombre']})
         .then(data => {
