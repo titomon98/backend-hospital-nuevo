@@ -20,6 +20,7 @@ const authController = require('../controllers/authController');
 //CARPETA DE ENFERMERIA
 
 //CARPETA DE FARMACIA
+const alertasController = require('../controllers/farmacia/alertasController')
 const casaMedicaController = require('../controllers/farmacia/casaMedicaController')
 const comunController = require('../controllers/farmacia/comunController')
 const comunMovimientosController = require('../controllers/farmacia/comunMovimientosController')
@@ -68,6 +69,11 @@ module.exports = (app) => {
     //CARPETA DE ENFERMERIA
     
     //CARPETA DE FARMACIA
+    //alertas
+    router.get('/alertas/listMedicamentos', alertasController.listMedicamentos);
+    router.get('/alertas/listComunes', alertasController.listComunes);
+    router.get('/alertas/listQuirurgico', alertasController.listQuirurgico);
+
     //casa_medica
     router.get('/casa_medica/list', casaMedicaController.list);
     router.post('/casa_medica/create', casaMedicaController.create);
