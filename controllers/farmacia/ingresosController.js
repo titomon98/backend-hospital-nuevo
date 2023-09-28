@@ -30,6 +30,7 @@ module.exports = {
                     let datos_detalles = {
                         cantidad: detalles[i].cantidad,
                         descripcion: detalles[i].descripcion,
+                        vencimiento: detalles[i].vencimiento,
                         subtotal: detalles[i].total,
                         estado: 2,
                         id_ingreso: ingreso_id,
@@ -43,6 +44,7 @@ module.exports = {
                     let datos_detalles = {
                         cantidad: detalles[i].cantidad,
                         descripcion: detalles[i].descripcion,
+                        vencimiento: detalles[i].vencimiento,
                         subtotal: detalles[i].total,
                         estado: 2,
                         id_ingreso: ingreso_id,
@@ -56,6 +58,7 @@ module.exports = {
                     let datos_detalles = {
                         cantidad: detalles[i].cantidad,
                         descripcion: detalles[i].descripcion,
+                        vencimiento: detalles[i].vencimiento,
                         subtotal: detalles[i].total,
                         estado: 2,
                         id_ingreso: ingreso_id,

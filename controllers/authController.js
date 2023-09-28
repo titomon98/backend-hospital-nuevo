@@ -78,5 +78,32 @@ module.exports = {
     autenticar (req, res) {
         res.status(200).send("Bienvenido ");
     },
+
+    async validatePassword (req, res) {
+        
+        try {
+            const { id_usuario, password } = req.body;
+
+            // Validación de backend
+            if (!(id_usuario && password)) {
+                res.status(400).send("No llenó todos los campos");
+            }
+
+            const usuario = await Usuario.findOne({where: {
+                id: id_usuario
+              }});
+            
+            //El bcrypt en npm tiene 10 rondas
+            if (usuario && (await bcrypt.compare(password, usuario.password))) {
+
+                // devolver usuario
+                res.status(200).json({ message: "Credenciales aprobadas"});
+            }
+            // res.status(400).send("Credenciales incorrectas");
+            res.status(401).json({ message: "Contraseña incorrecta"});
+        } catch (err) {
+            console.log(err);
+        }
+    },
 };
 

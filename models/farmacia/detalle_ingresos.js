@@ -36,6 +36,9 @@ module.exports = (sequelize, DataTypes) => {
     pertenencia: {
       type: DataTypes.STRING,
     },
+    vencimiento: {
+      type: DataTypes.STRING,
+    },
     estado: {
       type: DataTypes.INTEGER,
       allowNull: false

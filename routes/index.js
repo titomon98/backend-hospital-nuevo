@@ -268,6 +268,7 @@ module.exports = (app) => {
     router.post('/refresh', authController.refresh);
     router.post('/logout', authController.logout);
     router.post('/autenticar', auth, authController.autenticar);
+    router.post('/validatePassword', authController.validatePassword);
 
     app.use('/', router);
 };
