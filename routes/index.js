@@ -18,6 +18,7 @@ const authController = require('../controllers/authController');
 //CARPETA DE CAJA
 
 //CARPETA DE ENFERMERIA
+const habitacionesController = require('../controllers/enfermeria/habitacionesController')
 
 //CARPETA DE FARMACIA
 const alertasController = require('../controllers/farmacia/alertasController')
@@ -67,6 +68,13 @@ module.exports = (app) => {
     //CARPETA DE CAJA
 
     //CARPETA DE ENFERMERIA
+    //habitaciones
+    router.get('/habitaciones/list', habitacionesController.list);
+    router.post('/habitaciones/create', habitacionesController.create);
+    router.put('/habitaciones/update', habitacionesController.update);
+    router.put('/habitaciones/activate', habitacionesController.activate);
+    router.put('/habitaciones/deactivate', habitacionesController.deactivate);
+    router.get('/habitaciones/getSearch', habitacionesController.getSearch);
     
     //CARPETA DE FARMACIA
     //alertas
