@@ -16,6 +16,7 @@ const authController = require('../controllers/authController');
 
 //FAVOR DE DEJAR ORGANIZADO POR CARPETAS EN ORDEN ALFABETICO
 //CARPETA DE CAJA
+const contratosController = require('../controllers/caja/contratosController')
 
 //CARPETA DE ENFERMERIA
 const habitacionesController = require('../controllers/enfermeria/habitacionesController')
@@ -66,6 +67,13 @@ module.exports = (app) => {
     //FAVOR DE DEJAR ORGANIZADO POR CARPETAS EN ORDEN ALFABETICO
 
     //CARPETA DE CAJA
+    //contrato
+    router.get('/contrato/list', contratosController.list);
+    router.post('/contrato/create', contratosController.create);
+    router.put('/contrato/update', contratosController.update);
+    router.put('/contrato/activate', contratosController.activate);
+    router.put('/contrato/deactivate', contratosController.deactivate);
+    router.get('/contrato/getSearch', contratosController.getSearch);
 
     //CARPETA DE ENFERMERIA
     //habitaciones

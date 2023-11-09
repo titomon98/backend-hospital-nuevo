@@ -12,6 +12,10 @@ module.exports = (sequelize, DataTypes) => {
     }
   };
   banco.init({
+    contrato: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
     nombre: {
       type: DataTypes.STRING,
       allowNull: false
