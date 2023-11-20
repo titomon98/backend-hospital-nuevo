@@ -4,15 +4,60 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class banco extends Model {
+  class expediente extends Model {
     static associate(models) {
-      /* banco.hasMany(models.cuenta_bancarias, {
-        foreignKey: "id_banco",
-      }); */
+      expediente.hasMany(models.cuentas, {
+        foreignKey: "id_expediente",
+      });
     }
   };
-  banco.init({
-    nombre: {
+  expediente.init({
+    expediente: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    primer_ingreso: {
+      type: DataTypes.DATEONLY,
+      allowNull: false
+    },
+    nombres: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    apellidos: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    casada: {
+      type: DataTypes.STRING,
+    },
+    nacimiento: {
+      type: DataTypes.DATEONLY,
+      allowNull: false
+    },
+    cui: {
+      type: DataTypes.STRING,
+    },
+    nacionalidad: {
+      type: DataTypes.STRING,
+    },
+    telefono: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    direccion: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    nombre_encargado: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    contacto_encargado: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    parentesco_encargado: {
       type: DataTypes.STRING,
       allowNull: false
     },
@@ -24,5 +69,5 @@ module.exports = (sequelize, DataTypes) => {
     sequelize,
     modelName: 'expedientes',
   });
-  return banco;
+  return expediente;
 };
