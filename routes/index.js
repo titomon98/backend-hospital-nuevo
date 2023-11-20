@@ -17,6 +17,8 @@ const authController = require('../controllers/authController');
 //FAVOR DE DEJAR ORGANIZADO POR CARPETAS EN ORDEN ALFABETICO
 //CARPETA DE CAJA
 const contratosController = require('../controllers/caja/contratosController')
+const cuentasController = require('../controllers/caja/cuentasController')
+const expedientesController = require('../controllers/caja/expedientesController')
 
 //CARPETA DE ENFERMERIA
 const habitacionesController = require('../controllers/enfermeria/habitacionesController')
@@ -74,6 +76,22 @@ module.exports = (app) => {
     router.put('/contrato/activate', contratosController.activate);
     router.put('/contrato/deactivate', contratosController.deactivate);
     router.get('/contrato/getSearch', contratosController.getSearch);
+
+    //cuentas
+    router.get('/cuentas/list', cuentasController.list);
+    router.post('/cuentas/create', cuentasController.create);
+    router.put('/cuentas/update', cuentasController.update);
+    router.put('/cuentas/activate', cuentasController.activate);
+    router.put('/cuentas/deactivate', cuentasController.deactivate);
+    router.get('/cuentas/getSearch', cuentasController.getSearch);
+
+    //expedientes
+    router.get('/expedientes/list', expedientesController.list);
+    router.post('/expedientes/create', expedientesController.create);
+    router.put('/expedientes/update', expedientesController.update);
+    router.put('/expedientes/activate', expedientesController.activate);
+    router.put('/expedientes/deactivate', expedientesController.deactivate);
+    router.get('/expedientes/getSearch', expedientesController.getSearch);
 
     //CARPETA DE ENFERMERIA
     //habitaciones
