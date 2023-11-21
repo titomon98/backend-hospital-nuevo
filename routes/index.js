@@ -101,6 +101,7 @@ module.exports = (app) => {
     router.put('/habitaciones/activate', habitacionesController.activate);
     router.put('/habitaciones/deactivate', habitacionesController.deactivate);
     router.get('/habitaciones/getSearch', habitacionesController.getSearch);
+    router.get('/habitaciones/get', habitacionesController.get);
     
     //CARPETA DE FARMACIA
     //alertas

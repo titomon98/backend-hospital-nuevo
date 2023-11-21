@@ -81,9 +81,10 @@ module.exports = {
         let form = req.body.form
         Habitaciones.update(
             { nombre: form.nombre },
-            { where: { 
+            { 
+                where: { 
                 id: form.id 
-            } }
+            }}
         )
         .then(marca => res.status(200).send('El registro ha sido actualizado'))
         .catch(error => {
@@ -130,17 +131,59 @@ module.exports = {
         });
     },
     getSearch (req, res) {
-        var busqueda = req.query.search;
-        var condition = busqueda?{ [Op.or]:[ {nombre: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
-        Habitaciones.findAll({
-            where: condition})
-        .then(data => {
-            res.send(data);
+        var busqueda = req.query;
+        console.log(busqueda)
+        if (busqueda.tipo === '1') {
+            Habitaciones.findAll({
+                where: {
+                    estado: 1,
+                    tipo: 'Semi-privada'
+                }
+            })
+            .then(data => {
+                res.send(data);
+            })
+            .catch(error => {
+                console.log(error)
+                return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+            });
+        }
+        else {
+            Habitaciones.findAll({
+                where: {
+                    estado: 1
+                }
+            })
+            .then(data => {
+                res.send(data);
+            })
+            .catch(error => {
+                console.log(error)
+                return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+            });
+        }
+        
+    },
+
+    get (req, res) {
+        var busqueda = req.query.tipo
+        if (busqueda === '1') {
+            return Habitaciones.findAll({
+                where: {
+                    estado: 1,
+                    tipo: 'Semi-privada'
+                }
+            })
+            .then(tipo => res.status(200).send(tipo))
+            .catch(error => res.status(400).send(error))
+        }
+        return Habitaciones.findAll({
+            where: {
+                estado: 1
+            }
         })
-        .catch(error => {
-            console.log(error)
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
-    }
+        .then(tipo => res.status(200).send(tipo))
+        .catch(error => res.status(400).send(error))
+    },
 };
 

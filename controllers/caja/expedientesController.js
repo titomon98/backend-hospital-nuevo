@@ -1,21 +1,82 @@
 'use strict'
 const Sequelize     = require('sequelize');
 const db = require("../../models");
-const Contrato = db.contratos;
+const Expediente = db.expedientes;
+const Cuenta = db.cuentas;
+const Habitaciones = db.habitaciones;
 const Op = db.Sequelize.Op;
 
 module.exports = {
     create(req, res) {
         let form = req.body.form
+        const today = new Date();
         const datos = {
-            contrato: form.contrato,
-            nombre: form.nombre,
+            nombres: form.nombre,
+            apellidos: form.apellidos,
+            expediente: 'TEMPORAL',
+            primer_ingreso: today,
+            casada: form.casada,
+            nacimiento: form.nacimiento,
+            cui: form.cui,
+            nacionalidad: form.nacionalidad,
+            telefono: form.telefono,
+            direccion: form.direccion,
+            genero: form.generos,
+            nombre_encargado: form.nombre_encargado,
+            contacto_encargado: form.contacto_encargado,
+            cui_encargado: form.cui_encargado,
+            parentesco_encargado: form.parentesco_encargado,
             estado: 1
         };
 
-        Contrato.create(datos)
-        .then(tipo => {
-            res.send(tipo);
+        Expediente.create(datos)
+        .then(expediente => {
+            const expediente_id = expediente.id
+            let datos_cuenta = {
+                numero: 1,
+                fecha_ingreso: today,
+                motivo: form.motivo,
+                descripcion: null,
+                otros: null,
+                total: 0.0,
+                id_expediente: expediente_id,
+                estado: 1
+            }
+            Cuenta.create(datos_cuenta)
+
+            //Actualizar expediente
+            const year = today.getFullYear();
+            let resto
+            if (expediente_id.toString().length === 1) {
+                resto = '000' + expediente_id
+            }
+            else if (expediente_id.toString().length === 2) {
+                resto = '00' + expediente_id
+            }
+            else if (expediente_id.toString().length === 3) {
+                resto = '0' + expediente_id
+            }
+            else if (expediente_id.toString().length === 4) {
+                resto = '' + expediente_id
+            }
+            resto = year + '-' + resto
+            Expediente.update(
+                {
+                    expediente: resto,
+                },
+                { where: { 
+                    id: expediente_id
+                }}
+            )
+            Habitaciones.update(
+                {
+                    estado: 2,
+                },
+                { where: { 
+                    id: form.habitacion.id
+                }}
+            )
+            res.send(expediente);
         })
         .catch(error => {
             console.log(error)
@@ -54,7 +115,7 @@ module.exports = {
 
         var condition = busqueda ? { [Op.or]: [{ contrato: { [Op.like]: `%${busqueda}%` } }] } : null ;
 
-        Contrato.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        Expediente.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
         console.log('data: '+JSON.stringify(data))
@@ -73,17 +134,31 @@ module.exports = {
     find (req, res) {
         const id = req.params.id;
 
-        return Contrato.findByPk(id)
+        return Expediente.findByPk(id)
         .then(marca => res.status(200).send(marca))
         .catch(error => res.status(400).send(error))
     },
 
     update (req, res) {
         let form = req.body.form
-        Contrato.update(
+        Expediente.update(
             { 
-                contrato: form.contrato,
-                nombre: form.nombre,
+                nombres: form.nombre,
+                apellidos: form.apellidos,
+                expediente: form.expediente,
+                primer_ingreso: today,
+                casada: form.casada,
+                nacimiento: form.nacimiento,
+                cui: form.cui,
+                nacionalidad: form.nacionalidad,
+                telefono: form.telefono,
+                direccion: form.direccion,
+                genero: form.generos,
+                nombre_encargado: form.nombre_encargado,
+                contacto_encargado: form.contacto_encargado,
+                cui_encargado: form.cui_encargado,
+                parentesco_encargado: form.parentesco_encargado,
+                estado: 1
             },
             { where: { 
                 id: form.id 
@@ -97,7 +172,7 @@ module.exports = {
     },
 
     activate (req, res) {
-        Contrato.update(
+        Expediente.update(
             { estado: 1 },
             { where: { 
                 id: req.body.id 
@@ -111,7 +186,7 @@ module.exports = {
     },
 
     deactivate (req, res) {
-        Contrato.update(
+        Expediente.update(
             { estado: 0 },
             { where: { 
                 id: req.body.id 
@@ -124,7 +199,7 @@ module.exports = {
         });
     },
     get (req, res) {
-        Contrato.findAll({attributes: ['id', 'contrato']})
+        Expediente.findAll({attributes: ['id', 'contrato']})
         .then(data => {
             res.send(data);
         })
@@ -136,7 +211,7 @@ module.exports = {
     getSearch (req, res) {
         var busqueda = req.query.search;
         var condition = busqueda?{ [Op.or]:[ {contrato: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
-        Contrato.findAll({
+        Expediente.findAll({
             where: condition})
         .then(data => {
             res.send(data);
