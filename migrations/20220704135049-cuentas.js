@@ -23,11 +23,9 @@ module.exports = {
       },
       descripcion: {
           type: Sequelize.STRING,
-          allowNull: false
       },
       otros: {
           type: Sequelize.STRING,
-          allowNull: false
       },
       total: {
           type: Sequelize.DECIMAL(10,2),

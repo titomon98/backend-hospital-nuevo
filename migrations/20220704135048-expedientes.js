@@ -46,6 +46,10 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false
       },
+      genero: {
+        type: Sequelize.STRING,
+        allowNull: false
+      },
       nombre_encargado: {
         type: Sequelize.STRING,
         allowNull: false
@@ -55,6 +59,10 @@ module.exports = {
         allowNull: false
       },
       parentesco_encargado: {
+        type: Sequelize.STRING,
+        allowNull: false
+      },
+      cui_encargado: {
         type: Sequelize.STRING,
         allowNull: false
       },
