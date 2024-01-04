@@ -9,6 +9,9 @@ module.exports = (sequelize, DataTypes) => {
       expediente.hasMany(models.cuentas, {
         foreignKey: "id_expediente",
       });
+      expediente.hasMany(models.recetas, {
+        foreignKey: "id_expediente",
+      });
     }
   };
   expediente.init({

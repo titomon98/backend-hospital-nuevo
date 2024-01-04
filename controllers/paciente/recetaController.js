@@ -1,19 +1,20 @@
 'use strict'
 const Sequelize     = require('sequelize');
 const db = require("../../models");
-const Contrato = db.contratos;
+const Receta = db.recetas;
 const Op = db.Sequelize.Op;
 
 module.exports = {
     create(req, res) {
         let form = req.body.form
         const datos = {
-            contrato: form.contrato,
-            nombre: form.nombre,
-            estado: 1
+            contenido: form.contenido,
+            estado: 1,
+            id_medico: form.medico.id,
+            id_expediente: form.id_expediente
         };
 
-        Contrato.create(datos)
+        Receta.create(datos)
         .then(tipo => {
             res.send(tipo);
         })
@@ -52,9 +53,9 @@ module.exports = {
 
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Op.or]: [{ contrato: { [Op.like]: `%${busqueda}%` } }] } : null ;
+        var condition = busqueda ? { [Op.or]: [{ contenido: { [Op.like]: `%${busqueda}%` } }] } : null ;
 
-        Contrato.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        Receta.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
         console.log('data: '+JSON.stringify(data))
@@ -73,17 +74,18 @@ module.exports = {
     find (req, res) {
         const id = req.params.id;
 
-        return Contrato.findByPk(id)
+        return Receta.findByPk(id)
         .then(marca => res.status(200).send(marca))
         .catch(error => res.status(400).send(error))
     },
 
     update (req, res) {
         let form = req.body.form
-        Contrato.update(
+        Receta.update(
             { 
-                contrato: form.contrato,
-                nombre: form.nombre,
+                contenido: form.contenido,
+                estado: 1,
+                id_medico: form.medico.id
             },
             { where: { 
                 id: form.id 
@@ -97,7 +99,7 @@ module.exports = {
     },
 
     activate (req, res) {
-        Contrato.update(
+        Receta.update(
             { estado: 1 },
             { where: { 
                 id: req.body.id 
@@ -111,7 +113,7 @@ module.exports = {
     },
 
     deactivate (req, res) {
-        Contrato.update(
+        Receta.update(
             { estado: 0 },
             { where: { 
                 id: req.body.id 
@@ -124,7 +126,7 @@ module.exports = {
         });
     },
     get (req, res) {
-        Contrato.findAll({attributes: ['id', 'contrato']})
+        Receta.findAll()
         .then(data => {
             res.send(data);
         })
@@ -135,8 +137,8 @@ module.exports = {
     },
     getSearch (req, res) {
         var busqueda = req.query.search;
-        var condition = busqueda?{ [Op.or]:[ {contrato: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
-        Contrato.findAll({
+        var condition = busqueda?{ [Op.or]:[ {contenido: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
+        Receta.findAll({
             where: condition})
         .then(data => {
             res.send(data);

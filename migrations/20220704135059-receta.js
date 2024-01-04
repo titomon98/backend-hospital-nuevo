@@ -2,24 +2,16 @@
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('consumos', {
+    await queryInterface.createTable('recetas', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      cantidad: {
+      contenido: {
         type: Sequelize.STRING,
         allowNull: false
-      },
-      descripcion: {
-          type: Sequelize.STRING,
-          allowNull: false
-      },
-      subtotal: {
-          type: Sequelize.STRING,
-          allowNull: false
       },
       estado: {
         type: Sequelize.INTEGER,
@@ -33,17 +25,25 @@ module.exports = {
         allowNull: false,
         type: Sequelize.DATE
       },
-      id_cuenta: {
+      id_expediente: {
         allowNull: false,
         type: Sequelize.INTEGER,
         references: {
-            model: 'cuentas',
+            model: 'expedientes',
+            key: 'id'
+        }
+      },
+      id_medico: {
+        allowNull: false,
+        type: Sequelize.INTEGER,
+        references: {
+            model: 'medicos',
             key: 'id'
         }
       },
     });
   },
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable('consumos');
+    await queryInterface.dropTable('recetas');
   }
 };

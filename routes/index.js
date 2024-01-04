@@ -57,6 +57,9 @@ const especialidadesController = require('../controllers/medicos/especialidadesC
 const medicosController = require('../controllers/medicos/medicosController')
 const sociosController = require('../controllers/medicos/sociosController')
 
+//CARPETA DE PACIENTES
+const recetaController = require('../controllers/paciente/recetaController')
+
 //CARPETA DE EMPLEADOS
 const detalle_permisosController = require('../controllers/empleados/detalle_permisosController');
 const userController = require('../controllers/empleados/usuarioController');
@@ -281,6 +284,15 @@ module.exports = (app) => {
     router.put('/socios/activate', sociosController.activate);
     router.put('/socios/deactivate', sociosController.deactivate);
     router.get('/socios/getSearch', sociosController.getSearch);
+
+    //CARPETA DE PACIENTES
+    //recetas
+    router.get('/recetas/list', recetaController.list);
+    router.post('/recetas/create', recetaController.create);
+    router.put('/recetas/update', recetaController.update);
+    router.put('/recetas/activate', recetaController.activate);
+    router.put('/recetas/deactivate', recetaController.deactivate);
+    router.get('/recetas/getSearch', recetaController.getSearch);
 
     //CARPETA DE EMPLEADOS
     //detalle_permisos
