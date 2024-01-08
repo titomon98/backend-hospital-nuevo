@@ -12,6 +12,9 @@ module.exports = (sequelize, DataTypes) => {
       medicos.hasMany(models.socios, {
         foreignKey: "id_medico",
       });
+      medicos.hasMany(models.recetas, {
+        foreignKey: "id_medico",
+      });
     }
   };
   medicos.init({
