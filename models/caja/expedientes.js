@@ -40,6 +40,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     cui: {
       type: DataTypes.STRING,
+      allowNull: false
     },
     nacionalidad: {
       type: DataTypes.STRING,
@@ -54,8 +55,8 @@ module.exports = (sequelize, DataTypes) => {
     },
     genero: {
       type: DataTypes.STRING,
-      allowNull: false
     },
+    //encargado
     nombre_encargado: {
       type: DataTypes.STRING,
       allowNull: false
@@ -70,11 +71,44 @@ module.exports = (sequelize, DataTypes) => {
     },
     parentesco_encargado: {
       type: DataTypes.STRING,
-      allowNull: false
     },
     estado: {
       type: DataTypes.INTEGER,
       allowNull: false
+    },
+    //nuevos atributos
+    estado_civil: {
+      type: DataTypes.STRING
+    },
+    profesion: {
+      type: DataTypes.STRING
+    },
+    nombre_padre: {
+      type: DataTypes.STRING
+    },
+    nombre_madre: {
+      type: DataTypes.STRING
+    },
+    lugar_nacimiento: {
+      type: DataTypes.STRING
+    },
+    estado_civil_encargado: {
+      type: DataTypes.STRING
+    },
+    profesion_encargado: {
+      type: DataTypes.STRING
+    },
+    direccion_encargado: {
+      type: DataTypes.STRING
+    },
+    nombre_conyuge: {
+      type: DataTypes.STRING
+    },
+    direccion_conyuge: {
+      type: DataTypes.STRING
+    },
+    telefono_conyuge: {
+      type: DataTypes.STRING
     },
   }, {
     sequelize,

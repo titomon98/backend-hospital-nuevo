@@ -10,6 +10,16 @@ module.exports = {
     create(req, res) {
         let form = req.body.form
         const today = new Date();
+        let status = 0
+        if (form.selectedOption == 'hospi') {
+            status = 1
+        } else if (form.selectedOption == 'emergencia') {
+            status = 5
+        } else if (form.selectedOption == 'quirofano') {
+            status = 3
+        } else if (form.selectedOption == 'intensivo') {
+            status = 4
+        }
         const datos = {
             nombres: form.nombre,
             apellidos: form.apellidos,
@@ -26,7 +36,18 @@ module.exports = {
             contacto_encargado: form.contacto_encargado,
             cui_encargado: form.cui_encargado,
             parentesco_encargado: form.parentesco_encargado,
-            estado: 1
+            estado: status,
+            estado_civil: form.estado_civil,
+            profesion: form.profesion,
+            nombre_padre: form.nombre_padre,
+            nombre_madre: form.nombre_madre,
+            lugar_nacimiento: form.lugar_nacimiento,
+            estado_civil_encargado: form.estado_civil_encargado,
+            profesion_encargado: form.profesion_encargado,
+            direccion_encargado: form.direccion_encargado,
+            nombre_conyuge: form.nombre_conyuge,
+            direccion_conyuge: form.direccion_conyuge,
+            telefono_conyuge: form.telefono_conyuge
         };
 
         Expediente.create(datos)
@@ -47,19 +68,8 @@ module.exports = {
             //Actualizar expediente
             const year = today.getFullYear();
             let resto
-            if (expediente_id.toString().length === 1) {
-                resto = '000' + expediente_id
-            }
-            else if (expediente_id.toString().length === 2) {
-                resto = '00' + expediente_id
-            }
-            else if (expediente_id.toString().length === 3) {
-                resto = '0' + expediente_id
-            }
-            else if (expediente_id.toString().length === 4) {
-                resto = '' + expediente_id
-            }
-            resto = year + '-' + resto
+            var idFormateado = String(expediente_id).padStart(4, '0');
+            resto = year + '-' + idFormateado
             Expediente.update(
                 {
                     expediente: resto,
@@ -113,9 +123,9 @@ module.exports = {
 
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Op.or]: [{ contrato: { [Op.like]: `%${busqueda}%` } }] } : null ;
+        var condition = busqueda ? { [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` }, estado: {[Sequelize.Op.gte]: 0} }] } : {estado: {[Sequelize.Op.gte]: 0} } ;
 
-        Expediente.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        Expediente.findAndCountAll({ where: condition, order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
         console.log('data: '+JSON.stringify(data))
@@ -158,7 +168,18 @@ module.exports = {
                 contacto_encargado: form.contacto_encargado,
                 cui_encargado: form.cui_encargado,
                 parentesco_encargado: form.parentesco_encargado,
-                estado: 1
+                estado: 1, 
+                estado_civil: form.estado_civil,
+                profesion: form.profesion,
+                nombre_padre: form.nombre_padre,
+                nombre_madre: form.nombre_madre,
+                lugar_nacimiento: form.lugar_nacimiento,
+                estado_civil_encargado: form.estado_civil_encargado,
+                profesion_encargado: form.profesion_encargado,
+                direccion_encargado: form.direccion_encargado,
+                nombre_conyuge: form.nombre_conyuge,
+                direccion_conyuge: form.direccion_conyuge,
+                telefono_conyuge: form.telefono_conyuge
             },
             { where: { 
                 id: form.id 
@@ -199,7 +220,7 @@ module.exports = {
         });
     },
     get (req, res) {
-        Expediente.findAll({attributes: ['id', 'contrato']})
+        Expediente.findAll({attributes: ['id', 'nombres']})
         .then(data => {
             res.send(data);
         })
@@ -210,7 +231,7 @@ module.exports = {
     },
     getSearch (req, res) {
         var busqueda = req.query.search;
-        var condition = busqueda?{ [Op.or]:[ {contrato: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
+        var condition = busqueda?{ [Op.or]:[ {nombres: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
         Expediente.findAll({
             where: condition})
         .then(data => {
@@ -220,6 +241,208 @@ module.exports = {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
-    }
+    },
+
+    listQuirofano (req, res) {
+        const getPagingData = (data, page, limit) => {
+            const { count: totalItems, rows: referido } = data;
+
+            const currentPage = page ? +page : 0;
+            const totalPages = Math.ceil(totalItems / limit);
+
+            return { totalItems, referido, totalPages, currentPage };
+        };
+
+
+        const getPagination = (page, size) => {
+            const limit = size ? +size : 2;
+            const offset = page ? page * limit : 0;
+
+            return { limit, offset };
+        };
+
+        const busqueda=req.query.search;
+        const page=req.query.page-1;
+        const size=req.query.limit;
+        const criterio=req.query.criterio;
+        const order=req.query.order;
+
+
+        const { limit, offset } = getPagination(page, size);
+
+        var condition = busqueda ? { [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` }, estado: 3 }] } : {estado: 3} ;
+
+        Expediente.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        .then(data => {
+
+        console.log('data: '+JSON.stringify(data))
+        const response = getPagingData(data, page, limit);
+
+        console.log('response: '+JSON.stringify(response))
+        res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
+        })
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
+
+    listHospitalizacion (req, res) {
+        const getPagingData = (data, page, limit) => {
+            const { count: totalItems, rows: referido } = data;
+
+            const currentPage = page ? +page : 0;
+            const totalPages = Math.ceil(totalItems / limit);
+
+            return { totalItems, referido, totalPages, currentPage };
+        };
+
+
+        const getPagination = (page, size) => {
+            const limit = size ? +size : 2;
+            const offset = page ? page * limit : 0;
+
+            return { limit, offset };
+        };
+
+        const busqueda=req.query.search;
+        const page=req.query.page-1;
+        const size=req.query.limit;
+        const criterio=req.query.criterio;
+        const order=req.query.order;
+
+
+        const { limit, offset } = getPagination(page, size);
+
+        var condition = busqueda ? { [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` }, estado: 1 }] } : {estado: 1} ;
+
+        Expediente.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        .then(data => {
+
+        console.log('data: '+JSON.stringify(data))
+        const response = getPagingData(data, page, limit);
+
+        console.log('response: '+JSON.stringify(response))
+        res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
+        })
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
+
+    listIntensivo (req, res) {
+        const getPagingData = (data, page, limit) => {
+            const { count: totalItems, rows: referido } = data;
+
+            const currentPage = page ? +page : 0;
+            const totalPages = Math.ceil(totalItems / limit);
+
+            return { totalItems, referido, totalPages, currentPage };
+        };
+
+
+        const getPagination = (page, size) => {
+            const limit = size ? +size : 2;
+            const offset = page ? page * limit : 0;
+
+            return { limit, offset };
+        };
+
+        const busqueda=req.query.search;
+        const page=req.query.page-1;
+        const size=req.query.limit;
+        const criterio=req.query.criterio;
+        const order=req.query.order;
+
+
+        const { limit, offset } = getPagination(page, size);
+
+        var condition = busqueda ? { [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` }, estado: 4 }] } : {estado: 4} ;
+
+        Expediente.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        .then(data => {
+
+        console.log('data: '+JSON.stringify(data))
+        const response = getPagingData(data, page, limit);
+
+        console.log('response: '+JSON.stringify(response))
+        res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
+        })
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
+
+    listEmergencia (req, res) {
+        const getPagingData = (data, page, limit) => {
+            const { count: totalItems, rows: referido } = data;
+
+            const currentPage = page ? +page : 0;
+            const totalPages = Math.ceil(totalItems / limit);
+
+            return { totalItems, referido, totalPages, currentPage };
+        };
+
+
+        const getPagination = (page, size) => {
+            const limit = size ? +size : 2;
+            const offset = page ? page * limit : 0;
+
+            return { limit, offset };
+        };
+
+        const busqueda=req.query.search;
+        const page=req.query.page-1;
+        const size=req.query.limit;
+        const criterio=req.query.criterio;
+        const order=req.query.order;
+
+
+        const { limit, offset } = getPagination(page, size);
+
+        var condition = busqueda ? { [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` }, estado: 5 }] } : {estado: 5} ;
+
+
+        Expediente.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        .then(data => {
+
+        console.log('data: '+JSON.stringify(data))
+        const response = getPagingData(data, page, limit);
+
+        console.log('response: '+JSON.stringify(response))
+        res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
+        })
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
+
+    changeStatus (req, res) {
+        let form = req.body.form
+        let status = 0
+        if (form.selectedOption == 'hospi') {
+            status = 1
+        } else if (form.selectedOption == 'emergencia') {
+            status = 5
+        } else if (form.selectedOption == 'quirofano') {
+            status = 3
+        } else if (form.selectedOption == 'intensivo') {
+            status = 4
+        }
+        Expediente.update(
+            { estado: status },
+            { where: { 
+                id: form.id 
+            }}
+        )
+        .then(marca => res.status(200).send('El registro ha sido actualizado'))
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
 };
 

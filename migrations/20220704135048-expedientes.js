@@ -77,7 +77,40 @@ module.exports = {
       updatedAt: {
         allowNull: false,
         type: Sequelize.DATE
-      }
+      },
+      estado_civil: {
+        type: Sequelize.STRING
+      },
+      profesion: {
+        type: Sequelize.STRING
+      },
+      nombre_padre: {
+        type: Sequelize.STRING
+      },
+      nombre_madre: {
+        type: Sequelize.STRING
+      },
+      lugar_nacimiento: {
+        type: Sequelize.STRING
+      },
+      estado_civil_encargado: {
+        type: Sequelize.STRING
+      },
+      profesion_encargado: {
+        type: Sequelize.STRING
+      },
+      direccion_encargado: {
+        type: Sequelize.STRING
+      },
+      nombre_conyuge: {
+        type: Sequelize.STRING
+      },
+      direccion_conyuge: {
+        type: Sequelize.STRING
+      },
+      telefono_conyuge: {
+        type: Sequelize.STRING
+      },
     });
   },
   down: async (queryInterface, Sequelize) => {

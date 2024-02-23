@@ -95,6 +95,11 @@ module.exports = (app) => {
     router.put('/expedientes/activate', expedientesController.activate);
     router.put('/expedientes/deactivate', expedientesController.deactivate);
     router.get('/expedientes/getSearch', expedientesController.getSearch);
+    router.get('/expedientes/listQuirofano', expedientesController.listQuirofano);
+    router.get('/expedientes/listEmergencia', expedientesController.listEmergencia);
+    router.get('/expedientes/listIntensivo', expedientesController.listIntensivo);
+    router.get('/expedientes/listHospitalizacion', expedientesController.listHospitalizacion);
+    router.put('/expedientes/changeStatus', expedientesController.changeStatus);
 
     //CARPETA DE ENFERMERIA
     //habitaciones
