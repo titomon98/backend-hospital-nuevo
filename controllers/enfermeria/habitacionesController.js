@@ -120,16 +120,7 @@ module.exports = {
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
-    get (req, res) {
-        Habitaciones.findAll({attributes: ['id', 'nombre']})
-        .then(data => {
-            res.send(data);
-        })
-        .catch(error => {
-            console.log(error)
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
-    },
+    
     getSearch (req, res) {
         var busqueda = req.query;
         console.log(busqueda)
