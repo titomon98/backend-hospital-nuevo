@@ -29,7 +29,6 @@ module.exports = (sequelize, DataTypes) => {
     },
     id_medico: {
       type: DataTypes.INTEGER,
-      allowNull: false
     },
   }, {
     sequelize,
