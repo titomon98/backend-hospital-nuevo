@@ -2,6 +2,7 @@
 const Sequelize     = require('sequelize');
 const db = require("../../models");
 const Receta = db.recetas;
+const Expediente = db.expedientes;
 const Op = db.Sequelize.Op;
 
 module.exports = {
@@ -176,7 +177,7 @@ module.exports = {
         const criterio=req.query.criterio;
         const order=req.query.order;
         const id = req.query.id;
-
+        console.log(id)
         const { limit, offset } = getPagination(page, size);
 
         Receta.findAndCountAll({ include: [

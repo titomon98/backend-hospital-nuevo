@@ -298,6 +298,7 @@ module.exports = (app) => {
     router.put('/recetas/activate', recetaController.activate);
     router.put('/recetas/deactivate', recetaController.deactivate);
     router.get('/recetas/getSearch', recetaController.getSearch);
+    router.get('/recetas/getId', recetaController.getId)
 
     //CARPETA DE EMPLEADOS
     //detalle_permisos
