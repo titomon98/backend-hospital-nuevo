@@ -9,6 +9,9 @@ module.exports = (sequelize, DataTypes) => {
         consumo.belongsTo(models.cuentas, {
             foreignKey: "id_cuenta",
         });
+        consumo.belongsTo(models.servicios, {
+          foreignKey: "id_servicio",
+      });
     }
   };
   consumo.init({

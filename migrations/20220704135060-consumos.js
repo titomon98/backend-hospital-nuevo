@@ -41,6 +41,14 @@ module.exports = {
             key: 'id'
         }
       },
+      id_servicio: {
+        allowNull: false,
+        type: Sequelize.INTEGER,
+        references: {
+            model: 'servicios',
+            key: 'id'
+        }
+      },
     });
   },
   down: async (queryInterface, Sequelize) => {
