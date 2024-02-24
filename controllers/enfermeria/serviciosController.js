@@ -2,6 +2,7 @@
 const Sequelize     = require('sequelize');
 const db = require("../../models");
 const Contrato = db.contratos;
+const Servicios = db.servicios;
 const Op = db.Sequelize.Op;
 
 module.exports = {
@@ -133,10 +134,11 @@ module.exports = {
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
+
     getSearch (req, res) {
         var busqueda = req.query.search;
-        var condition = busqueda?{ [Op.or]:[ {contrato: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
-        Contrato.findAll({
+        var condition = busqueda?{ [Op.or]:[ {descripcion: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
+        Servicios.findAll({
             where: condition})
         .then(data => {
             res.send(data);
@@ -145,6 +147,21 @@ module.exports = {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
-    }
+    },
+
+    get(req, res) {
+        Servicios.findAll({
+            where: {
+                estado: 1
+            }
+        })
+        .then(data => {
+            res.send(data);
+        })
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
 };
 

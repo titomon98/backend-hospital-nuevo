@@ -17,6 +17,7 @@ const authController = require('../controllers/authController');
 //FAVOR DE DEJAR ORGANIZADO POR CARPETAS EN ORDEN ALFABETICO
 //CARPETA DE CAJA
 const contratosController = require('../controllers/caja/contratosController')
+const consumosController = require('../controllers/caja/consumosController')
 const cuentasController = require('../controllers/caja/cuentasController')
 const expedientesController = require('../controllers/caja/expedientesController')
 
@@ -64,6 +65,7 @@ const recetaController = require('../controllers/paciente/recetaController')
 const detalle_permisosController = require('../controllers/empleados/detalle_permisosController');
 const userController = require('../controllers/empleados/usuarioController');
 const userTypeController = require('../controllers/empleados/tipoUsuarioController');
+const serviciosController = require('../controllers/enfermeria/serviciosController');
 
 //RUTAS
 
@@ -79,6 +81,15 @@ module.exports = (app) => {
     router.put('/contrato/activate', contratosController.activate);
     router.put('/contrato/deactivate', contratosController.deactivate);
     router.get('/contrato/getSearch', contratosController.getSearch);
+
+    //consumos
+    router.get('/consumos/list', consumosController.list);
+    router.post('/consumos/create', consumosController.create);
+    router.put('/consumos/update', consumosController.update);
+    router.put('/consumos/activate', consumosController.activate);
+    router.put('/consumos/deactivate', consumosController.deactivate);
+    router.get('/consumos/getSearch', consumosController.getSearch);
+    router.get('/consumos/getId', consumosController.getId)
 
     //cuentas
     router.get('/cuentas/list', cuentasController.list);
@@ -110,6 +121,9 @@ module.exports = (app) => {
     router.put('/habitaciones/deactivate', habitacionesController.deactivate);
     router.get('/habitaciones/getSearch', habitacionesController.getSearch);
     router.get('/habitaciones/get', habitacionesController.get);
+
+    //servicios
+    router.get('/servicios/getSearch', serviciosController.getSearch);
     
     //CARPETA DE FARMACIA
     //alertas

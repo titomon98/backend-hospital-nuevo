@@ -1,20 +1,33 @@
 'use strict'
 const Sequelize     = require('sequelize');
 const db = require("../../models");
-const Receta = db.recetas;
-const Expediente = db.expedientes;
+const Consumo = db.consumos;
+const Servicio = db.servicios;
+const Cuenta = db.cuentas;
 const Op = db.Sequelize.Op;
 
 module.exports = {
-    create(req, res) {
+    async create(req, res) {
         let form = req.body.form
+
+        const cuenta = await Cuenta.findOne({
+            where: {
+                id_expediente: form.id
+            }
+        })
+        let id_cuenta = cuenta.dataValues.id
+        let subtotal = (parseFloat(form.cantidad) * parseFloat(form.servicio.precio))
+
         const datos = {
-            contenido: form.receta,
+            cantidad: form.cantidad,
+            descripcion: form.descripcion,
+            subtotal: subtotal,
             estado: 1,
-            id_expediente: form.id
+            id_servicio: form.servicio.id,
+            id_cuenta: id_cuenta
         };
 
-        Receta.create(datos)
+        await Consumo.create(datos)
         .then(tipo => {
             res.send(tipo);
         })
@@ -55,7 +68,7 @@ module.exports = {
 
         var condition = busqueda ? { [Op.or]: [{ contenido: { [Op.like]: `%${busqueda}%` } }] } : null ;
 
-        Receta.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        Consumo.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
         console.log('data: '+JSON.stringify(data))
@@ -74,18 +87,21 @@ module.exports = {
     find (req, res) {
         const id = req.params.id;
 
-        return Receta.findByPk(id)
+        return Consumo.findByPk(id)
         .then(marca => res.status(200).send(marca))
         .catch(error => res.status(400).send(error))
     },
 
     update (req, res) {
         let form = req.body.form
-        Receta.update(
+        Consumo.update(
             { 
-                contenido: form.contenido,
+                cantidad: form.cantidad,
+                descripcion: form.descripcion,
+                subtotal: form.servicio.precio,
                 estado: 1,
-                id_medico: form.medico.id
+                id_servicio: form.servicio.id,
+                id_cuenta: form.id_cuenta
             },
             { where: { 
                 id: form.id 
@@ -99,7 +115,7 @@ module.exports = {
     },
 
     activate (req, res) {
-        Receta.update(
+        Consumo.update(
             { estado: 1 },
             { where: { 
                 id: req.body.id 
@@ -113,7 +129,7 @@ module.exports = {
     },
 
     deactivate (req, res) {
-        Receta.update(
+        Consumo.update(
             { estado: 0 },
             { where: { 
                 id: req.body.id 
@@ -127,9 +143,9 @@ module.exports = {
     },
     
     get(req, res) {
-        Receta.findAll({
+        Consumo.findAll({
             where: {
-                id: req.body.id
+                estado: 1
             }
         })
         .then(data => {
@@ -144,7 +160,7 @@ module.exports = {
     getSearch (req, res) {
         var busqueda = req.query.search;
         var condition = busqueda?{ [Op.or]:[ {contenido: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
-        Receta.findAll({
+        Consumo.findAll({
             where: condition})
         .then(data => {
             res.send(data);
@@ -155,7 +171,17 @@ module.exports = {
         });
     },
 
-    getId (req, res) {
+    async getId (req, res) {
+        const id = req.query.id;
+        const cuenta = await Cuenta.findOne({
+            where: {
+                id_expediente: id
+            }
+        })
+        let id_cuenta = cuenta.dataValues.id
+        console.log(id)
+        console.log(id_cuenta)
+
         const getPagingData = (data, page, limit) => {
             const { count: totalItems, rows: referido } = data;
 
@@ -176,15 +202,21 @@ module.exports = {
         const size=req.query.limit;
         const criterio=req.query.criterio;
         const order=req.query.order;
-        const id = req.query.id;
+        
         const { limit, offset } = getPagination(page, size);
 
-        Receta.findAndCountAll({ include: [
+        Consumo.findAndCountAll({ include: [
             {
-                model: Expediente,
+                model: Servicio,
+                require: true
+            },
+            {
+                model: Cuenta,
                 require: true
             }
-        ], where: { id_expediente: id}, order:[[`${criterio}`,`${order}`]],limit,offset})
+        ], where: { 
+            id_cuenta: id_cuenta,
+        }, order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
         console.log('data: '+JSON.stringify(data))
