@@ -174,7 +174,39 @@ module.exports = {
     },
     getSearch (req, res) {
         var busqueda = req.query.search;
-        var condition = busqueda?{ [Op.or]:[ {nombre: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
+        var condition = busqueda ? {
+            [Op.or]: [{ nombre: { [Op.like]: `%${busqueda}%` }}],
+            [Op.and]: [{ estado: 1 }, { factura: 1 }]
+        } : [{ estado: 1 }, { factura: 1 }];
+        
+        Medicamento.findAll({
+            include: [
+                {
+                    model: Marca,
+                },
+                {
+                    model: Presentacion
+                },
+                {
+                    model: Proveedor
+                },
+            ],
+            where: condition})
+        .then(data => {
+            res.send(data);
+        })
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
+    getSearchNo (req, res) {
+        var busqueda = req.query.search;
+        var condition = busqueda ? {
+            [Op.or]: [{ nombre: { [Op.like]: `%${busqueda}%` }}],
+            [Op.and]: [{ estado: 1 }, { factura: 0 }]
+        } : [{ estado: 1 }, { factura: 0 }];
+        
         Medicamento.findAll({
             include: [
                 {

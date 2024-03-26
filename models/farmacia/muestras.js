@@ -62,8 +62,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     id_muestra: {
-      type: DataTypes.INTEGER,
-      allowNull: false
+      type: DataTypes.INTEGER
     },
   }, {
     sequelize,

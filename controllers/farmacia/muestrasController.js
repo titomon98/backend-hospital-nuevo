@@ -5,7 +5,6 @@ const Muestras = db.muestras_medicas;
 const Marca = db.marcas;
 const Presentacion = db.presentaciones;
 const Proveedor = db.proveedores;
-const CasasMedicas = db.casa_medicas;
 const Op = db.Sequelize.Op;
 
 module.exports = {
@@ -21,7 +20,6 @@ module.exports = {
             id_presentacion: form.presentacion.id,
             id_proveedor: form.proveedor.id,
             id_marca: form.marca.id,
-            id_muestra: form.casa_medica.id,
             estado: 1
         };
 
@@ -76,10 +74,7 @@ module.exports = {
                 },
                 {
                     model: Proveedor
-                },
-                {
-                    model: CasasMedicas
-                },
+                }
             ],
             where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
@@ -117,8 +112,7 @@ module.exports = {
                 existencia_actual: form.existencia_actual,
                 id_presentacion: form.presentacion.id,
                 id_proveedor: form.proveedor.id,
-                id_marca: form.marca.id,
-                id_muestra: form.casa_medica.id,
+                id_marca: form.marca.id
             },
             { where: { 
                 id: form.id 
@@ -181,10 +175,7 @@ module.exports = {
                 },
                 {
                     model: Proveedor
-                },
-                {
-                    model: CasasMedicas
-                },
+                }
             ],
             where: condition})
         .then(data => {
