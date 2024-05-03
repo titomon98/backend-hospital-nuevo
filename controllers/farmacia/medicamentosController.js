@@ -25,7 +25,8 @@ module.exports = {
             id_presentacion: form.presentacion.id,
             id_proveedor: form.proveedor.id,
             id_marca: form.marca.id,
-            estado: 1
+            estado: 1,
+            factura: form.factura
         };
 
         Medicamento.create(datos)
