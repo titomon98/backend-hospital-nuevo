@@ -124,6 +124,12 @@ module.exports = (app) => {
 
     //servicios
     router.get('/servicios/getSearch', serviciosController.getSearch);
+    router.get('/servicios/list', serviciosController.list);
+    router.post('/servicios/create', serviciosController.create);
+    router.put('/servicios/update', serviciosController.update);
+    router.put('/servicios/activate', serviciosController.activate);
+    router.put('/servicios/deactivate', serviciosController.deactivate);
+    router.get('/servicios/get', serviciosController.get);
     
     //CARPETA DE FARMACIA
     //alertas
