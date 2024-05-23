@@ -11,6 +11,7 @@ module.exports = {
         const datos = {
             descripcion: form.descripcion,
             precio: form.precio,
+            unidadDeMedida: form.unidadDeMedida,
             estado: 1
         };
 
@@ -85,6 +86,7 @@ module.exports = {
             { 
                 descripcion: form.descripcion,
                 precio: form.precio,
+                unidadDeMedida: form.unidadDeMedida,
                 estado: form.estado
             },
             { where: { 
