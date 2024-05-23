@@ -1,7 +1,7 @@
 'use strict'
 const Sequelize     = require('sequelize');
 const db = require("../../models");
-const Contrato = db.contratos;
+//const Contrato = db.contratos;
 const Servicios = db.servicios;
 const Op = db.Sequelize.Op;
 
@@ -9,12 +9,12 @@ module.exports = {
     create(req, res) {
         let form = req.body.form
         const datos = {
-            contrato: form.contrato,
-            nombre: form.nombre,
+            descripcion: form.descripcion,
+            precio: form.precio,
             estado: 1
         };
 
-        Contrato.create(datos)
+        Servicios.create(datos)
         .then(tipo => {
             res.send(tipo);
         })
@@ -53,9 +53,9 @@ module.exports = {
 
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Op.or]: [{ contrato: { [Op.like]: `%${busqueda}%` } }] } : null ;
+        var condition = busqueda ? { [Op.or]: [{ descripcion: { [Op.like]: `%${busqueda}%` } }] } : null ;
 
-        Contrato.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        Servicios.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
         console.log('data: '+JSON.stringify(data))
@@ -74,17 +74,18 @@ module.exports = {
     find (req, res) {
         const id = req.params.id;
 
-        return Contrato.findByPk(id)
+        return Servicios.findByPk(id)
         .then(marca => res.status(200).send(marca))
         .catch(error => res.status(400).send(error))
     },
 
     update (req, res) {
         let form = req.body.form
-        Contrato.update(
+        Servicios.update(
             { 
-                contrato: form.contrato,
-                nombre: form.nombre,
+                descripcion: form.descripcion,
+                precio: form.precio,
+                estado: form.estado
             },
             { where: { 
                 id: form.id 
@@ -98,7 +99,7 @@ module.exports = {
     },
 
     activate (req, res) {
-        Contrato.update(
+        Servicios.update(
             { estado: 1 },
             { where: { 
                 id: req.body.id 
@@ -112,7 +113,7 @@ module.exports = {
     },
 
     deactivate (req, res) {
-        Contrato.update(
+        Servicios.update(
             { estado: 0 },
             { where: { 
                 id: req.body.id 
@@ -125,7 +126,7 @@ module.exports = {
         });
     },
     get (req, res) {
-        Contrato.findAll({attributes: ['id', 'contrato']})
+        Servicios.findAll({attributes: ['id', 'descripcion']})
         .then(data => {
             res.send(data);
         })
