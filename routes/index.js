@@ -110,6 +110,7 @@ module.exports = (app) => {
     router.get('/expedientes/listEmergencia', expedientesController.listEmergencia);
     router.get('/expedientes/listIntensivo', expedientesController.listIntensivo);
     router.get('/expedientes/listHospitalizacion', expedientesController.listHospitalizacion);
+    router.get('/expedientes/listReingreso', expedientesController.listReingreso);
     router.put('/expedientes/changeStatus', expedientesController.changeStatus);
 
     //CARPETA DE ENFERMERIA
