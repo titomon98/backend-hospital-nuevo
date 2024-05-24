@@ -124,6 +124,12 @@ module.exports = (app) => {
     router.get('/habitaciones/get', habitacionesController.get);
 
     //servicios
+    router.get('/servicios/list', serviciosController.list);
+    router.post('/servicios/create', serviciosController.create);
+    router.put('/servicios/update', serviciosController.update);
+    router.put('/servicios/activate', serviciosController.activate);
+    router.put('/servicios/deactivate', serviciosController.deactivate);
+    router.get('/servicios/getSearch', serviciosController.getSearch);
     router.get('/servicios/getSearch', serviciosController.getSearch);
     router.get('/servicios/list', serviciosController.list);
     router.post('/servicios/create', serviciosController.create);
