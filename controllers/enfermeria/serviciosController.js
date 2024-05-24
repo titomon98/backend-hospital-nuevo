@@ -1,6 +1,10 @@
 'use strict'
 const Sequelize     = require('sequelize');
 const db = require("../../models");
+<<<<<<< HEAD
+=======
+//const Contrato = db.contratos;
+>>>>>>> f56d455ea4e4c8d3a1c4b9ae9ea65cf544fe8823
 const Servicios = db.servicios;
 const Op = db.Sequelize.Op;
 
@@ -10,6 +14,10 @@ module.exports = {
         const datos = {
             descripcion: form.descripcion,
             precio: form.precio,
+<<<<<<< HEAD
+=======
+            unidadDeMedida: form.unidadDeMedida,
+>>>>>>> f56d455ea4e4c8d3a1c4b9ae9ea65cf544fe8823
             estado: 1
         };
 
@@ -84,6 +92,11 @@ module.exports = {
             { 
                 descripcion: form.descripcion,
                 precio: form.precio,
+<<<<<<< HEAD
+=======
+                unidadDeMedida: form.unidadDeMedida,
+                estado: form.estado
+>>>>>>> f56d455ea4e4c8d3a1c4b9ae9ea65cf544fe8823
             },
             { where: { 
                 id: form.id 
@@ -124,7 +137,11 @@ module.exports = {
         });
     },
     get (req, res) {
+<<<<<<< HEAD
         Servicios.findAll({attributes: ['id', 'contrato']})
+=======
+        Servicios.findAll({attributes: ['id', 'descripcion']})
+>>>>>>> f56d455ea4e4c8d3a1c4b9ae9ea65cf544fe8823
         .then(data => {
             res.send(data);
         })
