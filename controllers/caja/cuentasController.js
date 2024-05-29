@@ -2,6 +2,7 @@
 const Sequelize     = require('sequelize');
 const db = require("../../models");
 const Cuenta = db.cuentas;
+const Expediente = db.expedientes;
 const Op = db.Sequelize.Op;
 
 module.exports = {
@@ -58,7 +59,13 @@ module.exports = {
 
         var condition = busqueda ? { [Op.or]: [{ cuenta: { [Op.like]: `%${busqueda}%` } }] } : null ;
 
-        Cuenta.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        Cuenta.findAndCountAll({ 
+            include: [
+                {
+                    model: Expediente,
+                }
+            ],
+            where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
         console.log('data: '+JSON.stringify(data))
