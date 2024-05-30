@@ -205,6 +205,19 @@ module.exports = {
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
+    changeState (req, res) {
+        Expediente.update(
+            { estado: req.body.estado },
+            { where: { 
+                id: req.body.id 
+            } }
+        )
+        .then(marca => res.status(200).send('El registro ha sido modificado'))
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
 
     deactivate (req, res) {
         Expediente.update(
