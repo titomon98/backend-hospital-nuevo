@@ -103,6 +103,7 @@ module.exports = (app) => {
     router.get('/expedientes/list', expedientesController.list);
     router.post('/expedientes/create', expedientesController.create);
     router.put('/expedientes/update', expedientesController.update);
+    router.put('/expedientes/changeState', expedientesController.changeState);
     router.put('/expedientes/activate', expedientesController.activate);
     router.put('/expedientes/deactivate', expedientesController.deactivate);
     router.get('/expedientes/getSearch', expedientesController.getSearch);
