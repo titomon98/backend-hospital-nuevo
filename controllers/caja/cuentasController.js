@@ -135,7 +135,7 @@ module.exports = {
     },
     getSearch (req, res) {
         var busqueda = req.query.search;
-        var condition = busqueda?{ [Op.or]:[ {contrato: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
+        var condition = busqueda?{ [Op.or]:[ {expediente: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
         Contrato.findAll({
             where: condition})
         .then(data => {
