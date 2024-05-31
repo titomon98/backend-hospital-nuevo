@@ -122,6 +122,7 @@ module.exports = (app) => {
     router.put('/habitaciones/update', habitacionesController.update);
     router.put('/habitaciones/activate', habitacionesController.activate);
     router.put('/habitaciones/deactivate', habitacionesController.deactivate);
+    router.put('/habitaciones/inUse', habitacionesController.inUse);
     router.get('/habitaciones/getSearch', habitacionesController.getSearch);
     router.get('/habitaciones/get', habitacionesController.get);
 

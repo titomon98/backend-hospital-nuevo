@@ -8,6 +8,7 @@ const Op = db.Sequelize.Op;
 module.exports = {
     create(req, res) {
         let form = req.body.form
+        console.log(req.body.form)
         const datos = {
             numero: form.numero,
             fecha_ingreso: form.fecha_ingreso,
@@ -15,7 +16,8 @@ module.exports = {
             descripcion: form.descripcion,
             otros: form.otros,
             total: form.total,
-            estado: 1
+            estado: 1,
+            id_expediente: form.id_expediente
         };
 
         Cuenta.create(datos)

@@ -121,6 +121,20 @@ module.exports = {
         });
     },
     
+    inUse (req, res) {
+        Habitaciones.update(
+            { estado: 2 },
+            { where: { 
+                id: req.body.id 
+            } }
+        )
+        .then(marca => res.status(200).send('El registro ha sido activado'))
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
+
     getSearch (req, res) {
         var busqueda = req.query;
         console.log(busqueda)
