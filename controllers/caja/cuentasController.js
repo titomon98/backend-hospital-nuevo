@@ -1,7 +1,7 @@
 'use strict'
 const Sequelize     = require('sequelize');
 const db = require("../../models");
-const Contrato = db.contratos;
+const Cuenta = db.cuentas;
 const Op = db.Sequelize.Op;
 
 module.exports = {
@@ -133,18 +133,24 @@ module.exports = {
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
-    getSearch (req, res) {
-        var busqueda = req.query.search;
-        var condition = busqueda?{ [Op.or]:[ {contrato: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
-        Contrato.findAll({
-            where: condition})
-        .then(data => {
-            res.send(data);
-        })
-        .catch(error => {
-            console.log(error)
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
-    }
+    async getSearch(req, res) {
+        const idExpediente = parseInt(req.query.search, 10)// Obtener el id_expediente de la consulta
+        console.log("ID Expediente recibido:", idExpediente); 
+        try {
+          const cuenta = await Cuenta.findOne({
+            where: { id_expediente: idExpediente }, // Buscar por id_expediente
+            include: [{ model: db.expedientes, as: 'expediente' }] 
+          });
+        console.log("Cuenta encontrada:", cuenta);
+          if (cuenta) {
+            res.send(cuenta); // Enviar la cuenta encontrada
+          } else {
+            res.status(404).json({ msg: 'No se encontró ninguna cuenta para este expediente' });
+          }
+        } catch (error) {
+            console.error("Error en getSearch:", error);
+          return res.status(500).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        }
+      }      
 };
 
