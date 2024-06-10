@@ -42,6 +42,9 @@ const proveedorController = require('../controllers/farmacia/proveedorController
 const quirurgicoController = require('../controllers/farmacia/quirurgicoController')
 const quirurgicoMovimientosController = require('../controllers/farmacia/quirurgicoMovimientosController')
 
+//CARPETA DE HONORARIOS
+const detalleHonorariosController = require('../controllers/honorarios/detalleHonorariosController')
+
 //CARPETA DE GERENCIA
 
 
@@ -94,6 +97,9 @@ module.exports = (app) => {
 
     //cuentas
     router.get('/cuentas/list', cuentasController.list);
+    router.get('/cuentas/get', cuentasController.get);
+    router.get('/cuentas/getByExp', cuentasController.getByExp);
+    router.get('/cuentas/pay', cuentasController.onPay);
     router.post('/cuentas/create', cuentasController.create);
     router.put('/cuentas/update', cuentasController.update);
     router.put('/cuentas/activate', cuentasController.activate);
@@ -271,6 +277,14 @@ module.exports = (app) => {
     router.put('/quirurgico_movimientos/activate', quirurgicoMovimientosController.activate);
     router.put('/quirurgico_movimientos/deactivate', quirurgicoMovimientosController.deactivate);
     router.get('/quirurgico_movimientos/getSearch', quirurgicoMovimientosController.getSearch);
+
+    //CARPETA HONORARIOS
+    // Rutas para detalle_honorarios
+    router.post('/detalle_honorarios/created', detalleHonorariosController.create);
+    router.get('/detalle_honorarios', detalleHonorariosController.list);
+    router.get('/detalle_honorarios/getId/:id', detalleHonorariosController.find);
+    router.get('/detalle_honorarios/getSearch', detalleHonorariosController.getSearch);
+    router.put('/detalle_honorarios/:id', detalleHonorariosController.update);
 
     //CARPETA DE INVENTARIO
     //alimentacion

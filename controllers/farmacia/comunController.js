@@ -24,6 +24,7 @@ module.exports = {
             id_presentacion: form.presentacion.id,
             id_proveedor: form.proveedor.id,
             id_marca: form.marca.id,
+            factura: form.factura,
             estado: 1
         };
 
