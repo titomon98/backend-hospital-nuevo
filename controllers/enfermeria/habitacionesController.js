@@ -123,11 +123,15 @@ module.exports = {
     
     inUse (req, res) {
         Habitaciones.update(
-            { estado: 2 },
+            { 
+                estado: 2,
+                ocupante: req.body.ocupante
+            },
             { where: { 
-                id: req.body.id 
+                id: req.body.id
             } }
         )
+        console.log(req.body)
         .then(marca => res.status(200).send('El registro ha sido activado'))
         .catch(error => {
             console.log(error)

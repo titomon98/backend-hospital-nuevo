@@ -136,9 +136,12 @@ module.exports = {
 
     deactivate (req, res) {
         Cuenta.update(
-            { estado: 0 },
+            { 
+                estado: 0,
+                tipo_de_pago: req.body.tipo_de_pago
+            },
             { where: { 
-                id: req.body.id 
+                id: req.body.id
             } }
         )
         .then(cuenta =>res.status(200).send('El registro ha sido desactivado'))
