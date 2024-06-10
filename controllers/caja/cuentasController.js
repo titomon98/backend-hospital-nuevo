@@ -2,19 +2,26 @@
 const Sequelize     = require('sequelize');
 const db = require("../../models");
 const Cuenta = db.cuentas;
+const Expediente = db.expedientes;
 const Op = db.Sequelize.Op;
 
 module.exports = {
     create(req, res) {
-        let form = req.body.form
+        let form = req.body
         const datos = {
-            contrato: form.contrato,
-            nombre: form.nombre,
-            estado: 1
+            numero: form.numero,
+            fecha_ingreso: form.fecha_ingreso,
+            motivo: form.motivo,
+            descripcion: form.descripcion,
+            otros: form.otros,
+            total: form.total,
+            estado: 1,
+            id_expediente: form.id_expediente
         };
 
-        Contrato.create(datos)
+        Cuenta.create(datos)
         .then(tipo => {
+            console.log(tipo.cuentas)
             res.send(tipo);
         })
         .catch(error => {
@@ -48,13 +55,17 @@ module.exports = {
         const size=req.query.limit;
         const criterio=req.query.criterio;
         const order=req.query.order;
-
-
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Op.or]: [{ contrato: { [Op.like]: `%${busqueda}%` } }] } : null ;
-
-        Contrato.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        var condition = busqueda ? { [Op.or]: [{ '$Expediente.expediente$': { [Op.like]: `%${busqueda}%` } }] } : null ;
+        console.log(busqueda)
+        Cuenta.findAndCountAll({ 
+            include: [
+                {
+                    model: Expediente,
+                }
+            ],
+            where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
         console.log('data: '+JSON.stringify(data))
@@ -73,23 +84,36 @@ module.exports = {
     find (req, res) {
         const id = req.params.id;
 
-        return Contrato.findByPk(id)
-        .then(marca => res.status(200).send(marca))
+        return Cuenta.findByPk(id)
+        .then(cuenta => res.status(200).send(cuenta))
+        .catch(error => res.status(400).send(error))
+    },
+
+    findByExp (req, res) {
+        const id = req.params.id
+
+        return Cuenta.find(id_expediente => id_expediente === id)
+        .then(cuenta => res.status(200).send(cuenta))
         .catch(error => res.status(400).send(error))
     },
 
     update (req, res) {
         let form = req.body.form
-        Contrato.update(
+        Cuenta.update(
             { 
-                contrato: form.contrato,
-                nombre: form.nombre,
+                numero: form.numero,
+                fecha_ingreso: form.fecha_ingreso,
+                motivo: form.motivo,
+                descripcion: form.descripcion,
+                otros: form.otros,
+                total: form.total,
+                estado: form.estado,
             },
             { where: { 
                 id: form.id 
             } }
         )
-        .then(marca => res.status(200).send('El registro ha sido actualizado'))
+        .then(cuenta => res.status(200).send('El registro ha sido actualizado'))
         .catch(error => {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
@@ -97,13 +121,13 @@ module.exports = {
     },
 
     activate (req, res) {
-        Contrato.update(
+        Cuenta.update(
             { estado: 1 },
             { where: { 
                 id: req.body.id 
             } }
         )
-        .then(marca => res.status(200).send('El registro ha sido activado'))
+        .then(cuenta => res.status(200).send('El registro ha sido activado'))
         .catch(error => {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
@@ -111,20 +135,68 @@ module.exports = {
     },
 
     deactivate (req, res) {
-        Contrato.update(
+        Cuenta.update(
             { estado: 0 },
             { where: { 
                 id: req.body.id 
             } }
         )
-        .then(marca =>res.status(200).send('El registro ha sido desactivado'))
+        .then(cuenta =>res.status(200).send('El registro ha sido desactivado'))
         .catch(error => {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
+
+    onPay (req, res) {
+        Cuenta.update(
+            { 
+                estado: 0,
+                tipo_de_pago: req.body.tipo
+             },
+            { where: { 
+                id: req.body.id 
+            } }
+        )
+        .then(cuenta =>res.status(200).send('La cuenta ha sido pagada'))
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
+
     get (req, res) {
-        Contrato.findAll({attributes: ['id', 'contrato']})
+        return Cuenta.findAll()
+        .then(data => {
+            res.send(data);
+        })
+        .catch(error => {
+            console.log(error)
+            res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
+    
+    getByExp (req, res) {
+        console.log(req.query)
+        console.log("HOLA")
+        return Cuenta.findAll({
+            where: {
+                id_expediente: req.query.id,
+                estado: 1
+            }
+        })
+            .then(tipo => res.status(200).send(tipo))
+            .catch(error => {
+                console.log(error)
+                res.status(400).send(error)
+            })
+    },
+
+    getSearch (req, res) {
+        var busqueda = req.query.search;
+        var condition = busqueda?{ [Op.or]:[ {cuenta: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
+        Cuenta.findAll({
+            where: condition})
         .then(data => {
             res.send(data);
         })
@@ -132,25 +204,6 @@ module.exports = {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
-    },
-    async getSearch(req, res) {
-        const idExpediente = parseInt(req.query.search, 10)// Obtener el id_expediente de la consulta
-        console.log("ID Expediente recibido:", idExpediente); 
-        try {
-          const cuenta = await Cuenta.findOne({
-            where: { id_expediente: idExpediente }, // Buscar por id_expediente
-            include: [{ model: db.expedientes, as: 'expediente' }] 
-          });
-        console.log("Cuenta encontrada:", cuenta);
-          if (cuenta) {
-            res.send(cuenta); // Enviar la cuenta encontrada
-          } else {
-            res.status(404).json({ msg: 'No se encontró ninguna cuenta para este expediente' });
-          }
-        } catch (error) {
-            console.error("Error en getSearch:", error);
-          return res.status(500).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        }
-      }      
+    }
 };
 

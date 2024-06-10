@@ -1,36 +1,70 @@
 'use strict'
 const Sequelize     = require('sequelize');
 const db = require("../../models");
-const Comun = db.comunes;
-const Marca = db.marcas;
-const Presentacion = db.presentaciones;
-const Proveedor = db.proveedores;
+const Pedido = db.pedidos;
+const DetallePedido = db.detalle_pedidos;
+const Usuarios = db.usuarios;
 const Op = db.Sequelize.Op;
 
 module.exports = {
     create(req, res) {
-        let form = req.body.form
+        let form = req.body
         const datos = {
-            nombre: form.name,
-            precio_costo: form.precio_costo,
-            precio_venta: form.precio_venta,
-            existencia_minima_quirofano: form.existencia_minima_quirofano,
-            existencia_actual_quirofano: form.existencia_actual_quirofano,
-            existencia_minima_farmacia: form.existencia_minima_farmacia,
-            existencia_actual_farmacia: form.existencia_actual_farmacia,
-            existencia_minima: form.existencia_minima,
-            existencia_actual: form.existencia_actual,
-            inventariado: form.inventariado,
-            id_presentacion: form.presentacion.id,
-            id_proveedor: form.proveedor.id,
-            id_marca: form.marca.id,
-            factura: form.factura,
+            codigoPedido: form.codigoPedido,
+            fecha: form.fecha,
+            id_usuario: form.id_usuario,
+            cantidadUnidades: form.cantidadUnidades,
             estado: 1
         };
 
-        Comun.create(datos)
-        .then(tipo => {
-            res.send(tipo);
+        Pedido.create(datos)
+        .then(pedido => {
+            const pedido_id = pedido.id
+            let total = 0;
+            let detalles = form.detalle
+            let cantidad = form.detalle.length
+            for (let i = 0; i < cantidad; i++){
+                if (detalles[i].is_medicine === true){
+                    let id_medicine = detalles[i].id_medicine
+                    let datos_detalles = {
+                        cantidad: detalles[i].cantidad,
+                        descripcion: detalles[i].descripcion,
+                        subtotal: detalles[i].total,
+                        estado: 1,
+                        id_pedido: pedido_id,
+                        id_medicamento: id_medicine
+                    }
+                    total = total + parseFloat(detalles[i].total)
+                    DetallePedido.create(datos_detalles)
+                }
+                else if (detalles[i].is_quirurgico === true){
+                    let id_medicine = detalles[i].id_medicine
+                    let datos_detalles = {
+                        cantidad: detalles[i].cantidad,
+                        descripcion: detalles[i].descripcion,
+                        subtotal: detalles[i].total,
+                        estado: 1,
+                        id_pedido: pedido_id,
+                        id_quirurgico: id_medicine
+                    }
+                    total = total + parseFloat(detalles[i].total)
+                    DetallePedido.create(datos_detalles)
+                }
+                else if (detalles[i].is_comun === true){
+                    let id_medicine = detalles[i].id_medicine
+                    let datos_detalles = {
+                        cantidad: detalles[i].cantidad,
+                        descripcion: detalles[i].descripcion,
+                        subtotal: detalles[i].total,
+                        estado: 1,
+                        id_pedido: pedido_id,
+                        id_comun: id_medicine
+                    }
+                    total = total + parseFloat(detalles[i].total)
+                    DetallePedido.create(datos_detalles)
+                }
+            }
+            res.send(pedido);
         })
         .catch(error => {
             console.log(error)
@@ -67,18 +101,17 @@ module.exports = {
 
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Op.or]: [{ nombre: { [Op.like]: `%${busqueda}%` } }] } : null ;
+        var condition = busqueda ? { [Op.or]: [{ codigoPedido: { [Op.like]: `%${busqueda}%` } }] } : null ;
 
-        Comun.findAndCountAll({ 
+        Pedido.findAndCountAll({ 
             include: [
                 {
-                    model: Marca,
+                    model: DetallePedido,
+                    require: true,
                 },
                 {
-                    model: Presentacion
-                },
-                {
-                    model: Proveedor
+                    model: Usuarios,
+                    require: true,
                 },
             ],
             where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
@@ -100,34 +133,22 @@ module.exports = {
     find (req, res) {
         const id = req.params.id;
 
-        return Comun.findByPk(id)
-        .then(comun => res.status(200).send(comun))
+        return Pedido.findByPk(id)
+        .then(pedido => res.status(200).send(pedido))
         .catch(error => res.status(400).send(error))
     },
 
     update (req, res) {
         let form = req.body.form
-        Comun.update(
-            { 
-                nombre: form.name,
-                precio_costo: form.precio_costo,
-                precio_venta: form.precio_venta,
-                existencia_minima: form.existencia_minima,
-                existencia_actual: form.existencia_actual,
-                existencia_minima_quirofano: form.existencia_minima_quirofano,
-                existencia_actual_quirofano: form.existencia_actual_quirofano,
-                existencia_minima_farmacia: form.existencia_minima_farmacia,
-                existencia_actual_farmacia: form.existencia_actual_farmacia,
-                inventariado: form.inventariado,
-                id_presentacion: form.presentacion.id,
-                id_proveedor: form.proveedor.id,
-                id_marca: form.marca.id,
+        Pedido.update(
+            {   
+                fecha: form.fecha
             },
             { where: { 
                 id: form.id 
             } }
         )
-        .then(comun => res.status(200).send('El registro ha sido actualizado'))
+        .then(pedido => res.status(200).send('El registro ha sido actualizado'))
         .catch(error => {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
@@ -135,13 +156,13 @@ module.exports = {
     },
 
     activate (req, res) {
-        Comun.update(
+        Pedido.update(
             { estado: 1 },
             { where: { 
                 id: req.body.id 
             } }
         )
-        .then(comun => res.status(200).send('El registro ha sido activado'))
+        .then(pedido => res.status(200).send('El registro ha sido activado'))
         .catch(error => {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
@@ -149,20 +170,20 @@ module.exports = {
     },
 
     deactivate (req, res) {
-        Comun.update(
+        Pedido.update(
             { estado: 0 },
             { where: { 
                 id: req.body.id 
             } }
         )
-        .then(comun =>res.status(200).send('El registro ha sido desactivado'))
+        .then(pedido =>res.status(200).send('El registro ha sido desactivado'))
         .catch(error => {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
     get (req, res) {
-        Comun.findAll({attributes: ['id', 'nombre']})
+        Pedido.findAll({attributes: ['id', 'codigoPedido', 'fecha', 'id_usuario', 'estado']})
         .then(data => {
             res.send(data);
         })
@@ -173,47 +194,16 @@ module.exports = {
     },
     getSearch (req, res) {
         var busqueda = req.query.search;
-        var condition = busqueda ? {
-            [Op.or]: [{ nombre: { [Op.like]: `%${busqueda}%` }}],
-            [Op.and]: [{ estado: 1 }, { factura: 1 }]
-        } : [{ estado: 1 }, { factura: 1 }];
-        Comun.findAll({
+        var condition = busqueda?{ [Op.or]:[ {codigoPedido: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
+        Pedido.findAll({
             include: [
                 {
-                    model: Marca,
+                    model: DetallePedido,
+                    require: true,
                 },
                 {
-                    model: Presentacion
-                },
-                {
-                    model: Proveedor
-                },
-            ],
-            where: condition})
-        .then(data => {
-            res.send(data);
-        })
-        .catch(error => {
-            console.log(error)
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
-    },
-    getSearchNo (req, res) {
-        var busqueda = req.query.search;
-        var condition = busqueda ? {
-            [Op.or]: [{ nombre: { [Op.like]: `%${busqueda}%` }}],
-            [Op.and]: [{ estado: 1 }, { factura: 0 }]
-        } : [{ estado: 1 }, { factura: 0 }];
-        Comun.findAll({
-            include: [
-                {
-                    model: Marca,
-                },
-                {
-                    model: Presentacion
-                },
-                {
-                    model: Proveedor
+                    model: Usuarios,
+                    require: true,
                 },
             ],
             where: condition})
