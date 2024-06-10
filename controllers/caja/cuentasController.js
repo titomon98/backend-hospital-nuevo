@@ -55,12 +55,10 @@ module.exports = {
         const size=req.query.limit;
         const criterio=req.query.criterio;
         const order=req.query.order;
-
-
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Op.or]: [{ cuenta: { [Op.like]: `%${busqueda}%` } }] } : null ;
-
+        var condition = busqueda ? { [Op.or]: [{ '$Expediente.expediente$': { [Op.like]: `%${busqueda}%` } }] } : null ;
+        console.log(busqueda)
         Cuenta.findAndCountAll({ 
             include: [
                 {
