@@ -23,12 +23,17 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false
     },
+    id_comun: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
     id_medicamento: {
       type: DataTypes.INTEGER,
+      allowNull: true
     },
-    id_pedido: {
+    id_quirurgico: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: true
     },
     estado: {
       type: DataTypes.INTEGER,

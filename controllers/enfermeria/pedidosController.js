@@ -3,6 +3,9 @@ const Sequelize     = require('sequelize');
 const db = require("../../models");
 const Pedido = db.pedidos;
 const DetallePedido = db.detalle_pedidos;
+const Medicamento = db.medicamentos;
+const Comun = db.comunes;
+const Quirurgico = db.quirurgicos;
 const Usuarios = db.usuarios;
 const Op = db.Sequelize.Op;
 
@@ -10,58 +13,108 @@ module.exports = {
     create(req, res) {
         let form = req.body
         const datos = {
-            codigoPedido: form.codigoPedido,
-            fecha: form.fecha,
-            id_usuario: form.id_usuario,
-            cantidadUnidades: form.cantidadUnidades,
+            codigoPedido: req.body.codigoPedido,
+            fecha: req.body.fecha,
+            id_usuario: req.body.id_usuario,
+            cantidadUnidades: req.body.cantidadUnidades,
             estado: 1
         };
 
         Pedido.create(datos)
         .then(pedido => {
             const pedido_id = pedido.id
-            let total = 0;
-            let detalles = form.detalle
-            let cantidad = form.detalle.length
+            let cantidadUnidades = 0;
+            let detalles = req.body.detalle
+            let cantidad = req.body.detalle.length
             for (let i = 0; i < cantidad; i++){
                 if (detalles[i].is_medicine === true){
                     let id_medicine = detalles[i].id_medicine
+                    console.log(detalles[i])
+                    console.log(pedido_id)
                     let datos_detalles = {
-                        cantidad: detalles[i].cantidad,
-                        descripcion: detalles[i].descripcion,
-                        subtotal: detalles[i].total,
+                        cantidad: parseInt(detalles[i].cantidad),
+                        descripcion: detalles[i].nombre,
                         estado: 1,
-                        id_pedido: pedido_id,
+                        id_paquete: parseInt(pedido_id),
                         id_medicamento: id_medicine
                     }
-                    total = total + parseFloat(detalles[i].total)
+                    cantidadUnidades = cantidadUnidades + parseInt(detalles[i].cantidad)
                     DetallePedido.create(datos_detalles)
+                    .then(detalle => {
+                        Medicamento.update(
+                        { 
+                            existencia_actual: detalles[i].existencias_actuales
+                        },
+                        { where: { 
+                            id: detalles[i].id_medicine
+                        }})
+                        .then(medicamento => res.status(200).send('El registro ha sido actualizado'))
+                        .catch(error => {
+                            console.log(error)
+                            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+                        });
+                    })
+                    .catch(error => {
+                        console.log(error)
+                        return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+                    });
                 }
                 else if (detalles[i].is_quirurgico === true){
-                    let id_medicine = detalles[i].id_medicine
+                    let id_quirurgico = detalles[i].id_quirurgico
                     let datos_detalles = {
                         cantidad: detalles[i].cantidad,
                         descripcion: detalles[i].descripcion,
-                        subtotal: detalles[i].total,
                         estado: 1,
                         id_pedido: pedido_id,
-                        id_quirurgico: id_medicine
+                        id_quirurgico: id_quirurgico
                     }
-                    total = total + parseFloat(detalles[i].total)
-                    DetallePedido.create(datos_detalles)
+                    cantidadUnidades = cantidadUnidades + parseInt(detalles[i].cantidad)
+                    DetallePedido.create(datos_detalles).then(detalle => {
+                        Quirurgico.update(
+                        { 
+                            existencia_actual: detalles[i].existencias_actuales
+                        },
+                        { where: { 
+                            id: detalles[i].id_quirurgico
+                        }})
+                        .then(quirurgico => res.status(200).send('El registro ha sido actualizado'))
+                        .catch(error => {
+                            console.log(error)
+                            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+                        });
+                    })
+                    .catch(error => {
+                        console.log(error)
+                        return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+                    });
                 }
                 else if (detalles[i].is_comun === true){
-                    let id_medicine = detalles[i].id_medicine
+                    let id_comun = detalles[i].id_comun
                     let datos_detalles = {
                         cantidad: detalles[i].cantidad,
                         descripcion: detalles[i].descripcion,
-                        subtotal: detalles[i].total,
                         estado: 1,
                         id_pedido: pedido_id,
-                        id_comun: id_medicine
+                        id_comun: id_comun
                     }
-                    total = total + parseFloat(detalles[i].total)
-                    DetallePedido.create(datos_detalles)
+                    DetallePedido.create(datos_detalles).then(detalle => {
+                        Comun.update(
+                        { 
+                            existencia_actual: detalles[i].existencias_actuales
+                        },
+                        { where: { 
+                            id: detalles[i].id_comun
+                        }})
+                        .then(comun => res.status(200).send('El registro ha sido actualizado'))
+                        .catch(error => {
+                            console.log(error)
+                            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+                        });
+                    })
+                    .catch(error => {
+                        console.log(error)
+                        return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+                    });
                 }
             }
             res.send(pedido);
@@ -184,6 +237,25 @@ module.exports = {
     },
     get (req, res) {
         Pedido.findAll({attributes: ['id', 'codigoPedido', 'fecha', 'id_usuario', 'estado']})
+        .then(data => {
+            res.send(data);
+        })
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
+    getPerYear (req, res) {
+        const currentYear = new Date().getFullYear();
+        const currentFirstDate = new Date(currentYear, 0, 1);
+        const currentLastDate = new Date(currentYear, 11, 31);
+        Pedido.findAll({attributes: ['id', 'codigoPedido', 'fecha', 'id_usuario', 'estado'],
+            where: {
+                fecha: {
+                    [Op.between]: [currentFirstDate, currentLastDate] 
+                }
+            }
+        })
         .then(data => {
             res.send(data);
         })
