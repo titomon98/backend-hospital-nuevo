@@ -94,6 +94,9 @@ module.exports = (app) => {
 
     //cuentas
     router.get('/cuentas/list', cuentasController.list);
+    router.get('/cuentas/get', cuentasController.get);
+    router.get('/cuentas/getByExp', cuentasController.getByExp);
+    router.get('/cuentas/pay', cuentasController.onPay);
     router.post('/cuentas/create', cuentasController.create);
     router.put('/cuentas/update', cuentasController.update);
     router.put('/cuentas/activate', cuentasController.activate);
