@@ -7,8 +7,7 @@ const Op = db.Sequelize.Op;
 
 module.exports = {
     create(req, res) {
-        let form = req.body.form
-        console.log(req.body.form)
+        let form = req.body
         const datos = {
             numero: form.numero,
             fecha_ingreso: form.fecha_ingreso,
@@ -22,6 +21,7 @@ module.exports = {
 
         Cuenta.create(datos)
         .then(tipo => {
+            console.log(tipo.cuentas)
             res.send(tipo);
         })
         .catch(error => {
@@ -91,6 +91,14 @@ module.exports = {
         .catch(error => res.status(400).send(error))
     },
 
+    findByExp (req, res) {
+        const id = req.params.id
+
+        return Cuenta.find(id_expediente => id_expediente === id)
+        .then(cuenta => res.status(200).send(cuenta))
+        .catch(error => res.status(400).send(error))
+    },
+
     update (req, res) {
         let form = req.body.form
         Cuenta.update(
@@ -141,16 +149,51 @@ module.exports = {
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
-    get (req, res) {
-        Cuenta.findAll({attributes: ['id', 'cuenta']})
-        .then(data => {
-            res.send(data);
-        })
+
+    onPay (req, res) {
+        Cuenta.update(
+            { 
+                estado: 0,
+                tipo_de_pago: req.body.tipo
+             },
+            { where: { 
+                id: req.body.id 
+            } }
+        )
+        .then(cuenta =>res.status(200).send('La cuenta ha sido pagada'))
         .catch(error => {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
+
+    get (req, res) {
+        return Cuenta.findAll()
+        .then(data => {
+            res.send(data);
+        })
+        .catch(error => {
+            console.log(error)
+            res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
+    
+    getByExp (req, res) {
+        console.log(req.query)
+        console.log("HOLA")
+        return Cuenta.findAll({
+            where: {
+                id_expediente: req.query.id,
+                estado: 1
+            }
+        })
+            .then(tipo => res.status(200).send(tipo))
+            .catch(error => {
+                console.log(error)
+                res.status(400).send(error)
+            })
+    },
+
     getSearch (req, res) {
         var busqueda = req.query.search;
         var condition = busqueda?{ [Op.or]:[ {cuenta: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
