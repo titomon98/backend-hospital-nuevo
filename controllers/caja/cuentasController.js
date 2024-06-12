@@ -138,7 +138,8 @@ module.exports = {
         Cuenta.update(
             { 
                 estado: 0,
-                tipo_de_pago: req.body.tipo_de_pago
+                tipo_de_pago: req.body.tipo_de_pago,
+                total_pagado: req.body.total_pagado
             },
             { where: { 
                 id: req.body.id
