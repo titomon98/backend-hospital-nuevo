@@ -29,30 +29,50 @@ module.exports = {
             for (let i = 0; i < cantidad; i++){
                 if (detalles[i].is_medicine === true){
                     let id_medicine = detalles[i].id_medicine
-                    console.log(detalles[i])
-                    console.log(pedido_id)
                     let datos_detalles = {
                         cantidad: parseInt(detalles[i].cantidad),
                         descripcion: detalles[i].nombre,
                         estado: 1,
-                        id_paquete: parseInt(pedido_id),
+                        id_pedido: parseInt(pedido_id),
                         id_medicamento: id_medicine
                     }
                     cantidadUnidades = cantidadUnidades + parseInt(detalles[i].cantidad)
                     DetallePedido.create(datos_detalles)
                     .then(detalle => {
-                        Medicamento.update(
-                        { 
-                            existencia_actual: detalles[i].existencias_actuales
-                        },
-                        { where: { 
-                            id: detalles[i].id_medicine
-                        }})
-                        .then(medicamento => res.status(200).send('El registro ha sido actualizado'))
-                        .catch(error => {
-                            console.log(error)
-                            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-                        });
+                        Medicamento.findByPk(id_medicine).then(med=>{
+                            if(req.body.picked === 0){
+                                Medicamento.update(
+                                { 
+                                    existencia_actual: detalles[i].existencias_actuales,
+                                    existencia_actual_farmacia: parseInt(med['existencia_actual_farmacia']) + parseInt(detalles[i].cantidad)
+                                },
+                                { where: { 
+                                    id: detalles[i].id_medicine
+                                }})
+                                .then(medicamento => res.status(200).send('El registro ha sido actualizado'))
+                                .catch(error => {
+                                    console.log(error)
+                                    return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+                                });
+                            }
+                            else {
+                                Medicamento.findByPk(id_medicine).then(med=>{
+                                    Medicamento.update(
+                                    { 
+                                        existencia_actual: detalles[i].existencias_actuales,
+                                        existencia_actual_quirofano: parseInt(med['existencia_actual_quirofano']) + parseInt(detalles[i].cantidad)
+                                    },
+                                    { where: { 
+                                        id: detalles[i].id_medicine
+                                    }})
+                                    .then(medicamento => res.status(200).send('El registro ha sido actualizado'))
+                                    .catch(error => {
+                                        console.log(error)
+                                        return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+                                    });
+                                })
+                            }
+                        })
                     })
                     .catch(error => {
                         console.log(error)
@@ -63,25 +83,48 @@ module.exports = {
                     let id_quirurgico = detalles[i].id_quirurgico
                     let datos_detalles = {
                         cantidad: detalles[i].cantidad,
-                        descripcion: detalles[i].descripcion,
+                        descripcion: detalles[i].nombre,
                         estado: 1,
                         id_pedido: pedido_id,
                         id_quirurgico: id_quirurgico
                     }
                     cantidadUnidades = cantidadUnidades + parseInt(detalles[i].cantidad)
                     DetallePedido.create(datos_detalles).then(detalle => {
-                        Quirurgico.update(
-                        { 
-                            existencia_actual: detalles[i].existencias_actuales
-                        },
-                        { where: { 
-                            id: detalles[i].id_quirurgico
-                        }})
-                        .then(quirurgico => res.status(200).send('El registro ha sido actualizado'))
-                        .catch(error => {
-                            console.log(error)
-                            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-                        });
+                        Quirurgico.findByPk(id_quirurgico).then(qui=>{
+                                if(req.body.picked === 0)
+                                {
+                                Quirurgico.update(
+                                { 
+                                    existencia_actual: detalles[i].existencias_actuales,
+                                    existencia_actual_farmacia: parseInt(qui['existencia_actual_farmacia']) + parseInt(detalles[i].cantidad)
+
+                                },
+                                { where: { 
+                                    id: detalles[i].id_quirurgico
+                                }})
+                                .then(quirurgico => res.status(200).send('El registro ha sido actualizado'))
+                                .catch(error => {
+                                    console.log(error)
+                                    return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+                                });
+                            }
+                            else{
+                                Quirurgico.update(
+                                { 
+                                    existencia_actual: detalles[i].existencias_actuales,
+                                    existencia_actual_quirofano: parseInt(qui['existencia_actual_quirofano']) + parseInt(detalles[i].cantidad)
+    
+                                },
+                                { where: { 
+                                    id: detalles[i].id_quirurgico
+                                }})
+                                .then(quirurgico => res.status(200).send('El registro ha sido actualizado'))
+                                .catch(error => {
+                                    console.log(error)
+                                    return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+                                });
+                            }
+                        })
                     })
                     .catch(error => {
                         console.log(error)
@@ -92,24 +135,44 @@ module.exports = {
                     let id_comun = detalles[i].id_comun
                     let datos_detalles = {
                         cantidad: detalles[i].cantidad,
-                        descripcion: detalles[i].descripcion,
+                        descripcion: detalles[i].nombre,
                         estado: 1,
                         id_pedido: pedido_id,
                         id_comun: id_comun
                     }
                     DetallePedido.create(datos_detalles).then(detalle => {
-                        Comun.update(
-                        { 
-                            existencia_actual: detalles[i].existencias_actuales
-                        },
-                        { where: { 
-                            id: detalles[i].id_comun
-                        }})
-                        .then(comun => res.status(200).send('El registro ha sido actualizado'))
-                        .catch(error => {
-                            console.log(error)
-                            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-                        });
+                        Comun.findByPk(id_comun).then(com => {
+                            if(req.body.picked === 0){
+                                Comun.update({ 
+                                    existencia_actual: detalles[i].existencias_actuales,
+                                    existencia_actual_farmacia: parseInt(com['existencia_actual_farmacia']) + parseInt(detalles[i].cantidad)
+
+                                },
+                                { where: { 
+                                    id: detalles[i].id_comun
+                                }})
+                                .then(comun => res.status(200).send('El registro ha sido actualizado'))
+                                .catch(error => {
+                                    console.log(error)
+                                    return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+                                });
+                            }
+                            else {
+                                Comun.update({ 
+                                    existencia_actual: detalles[i].existencias_actuales,
+                                    existencia_actual_quirofano: parseInt(com['existencia_actual_quirofano']) + parseInt(detalles[i].cantidad)
+
+                                },
+                                { where: { 
+                                    id: detalles[i].id_comun
+                                }})
+                                .then(comun => res.status(200).send('El registro ha sido actualizado'))
+                                .catch(error => {
+                                    console.log(error)
+                                    return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+                                });
+                            }
+                        })
                     })
                     .catch(error => {
                         console.log(error)
@@ -154,7 +217,9 @@ module.exports = {
 
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Op.or]: [{ codigoPedido: { [Op.like]: `%${busqueda}%` } }] } : null ;
+        var condition = busqueda ? {
+             [Op.or]: [{ codigoPedido: { [Op.like]: `%${busqueda}%` } }], estado: 1
+            } : {estado: 1} ;
 
         Pedido.findAndCountAll({ 
             include: [
@@ -167,7 +232,8 @@ module.exports = {
                     require: true,
                 },
             ],
-            where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+            where: condition
+            ,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
         console.log('data: '+JSON.stringify(data))

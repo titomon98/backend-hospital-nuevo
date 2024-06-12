@@ -24,6 +24,7 @@ const expedientesController = require('../controllers/caja/expedientesController
 //CARPETA DE ENFERMERIA
 const habitacionesController = require('../controllers/enfermeria/habitacionesController')
 const pedidosController = require('../controllers/enfermeria/pedidosController')
+const detallePedidosController = require('../controllers/enfermeria/detallePedidosController')
 
 //CARPETA DE FARMACIA
 const alertasController = require('../controllers/farmacia/alertasController')
@@ -148,14 +149,17 @@ module.exports = (app) => {
     router.get('/servicios/get', serviciosController.get);
 
     //pedidos
-    router.get('/pedidos/list', pedidosController.get);
+    router.get('/pedidos/list', pedidosController.list);
     router.get('/pedidos/getPerYear', pedidosController.getPerYear);
     router.post('/pedidos/create', pedidosController.create);
     router.put('/pedidos/update', pedidosController.update);
     router.put('/pedidos/activate', pedidosController.activate);
     router.put('/pedidos/deactivate', pedidosController.deactivate);
     router.get('/pedidos/getSearch', pedidosController.getSearch);
-    
+
+    //pedidos
+    router.get('/detalle_pedidos/list', detallePedidosController.list);
+
     //CARPETA DE FARMACIA
     //alertas
     router.get('/alertas/listMedicamentos', alertasController.listMedicamentos);

@@ -30,9 +30,6 @@ module.exports = (sequelize, DataTypes) => {
     id_usuario: {
       type: DataTypes.INTEGER,
     },
-    tipo: {
-      type: DataTypes.INTEGER,
-    },
     estado: {
       type: DataTypes.INTEGER,
       allowNull: false

@@ -35,6 +35,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: true
     },
+    id_pedido: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
     estado: {
       type: DataTypes.INTEGER,
       allowNull: false
