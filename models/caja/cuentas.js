@@ -12,6 +12,9 @@ module.exports = (sequelize, DataTypes) => {
         cuenta.hasMany(models.consumos, {
             foreignKey: "id_cuenta",
         });
+        cuenta.hasMany(models.detalle_pago_cuentas, {
+          foreignKey: "id_cuenta",
+      });
     }
   };
   cuenta.init({
@@ -41,9 +44,13 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false
     },
-    tipo_de_pago: {
-      type: DataTypes.STRING,
-      allowNull: true
+    total_pagado: {
+      type: DataTypes.DECIMAL,
+      defaultValue: 0
+    },
+    pendiente_de_pago: {
+      type: DataTypes.DECIMAL,
+      defaultValue: 0
     },
     id_expediente: {
         type: DataTypes.INTEGER,

@@ -24,6 +24,7 @@ const expedientesController = require('../controllers/caja/expedientesController
 //CARPETA DE ENFERMERIA
 const habitacionesController = require('../controllers/enfermeria/habitacionesController')
 const pedidosController = require('../controllers/enfermeria/pedidosController')
+const detallePedidosController = require('../controllers/enfermeria/detallePedidosController')
 
 //CARPETA DE FARMACIA
 const alertasController = require('../controllers/farmacia/alertasController')
@@ -129,6 +130,7 @@ module.exports = (app) => {
     router.put('/habitaciones/activate', habitacionesController.activate);
     router.put('/habitaciones/deactivate', habitacionesController.deactivate);
     router.put('/habitaciones/inUse', habitacionesController.inUse);
+    router.put('/habitaciones/available', habitacionesController.available);
     router.get('/habitaciones/getSearch', habitacionesController.getSearch);
     router.get('/habitaciones/get', habitacionesController.get);
 
@@ -149,12 +151,16 @@ module.exports = (app) => {
 
     //pedidos
     router.get('/pedidos/list', pedidosController.list);
+    router.get('/pedidos/getPerYear', pedidosController.getPerYear);
     router.post('/pedidos/create', pedidosController.create);
     router.put('/pedidos/update', pedidosController.update);
     router.put('/pedidos/activate', pedidosController.activate);
     router.put('/pedidos/deactivate', pedidosController.deactivate);
     router.get('/pedidos/getSearch', pedidosController.getSearch);
-    
+
+    //pedidos
+    router.get('/detalle_pedidos/list', detallePedidosController.list);
+
     //CARPETA DE FARMACIA
     //alertas
     router.get('/alertas/listMedicamentos', alertasController.listMedicamentos);
@@ -170,7 +176,7 @@ module.exports = (app) => {
     router.get('/casa_medica/getSearch', casaMedicaController.getSearch);
 
     //comun
-    router.get('/comun/list', comunController.list);
+    router.get('/comun/list', comunController.get);
     router.post('/comun/create', comunController.create);
     router.put('/comun/update', comunController.update);
     router.put('/comun/activate', comunController.activate);
@@ -204,7 +210,7 @@ module.exports = (app) => {
     router.get('/marca/getSearch', marcaController.getSearch);
 
     //medicamentos
-    router.get('/medicamentos/list', medicamentosController.list);
+    router.get('/medicamentos/list', medicamentosController.get);
     router.post('/medicamentos/create', medicamentosController.create);
     router.put('/medicamentos/update', medicamentosController.update);
     router.put('/medicamentos/activate', medicamentosController.activate);
@@ -261,7 +267,7 @@ module.exports = (app) => {
     router.get('/proveedor/getSearch', proveedorController.getSearch);
 
     //quirurgico
-    router.get('/quirurgico/list', quirurgicoController.list);
+    router.get('/quirurgico/list', quirurgicoController.get);
     router.post('/quirurgico/create', quirurgicoController.create);
     router.put('/quirurgico/update', quirurgicoController.update);
     router.put('/quirurgico/activate', quirurgicoController.activate);

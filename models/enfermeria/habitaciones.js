@@ -6,9 +6,9 @@ const {
 module.exports = (sequelize, DataTypes) => {
   class habitaciones extends Model {
     static associate(models) {
-      /* habitaciones.hasMany(models.cuenta_bancarias, {
+      habitaciones.hasMany(models.detalle_habitaciones, {
         foreignKey: "id_habitaciones",
-      }); */
+      });
     }
   };
   habitaciones.init({
@@ -31,6 +31,10 @@ module.exports = (sequelize, DataTypes) => {
     estado: {
       type: DataTypes.INTEGER,
       allowNull: false
+    },
+    ocupante: {
+      type: DataTypes.INTEGER,
+      allowNull: true
     },
   }, {
     sequelize,

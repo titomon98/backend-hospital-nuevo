@@ -162,13 +162,18 @@ module.exports = {
         });
     },
     get (req, res) {
-        Comun.findAll({attributes: ['id', 'nombre']})
+        console.log('helou--------------------------')
+        Comun.findAll({attributes: ['id', 'nombre', 'existencia_actual'], 
+            where: {
+                existencia_actual:{
+                    [Op.gt]:0
+                }
+            }})
         .then(data => {
             res.send(data);
         })
         .catch(error => {
-            console.log(error)
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' + error });
         });
     },
     getSearch (req, res) {
