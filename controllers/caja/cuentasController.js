@@ -3,6 +3,7 @@ const Sequelize     = require('sequelize');
 const db = require("../../models");
 const Cuenta = db.cuentas;
 const Expediente = db.expedientes;
+const detallePagoCuentas = db.detalle_pago_cuentas;
 const Op = db.Sequelize.Op;
 
 module.exports = {
@@ -16,7 +17,8 @@ module.exports = {
             otros: form.otros,
             total: form.total,
             estado: 1,
-            id_expediente: form.id_expediente
+            id_expediente: form.id_expediente,
+            numero: form.numero,
         };
 
         Cuenta.create(datos)
@@ -135,21 +137,73 @@ module.exports = {
     },
 
     deactivate (req, res) {
-        Cuenta.update(
-            { 
-                estado: 0,
-                tipo_de_pago: req.body.tipo_de_pago,
-                total_pagado: req.body.total_pagado
-            },
-            { where: { 
-                id: req.body.id
-            } }
-        )
-        .then(cuenta =>res.status(200).send('El registro ha sido desactivado'))
-        .catch(error => {
-            console.log(error)
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
+        if (req.body.tipo === 'finiquito'){
+
+            Cuenta.update(
+                { 
+                    estado: 0,
+                    total_pagado: req.body.total_pagado,
+                    pendiente_de_pago: req.body.pendiente_de_pago
+                },
+                { where: { 
+                    id: req.body.id
+                } }
+            )
+            .then(cuenta =>{
+                detallePagoCuentas.create(
+                    {
+                        efectivo: req.body.efectivo,
+                        tarjeta: req.body.tarjeta,
+                        deposito: req.body.deposito,
+                        cheque: req.body.cheque,
+                        seguro: req.body.seguro,
+                        total: req.body.total,
+                        tipo: req.body.tipo,
+                        id_cuenta: req.body.id
+                    })
+                .then(detalle_cuenta =>res.status(200).send('El registro ha sido desactivado'))
+                .catch(error=>{
+                    console.log(error)
+                    return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+                })
+            })
+            .catch(error => {
+                console.log(error)
+                return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+            });
+        } else {
+            Cuenta.update(
+                { 
+                    total_pagado: req.body.total_pagado,
+                    pendiente_de_pago: req.body.pendiente_de_pago
+                },
+                { where: { 
+                    id: req.body.id
+                } }
+            )
+            .then(cuenta =>{
+                detallePagoCuentas.create(
+                    {
+                        efectivo: req.body.efectivo,
+                        tarjeta: req.body.tarjeta,
+                        deposito: req.body.deposito,
+                        cheque: req.body.cheque,
+                        seguro: req.body.seguro,
+                        total: req.body.total,
+                        tipo: req.body.tipo,
+                        id_cuenta: req.body.id
+                    })
+                .then(detalle_cuenta =>res.status(200).send('El registro ha sido desactivado'))
+                .catch(error=>{
+                    console.log(error)
+                    return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+                })
+            })
+            .catch(error => {
+                console.log(error)
+                return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+            });
+        }
     },
 
     onPay (req, res) {

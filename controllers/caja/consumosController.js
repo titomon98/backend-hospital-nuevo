@@ -35,6 +35,8 @@ module.exports = {
 
         let nuevoTotal = (parseFloat(totalCuenta) + parseFloat(subtotal))
         console.log(nuevoTotal)
+        
+        let pendientePago = (parseFloat(nuevoTotal) - parseFloat(cuentaSeleccionada.dataValues.total_pagado))
 
         const datos = {
             cantidad: form.cantidad,
@@ -45,7 +47,7 @@ module.exports = {
             id_cuenta: id_cuenta
         };
 
-        await cuentaSeleccionada.update({ total: nuevoTotal });
+        await cuentaSeleccionada.update({ total: nuevoTotal, pendiente_de_pago: pendientePago });
         await Consumo.create(datos)
         .then(tipo => {
             res.send(tipo);
