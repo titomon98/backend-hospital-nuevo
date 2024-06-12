@@ -45,6 +45,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: true
     },
+    total_pagado: {
+      type: DataTypes.DECIMAL,
+      defaultValue: 0
+    },
     id_expediente: {
         type: DataTypes.INTEGER,
         allowNull: false
