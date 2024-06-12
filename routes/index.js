@@ -23,6 +23,8 @@ const expedientesController = require('../controllers/caja/expedientesController
 
 //CARPETA DE ENFERMERIA
 const habitacionesController = require('../controllers/enfermeria/habitacionesController')
+const pedidosController = require('../controllers/enfermeria/pedidosController')
+const detallePedidosController = require('../controllers/enfermeria/detallePedidosController')
 
 //CARPETA DE FARMACIA
 const alertasController = require('../controllers/farmacia/alertasController')
@@ -40,6 +42,9 @@ const presentacionController = require('../controllers/farmacia/presentacionCont
 const proveedorController = require('../controllers/farmacia/proveedorController')
 const quirurgicoController = require('../controllers/farmacia/quirurgicoController')
 const quirurgicoMovimientosController = require('../controllers/farmacia/quirurgicoMovimientosController')
+
+//CARPETA DE HONORARIOS
+const detalleHonorariosController = require('../controllers/honorarios/detalleHonorariosController')
 
 //CARPETA DE GERENCIA
 
@@ -93,6 +98,9 @@ module.exports = (app) => {
 
     //cuentas
     router.get('/cuentas/list', cuentasController.list);
+    router.get('/cuentas/get', cuentasController.get);
+    router.get('/cuentas/getByExp', cuentasController.getByExp);
+    router.get('/cuentas/pay', cuentasController.onPay);
     router.post('/cuentas/create', cuentasController.create);
     router.put('/cuentas/update', cuentasController.update);
     router.put('/cuentas/activate', cuentasController.activate);
@@ -103,6 +111,7 @@ module.exports = (app) => {
     router.get('/expedientes/list', expedientesController.list);
     router.post('/expedientes/create', expedientesController.create);
     router.put('/expedientes/update', expedientesController.update);
+    router.put('/expedientes/changeState', expedientesController.changeState);
     router.put('/expedientes/activate', expedientesController.activate);
     router.put('/expedientes/deactivate', expedientesController.deactivate);
     router.get('/expedientes/getSearch', expedientesController.getSearch);
@@ -110,6 +119,7 @@ module.exports = (app) => {
     router.get('/expedientes/listEmergencia', expedientesController.listEmergencia);
     router.get('/expedientes/listIntensivo', expedientesController.listIntensivo);
     router.get('/expedientes/listHospitalizacion', expedientesController.listHospitalizacion);
+    router.get('/expedientes/listReingreso', expedientesController.listReingreso);
     router.put('/expedientes/changeStatus', expedientesController.changeStatus);
 
     //CARPETA DE ENFERMERIA
@@ -119,12 +129,38 @@ module.exports = (app) => {
     router.put('/habitaciones/update', habitacionesController.update);
     router.put('/habitaciones/activate', habitacionesController.activate);
     router.put('/habitaciones/deactivate', habitacionesController.deactivate);
+    router.put('/habitaciones/inUse', habitacionesController.inUse);
+    router.put('/habitaciones/available', habitacionesController.available);
     router.get('/habitaciones/getSearch', habitacionesController.getSearch);
     router.get('/habitaciones/get', habitacionesController.get);
 
     //servicios
+    router.get('/servicios/list', serviciosController.list);
+    router.post('/servicios/create', serviciosController.create);
+    router.put('/servicios/update', serviciosController.update);
+    router.put('/servicios/activate', serviciosController.activate);
+    router.put('/servicios/deactivate', serviciosController.deactivate);
     router.get('/servicios/getSearch', serviciosController.getSearch);
-    
+    router.get('/servicios/getSearch', serviciosController.getSearch);
+    router.get('/servicios/list', serviciosController.list);
+    router.post('/servicios/create', serviciosController.create);
+    router.put('/servicios/update', serviciosController.update);
+    router.put('/servicios/activate', serviciosController.activate);
+    router.put('/servicios/deactivate', serviciosController.deactivate);
+    router.get('/servicios/get', serviciosController.get);
+
+    //pedidos
+    router.get('/pedidos/list', pedidosController.list);
+    router.get('/pedidos/getPerYear', pedidosController.getPerYear);
+    router.post('/pedidos/create', pedidosController.create);
+    router.put('/pedidos/update', pedidosController.update);
+    router.put('/pedidos/activate', pedidosController.activate);
+    router.put('/pedidos/deactivate', pedidosController.deactivate);
+    router.get('/pedidos/getSearch', pedidosController.getSearch);
+
+    //pedidos
+    router.get('/detalle_pedidos/list', detallePedidosController.list);
+
     //CARPETA DE FARMACIA
     //alertas
     router.get('/alertas/listMedicamentos', alertasController.listMedicamentos);
@@ -140,7 +176,7 @@ module.exports = (app) => {
     router.get('/casa_medica/getSearch', casaMedicaController.getSearch);
 
     //comun
-    router.get('/comun/list', comunController.list);
+    router.get('/comun/list', comunController.get);
     router.post('/comun/create', comunController.create);
     router.put('/comun/update', comunController.update);
     router.put('/comun/activate', comunController.activate);
@@ -174,7 +210,7 @@ module.exports = (app) => {
     router.get('/marca/getSearch', marcaController.getSearch);
 
     //medicamentos
-    router.get('/medicamentos/list', medicamentosController.list);
+    router.get('/medicamentos/list', medicamentosController.get);
     router.post('/medicamentos/create', medicamentosController.create);
     router.put('/medicamentos/update', medicamentosController.update);
     router.put('/medicamentos/activate', medicamentosController.activate);
@@ -231,7 +267,7 @@ module.exports = (app) => {
     router.get('/proveedor/getSearch', proveedorController.getSearch);
 
     //quirurgico
-    router.get('/quirurgico/list', quirurgicoController.list);
+    router.get('/quirurgico/list', quirurgicoController.get);
     router.post('/quirurgico/create', quirurgicoController.create);
     router.put('/quirurgico/update', quirurgicoController.update);
     router.put('/quirurgico/activate', quirurgicoController.activate);
@@ -246,6 +282,14 @@ module.exports = (app) => {
     router.put('/quirurgico_movimientos/activate', quirurgicoMovimientosController.activate);
     router.put('/quirurgico_movimientos/deactivate', quirurgicoMovimientosController.deactivate);
     router.get('/quirurgico_movimientos/getSearch', quirurgicoMovimientosController.getSearch);
+
+    //CARPETA HONORARIOS
+    // Rutas para detalle_honorarios
+    router.post('/detalle_honorarios/created', detalleHonorariosController.create);
+    router.get('/detalle_honorarios', detalleHonorariosController.list);
+    router.get('/detalle_honorarios/getId/:id', detalleHonorariosController.find);
+    router.get('/detalle_honorarios/getSearch', detalleHonorariosController.getSearch);
+    router.put('/detalle_honorarios/:id', detalleHonorariosController.update);
 
     //CARPETA DE INVENTARIO
     //alimentacion

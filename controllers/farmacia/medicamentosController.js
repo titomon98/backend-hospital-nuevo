@@ -55,19 +55,19 @@ module.exports = {
         const getPagination = (page, size) => {
             const limit = size ? +size : 2;
             const offset = page ? page * limit : 0;
-
+            
             return { limit, offset };
         };
-
+        
         const busqueda=req.query.search;
         const page=req.query.page-1;
         const size=req.query.limit;
         const criterio=req.query.criterio;
         const order=req.query.order;
-
-
+        
+        
         const { limit, offset } = getPagination(page, size);
-
+        
         var condition = busqueda ? { [Op.or]: [{ nombre: { [Op.like]: `%${busqueda}%` } }] } : null ;
 
         Medicamento.findAndCountAll({ 
@@ -85,10 +85,9 @@ module.exports = {
             where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
-        console.log('data: '+JSON.stringify(data))
         const response = getPagingData(data, page, limit);
 
-        console.log('response: '+JSON.stringify(response))
+        //console.log('response: '+JSON.stringify(response))
         res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
         })
         .catch(error => {
@@ -127,7 +126,8 @@ module.exports = {
             },
             { where: { 
                 id: form.id 
-            } }
+            } 
+        }
         )
         .then(medicamento => res.status(200).send('El registro ha sido actualizado'))
         .catch(error => {
@@ -164,7 +164,12 @@ module.exports = {
         });
     },
     get (req, res) {
-        Medicamento.findAll({attributes: ['id', 'nombre']})
+        Medicamento.findAll({attributes: ['id', 'nombre', 'existencia_actual'], 
+            where: {
+                existencia_actual:{
+                    [Op.gt]:0
+                }
+            }})
         .then(data => {
             res.send(data);
         })

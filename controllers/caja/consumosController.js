@@ -10,13 +10,33 @@ module.exports = {
     async create(req, res) {
         let form = req.body.form
 
-        const cuenta = await Cuenta.findOne({
+        const cuentas = await Cuenta.findAll({
             where: {
                 id_expediente: form.id
-            }
+            },
+            order: [['createdAt', 'DESC']]
         })
-        let id_cuenta = cuenta.dataValues.id
+        let cuentaSeleccionada = null;
+        for (const cuenta of cuentas) {
+          if (cuenta.dataValues.estado == 1) {
+            cuentaSeleccionada = cuenta;
+            break;
+          }
+        }
+
+        if (!cuentaSeleccionada) {
+            return res.status(404).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
+          }
+        const id_cuenta = cuentaSeleccionada.dataValues.id
+
+        let totalCuenta = cuentaSeleccionada.dataValues.total || 0; 
+
         let subtotal = (parseFloat(form.cantidad) * parseFloat(form.servicio.precio))
+
+        let nuevoTotal = (parseFloat(totalCuenta) + parseFloat(subtotal))
+        console.log(nuevoTotal)
+        
+        let pendientePago = (parseFloat(nuevoTotal) - parseFloat(cuentaSeleccionada.dataValues.total_pagado))
 
         const datos = {
             cantidad: form.cantidad,
@@ -27,6 +47,7 @@ module.exports = {
             id_cuenta: id_cuenta
         };
 
+        await cuentaSeleccionada.update({ total: nuevoTotal, pendiente_de_pago: pendientePago });
         await Consumo.create(datos)
         .then(tipo => {
             res.send(tipo);
@@ -173,12 +194,24 @@ module.exports = {
 
     async getId (req, res) {
         const id = req.query.id;
-        const cuenta = await Cuenta.findOne({
+        const cuentas = await Cuenta.findAll({
             where: {
                 id_expediente: id
-            }
+            },
+            order: [['createdAt', 'DESC']]
         })
-        let id_cuenta = cuenta.dataValues.id
+        let cuentaSeleccionada = null;
+        for (const cuenta of cuentas) {
+          if (cuenta.dataValues.estado == 1) {
+            cuentaSeleccionada = cuenta;
+            break;
+          }
+        }
+
+        if (!cuentaSeleccionada) {
+            return res.status(404).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
+          }
+        const id_cuenta = cuentaSeleccionada.dataValues.id
         console.log(id)
         console.log(id_cuenta)
 

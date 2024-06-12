@@ -20,6 +20,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false
     },
+    unidadDeMedida: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
     estado: {
       type: DataTypes.INTEGER,
       allowNull: false
