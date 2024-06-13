@@ -18,13 +18,15 @@ module.exports = {
             total: form.total,
             estado: 1,
             id_expediente: form.id_expediente,
-            numero: form.numero,
         };
 
         Cuenta.create(datos)
         .then(tipo => {
-            console.log(tipo.cuentas)
-            res.send(tipo);
+            return tipo.update({ numero: tipo.id });
+        })
+        .then(updatedTipo => {
+            console.log(updatedTipo);
+            res.send(updatedTipo);
         })
         .catch(error => {
             console.log(error)
