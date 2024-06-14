@@ -17,6 +17,10 @@ module.exports = {
           type: Sequelize.STRING,
           allowNull: false
       },
+      unidadDeMedida: {
+        type: Sequelize.STRING,
+        allowNull: false
+      },
       estado: {
         type: Sequelize.INTEGER,
         allowNull: false

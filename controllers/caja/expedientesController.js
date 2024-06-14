@@ -64,6 +64,12 @@ module.exports = {
                 estado: 1
             }
             Cuenta.create(datos_cuenta)
+                .then(res=>{
+                    console.log(res)
+                })
+                .catch(err=>
+                    console.log(err)
+                )
 
             //Actualizar expediente
             const year = today.getFullYear();
