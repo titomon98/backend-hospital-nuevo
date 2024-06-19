@@ -30,6 +30,9 @@ module.exports = (sequelize, DataTypes) => {
     seguro: {
         type: DataTypes.DECIMAL(10,2),
     },
+    transferencia: {
+      type: DataTypes.DECIMAL(10,2),
+    },
     total: {
         type: DataTypes.DECIMAL(10,2),
         allowNull: true

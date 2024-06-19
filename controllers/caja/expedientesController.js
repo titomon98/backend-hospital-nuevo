@@ -212,17 +212,37 @@ module.exports = {
         });
     },
     changeState (req, res) {
-        Expediente.update(
-            { estado: req.body.estado },
-            { where: { 
-                id: req.body.id 
-            } }
-        )
-        .then(marca => res.status(200).send('El registro ha sido modificado'))
-        .catch(error => {
-            console.log(error)
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
+        if (typeof req.body.nombre_encargado === 'undefined'){
+            Expediente.update(
+                { estado: req.body.estado },
+                { where: { 
+                    id: req.body.id 
+                } }
+            )
+            .then(marca => res.status(200).send('El registro ha sido modificado'))
+            .catch(error => {
+                console.log(error)
+                return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+            });
+        } else {
+            Expediente.update(
+                { 
+                    estado: req.body.estado,
+                    nombre_encargado: req.body.nombre_encargado,
+                    cui_encargado: req.body.cui_encargado,
+                    contacto_encargado: req.body.contacto_encargado,
+                    parentesco_encargado: req.body.parentesco_encargado,
+                 },
+                { where: { 
+                    id: req.body.id 
+                } }
+            )
+            .then(marca => res.status(200).send('El registro ha sido modificado'))
+            .catch(error => {
+                console.log(error)
+                return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+            });
+        }
     },
 
     deactivate (req, res) {
@@ -466,7 +486,7 @@ module.exports = {
 
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Op.or]: [{ [criterio]: { [Op.like]: `%${busqueda}%` }, estado: 0 }] } : {estado: 0} ;
+        var condition = busqueda ? { [Op.or]: [{ [criterio]: { [Op.like]: `%${busqueda}%` }, estado: 2 }] } : {estado: 2} ;
 
         Expediente.findAndCountAll({ where: condition, order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
