@@ -36,7 +36,7 @@ module.exports = {
 
         var condition = busqueda ? {
             id_pedido: req.body.id_pedido
-            } : null ;
+            } : req.body.id_pedido ;
 
         DetallePedido.findAndCountAll({ 
             include: [
