@@ -4,6 +4,7 @@ const db = require("../../models");
 const Expediente = db.expedientes;
 const Cuenta = db.cuentas;
 const Habitaciones = db.habitaciones;
+const Logs = db.log_traslados;
 const Op = db.Sequelize.Op;
 
 module.exports = {
@@ -212,6 +213,48 @@ module.exports = {
         });
     },
     changeState (req, res) {
+        const dat = [
+            'egreso por fallecimiento',
+            'Hospitalización',
+            'Egreso por alta médica',
+            'Quirófano',
+            'Cuidados Intensivos',
+            'Emergencias',
+            'Desahuciado'
+        ]
+
+        Logs.create({
+            id_expediente: req.body.id,
+            origen: dat[req.body.estado_anterior],
+            destino: dat[req.body.estado]
+        })
+
+        Cuenta.findAll({
+            where: { 
+                id_expediente:req.body.id,
+                pendiente_de_pago: { [Sequelize.Op.gt]: 0 }
+        }})
+            .then((cuentas)=>{
+                console.log("PEPEPEPPEPEPE")
+                console.log(cuentas.length)
+                if(cuentas.length > 0){
+                    Expediente.update(
+                        { solvencia: 0 },
+                        { where: { 
+                            id: req.body.id 
+                        } }
+                    )
+                }else{
+                    Expediente.update(
+                        { solvencia: 1 },
+                        { where: { 
+                            id: req.body.id 
+                        } }
+                    )
+            }}
+
+            )
+
         if (typeof req.body.nombre_encargado === 'undefined'){
             Expediente.update(
                 { estado: req.body.estado },

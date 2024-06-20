@@ -161,6 +161,7 @@ module.exports = (app) => {
 
     //pedidos
     router.get('/detalle_pedidos/list', detallePedidosController.list);
+    router.get('/detalle_pedidos/getByAccount', detallePedidosController.getByAccountId);
 
     //CARPETA DE FARMACIA
     //alertas

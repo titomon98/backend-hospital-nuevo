@@ -79,6 +79,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false
     },
+    solvencia: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
     //nuevos atributos
     estado_civil: {
       type: DataTypes.STRING
