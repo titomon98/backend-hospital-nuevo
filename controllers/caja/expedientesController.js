@@ -212,6 +212,33 @@ module.exports = {
         });
     },
     changeState (req, res) {
+
+        Cuenta.findAll({
+            where: { 
+                id_expediente:req.body.id,
+                pendiente_de_pago: { [Sequelize.Op.gt]: 0 }
+        }})
+            .then((cuentas)=>{
+                console.log("PEPEPEPPEPEPE")
+                console.log(cuentas.length)
+                if(cuentas.length > 0){
+                    Expediente.update(
+                        { solvencia: 0 },
+                        { where: { 
+                            id: req.body.id 
+                        } }
+                    )
+                }else{
+                    Expediente.update(
+                        { solvencia: 1 },
+                        { where: { 
+                            id: req.body.id 
+                        } }
+                    )
+            }}
+
+            )
+
         if (typeof req.body.nombre_encargado === 'undefined'){
             Expediente.update(
                 { estado: req.body.estado },
