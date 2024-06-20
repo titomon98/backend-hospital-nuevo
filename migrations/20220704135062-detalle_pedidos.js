@@ -29,16 +29,16 @@ module.exports = {
         allowNull: false,
         type: Sequelize.DATE
       },
-      id_paquete: {
+      id_pedido: {
         allowNull: false,
         type: Sequelize.INTEGER,
         references: {
-            model: 'paquetes',
+            model: 'pedidos',
             key: 'id'
         }
       },
       id_medicamento: {
-        allowNull: false,
+        allowNull: true,
         type: Sequelize.INTEGER,
         references: {
             model: 'medicamentos',
@@ -46,7 +46,7 @@ module.exports = {
         }
       },
       id_comun: {
-        allowNull: false,
+        allowNull: true,
         type: Sequelize.INTEGER,
         references: {
             model: 'comunes',
@@ -54,7 +54,7 @@ module.exports = {
         }
       },
       id_quirurgico: {
-        allowNull: false,
+        allowNull: true,
         type: Sequelize.INTEGER,
         references: {
             model: 'quirurgicos',
