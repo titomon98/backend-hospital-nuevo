@@ -4,6 +4,7 @@ const db = require("../../models");
 const Expediente = db.expedientes;
 const Cuenta = db.cuentas;
 const Habitaciones = db.habitaciones;
+const Logs = db.log_traslados;
 const Op = db.Sequelize.Op;
 
 module.exports = {
@@ -64,6 +65,12 @@ module.exports = {
                 estado: 1
             }
             Cuenta.create(datos_cuenta)
+                .then(res=>{
+                    console.log(res)
+                })
+                .catch(err=>
+                    console.log(err)
+                )
 
             //Actualizar expediente
             const year = today.getFullYear();
@@ -206,17 +213,79 @@ module.exports = {
         });
     },
     changeState (req, res) {
-        Expediente.update(
-            { estado: req.body.estado },
-            { where: { 
-                id: req.body.id 
-            } }
-        )
-        .then(marca => res.status(200).send('El registro ha sido modificado'))
-        .catch(error => {
-            console.log(error)
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
+        const dat = [
+            'egreso por fallecimiento',
+            'Hospitalización',
+            'Egreso por alta médica',
+            'Quirófano',
+            'Cuidados Intensivos',
+            'Emergencias',
+            'Desahuciado'
+        ]
+
+        Logs.create({
+            id_expediente: req.body.id,
+            origen: dat[req.body.estado_anterior],
+            destino: dat[req.body.estado]
+        })
+
+        Cuenta.findAll({
+            where: { 
+                id_expediente:req.body.id,
+                pendiente_de_pago: { [Sequelize.Op.gt]: 0 }
+        }})
+            .then((cuentas)=>{
+                console.log("PEPEPEPPEPEPE")
+                console.log(cuentas.length)
+                if(cuentas.length > 0){
+                    Expediente.update(
+                        { solvencia: 0 },
+                        { where: { 
+                            id: req.body.id 
+                        } }
+                    )
+                }else{
+                    Expediente.update(
+                        { solvencia: 1 },
+                        { where: { 
+                            id: req.body.id 
+                        } }
+                    )
+            }}
+
+            )
+
+        if (typeof req.body.nombre_encargado === 'undefined'){
+            Expediente.update(
+                { estado: req.body.estado },
+                { where: { 
+                    id: req.body.id 
+                } }
+            )
+            .then(marca => res.status(200).send('El registro ha sido modificado'))
+            .catch(error => {
+                console.log(error)
+                return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+            });
+        } else {
+            Expediente.update(
+                { 
+                    estado: req.body.estado,
+                    nombre_encargado: req.body.nombre_encargado,
+                    cui_encargado: req.body.cui_encargado,
+                    contacto_encargado: req.body.contacto_encargado,
+                    parentesco_encargado: req.body.parentesco_encargado,
+                 },
+                { where: { 
+                    id: req.body.id 
+                } }
+            )
+            .then(marca => res.status(200).send('El registro ha sido modificado'))
+            .catch(error => {
+                console.log(error)
+                return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+            });
+        }
     },
 
     deactivate (req, res) {
@@ -460,7 +529,7 @@ module.exports = {
 
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Op.or]: [{ [criterio]: { [Op.like]: `%${busqueda}%` }, estado: 0 }] } : {estado: 0} ;
+        var condition = busqueda ? { [Op.or]: [{ [criterio]: { [Op.like]: `%${busqueda}%` }, estado: 2 }] } : {estado: 2} ;
 
         Expediente.findAndCountAll({ where: condition, order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {

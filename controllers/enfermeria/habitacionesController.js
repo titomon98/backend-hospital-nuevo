@@ -131,7 +131,6 @@ module.exports = {
                 id: req.body.id
             } }
         )
-        console.log(req.body)
         .then(marca => res.status(200).send('El registro ha sido activado'))
         .catch(error => {
             console.log(error)
