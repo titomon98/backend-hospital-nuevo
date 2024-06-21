@@ -82,12 +82,12 @@ module.exports = {
                     model: Proveedor
                 },
             ],
-            where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+            where: condition, order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
         const response = getPagingData(data, page, limit);
 
-        //console.log('response: '+JSON.stringify(response))
+        console.log('response: '+JSON.stringify(response))
         res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
         })
         .catch(error => {
@@ -178,12 +178,13 @@ module.exports = {
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
+
     getSearch (req, res) {
         var busqueda = req.query.search;
         var condition = busqueda ? {
             [Op.or]: [{ nombre: { [Op.like]: `%${busqueda}%` }}],
-            [Op.and]: [{ estado: 1 }, { factura: 1 }]
-        } : [{ estado: 1 }, { factura: 1 }];
+            [Op.and]: [{ estado: 1 }]
+        } : [{ estado: 1 }];
         
         Medicamento.findAll({
             include: [
