@@ -3,6 +3,9 @@ const Sequelize     = require('sequelize');
 const db = require("../../models");
 const Pedido = db.pedidos;
 const DetallePedido = db.detalle_pedidos;
+const Medicamento = db.medicamentos;
+const Quirurgico = db.quirurgicos;
+const Comunes = db.comunes;
 const Usuarios = db.usuarios;
 const Op = db.Sequelize.Op;
 
@@ -59,6 +62,36 @@ module.exports = {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
-    }
+    },
+
+    getByAccountId (req, res) {
+        return DetallePedido.findAll({
+            where: {
+                id_pedido: req.query.id,
+            },
+            include: [
+                {
+                model: Medicamento,
+                require: false
+              },
+              {
+                model: Comunes,
+                require: false
+              },
+              {
+                model: Quirurgico,
+                require: false
+              }
+            ],
+        })
+            .then(tipo => {
+                console.log(tipo)
+                res.status(200).send(tipo)}
+            )
+            .catch(error => {
+                console.log(error)
+                res.status(400).send(error)
+            })
+    },
 };
 

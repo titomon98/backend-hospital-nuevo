@@ -25,6 +25,7 @@ const expedientesController = require('../controllers/caja/expedientesController
 const habitacionesController = require('../controllers/enfermeria/habitacionesController')
 const pedidosController = require('../controllers/enfermeria/pedidosController')
 const detallePedidosController = require('../controllers/enfermeria/detallePedidosController')
+const servicioSalaOperacionesController = require('../controllers/enfermeria/servicioSalaOperacionesController')
 
 //CARPETA DE FARMACIA
 const alertasController = require('../controllers/farmacia/alertasController')
@@ -42,12 +43,15 @@ const presentacionController = require('../controllers/farmacia/presentacionCont
 const proveedorController = require('../controllers/farmacia/proveedorController')
 const quirurgicoController = require('../controllers/farmacia/quirurgicoController')
 const quirurgicoMovimientosController = require('../controllers/farmacia/quirurgicoMovimientosController')
+const detalle_consumo_medicamentos = require('../controllers/farmacia/consumoMedicamentosController.js')
+const detalle_consumo_quirugicos = require('../controllers/farmacia/consumoQuirurgicosController.js')
+const detalle_consumo_comunes = require('../controllers/farmacia/consumoComunController.js')
+
+//CARPETA DE GERENCIA
+const AsuetosController = require('../controllers/gerencia/asuetosController')
 
 //CARPETA DE HONORARIOS
 const detalleHonorariosController = require('../controllers/honorarios/detalleHonorariosController')
-
-//CARPETA DE GERENCIA
-
 
 //CARPETA DE INVENTARIO
 const alimentacionController = require('../controllers/inventario/alimentacionController')
@@ -98,6 +102,7 @@ module.exports = (app) => {
 
     //cuentas
     router.get('/cuentas/list', cuentasController.list);
+    router.get('/cuentas/debtList', cuentasController.listNoPay);
     router.get('/cuentas/get', cuentasController.get);
     router.get('/cuentas/getByExp', cuentasController.getByExp);
     router.get('/cuentas/pay', cuentasController.onPay);
@@ -160,6 +165,13 @@ module.exports = (app) => {
 
     //pedidos
     router.get('/detalle_pedidos/list', detallePedidosController.list);
+    router.get('/detalle_pedidos/getByAccount', detallePedidosController.getByAccountId);
+
+    //servicioSalaOperaciones
+    router.post('/salaOperaciones/created', servicioSalaOperacionesController.create);
+    router.get('/salaOperaciones/list', servicioSalaOperacionesController.list);
+    router.get('/salaOperaciones/getId/:id', servicioSalaOperacionesController.find);
+    router.get('/salaOperaciones/getSearch', servicioSalaOperacionesController.getSearch);
 
     //CARPETA DE FARMACIA
     //alertas
@@ -283,7 +295,24 @@ module.exports = (app) => {
     router.put('/quirurgico_movimientos/deactivate', quirurgicoMovimientosController.deactivate);
     router.get('/quirurgico_movimientos/getSearch', quirurgicoMovimientosController.getSearch);
 
+    //detalle_consumo_medicamentos
+    router.post('/detalle_consumo_medicamentos/create', detalle_consumo_medicamentos.create);
+
+    //detalle_consumo_quirurgicos
+    router.post('/detalle_consumo_quirugicos/create', detalle_consumo_quirugicos.create);
+    
+    //detalle_consumo_comunes
+    router.post('/detalle_consumo_comun/create', detalle_consumo_comunes.create);
+
+    //CARPETA GERENCIA
+    //asuetos
+    router.post('/asuetos/create', AsuetosController.create);
+    router.get('/asuetos/list', AsuetosController.list);
+    router.get('/asuetos/getId/:id', AsuetosController.gitId);
+    router.put('/asuetos', AsuetosController.update);
+
     //CARPETA HONORARIOS
+    
     // Rutas para detalle_honorarios
     router.post('/detalle_honorarios/created', detalleHonorariosController.create);
     router.get('/detalle_honorarios', detalleHonorariosController.list);
