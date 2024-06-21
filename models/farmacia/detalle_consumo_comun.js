@@ -2,22 +2,22 @@
 const { Model } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
-  class detalle_consumo_quirugicos extends Model {
+  class detalle_consumo_comun extends Model {
     static associate(models) {
-        detalle_consumo_quirugicos.belongsTo(models.quirurgicos, {
-        foreignKey: 'id_quirurgico',
+        detalle_consumo_comun.belongsTo(models.comunes, {
+        foreignKey: 'id_comun',
       });
-        detalle_consumo_quirugicos.belongsTo(models.cuentas, {
+        detalle_consumo_comun.belongsTo(models.cuentas, {
             foreignKey: 'id_cuenta',
           });
     }
   }
-  detalle_consumo_quirugicos.init({     
-    id_quirurgico: {
+  detalle_consumo_comun.init({     
+    id_comun: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'quirurgicos',
+        model: 'comunes',
         key: 'id'
         }
       },
@@ -59,8 +59,8 @@ module.exports = (sequelize, DataTypes) => {
     }
   }, {
     sequelize,
-    modelName: 'detalle_consumo_quirugicos',
+    modelName: 'detalle_consumo_comun',
     timestamps: false,
   });
-  return detalle_consumo_quirugicos;
+  return detalle_consumo_comun;
 };

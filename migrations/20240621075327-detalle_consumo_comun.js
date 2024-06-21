@@ -3,18 +3,18 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up (queryInterface, Sequelize) {
-    await queryInterface.createTable('detalle_consumo_quirurgicos', {
+    await queryInterface.createTable('detalle_consumo_comun', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      id_quirurgico: {
+      id_comun: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'quirurgicos',
+          model: 'comunes',
           key: 'id'
         }
       },
@@ -59,6 +59,6 @@ module.exports = {
   },
 
   async down (queryInterface, Sequelize) {
-    await queryInterface.dropTable('detalle_consumo_quirugicos');
+    await queryInterface.dropTable('detalle_consumo_comun');
   }
 };

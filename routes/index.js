@@ -45,6 +45,7 @@ const quirurgicoController = require('../controllers/farmacia/quirurgicoControll
 const quirurgicoMovimientosController = require('../controllers/farmacia/quirurgicoMovimientosController')
 const detalle_consumo_medicamentos = require('../controllers/farmacia/consumoMedicamentosController.js')
 const detalle_consumo_quirugicos = require('../controllers/farmacia/consumoQuirurgicosController.js')
+const detalle_consumo_comunes = require('../controllers/farmacia/consumoComunController.js')
 
 //CARPETA DE GERENCIA
 const AsuetosController = require('../controllers/gerencia/asuetosController')
@@ -297,8 +298,11 @@ module.exports = (app) => {
     //detalle_consumo_medicamentos
     router.post('/detalle_consumo_medicamentos/create', detalle_consumo_medicamentos.create);
 
-    //detalle_consumo_medicamentos
+    //detalle_consumo_quirurgicos
     router.post('/detalle_consumo_quirugicos/create', detalle_consumo_quirugicos.create);
+    
+    //detalle_consumo_comunes
+    router.post('/detalle_consumo_comun/create', detalle_consumo_comunes.create);
 
     //CARPETA GERENCIA
     //asuetos
