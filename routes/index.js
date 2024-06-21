@@ -98,6 +98,7 @@ module.exports = (app) => {
 
     //cuentas
     router.get('/cuentas/list', cuentasController.list);
+    router.get('/cuentas/debtList', cuentasController.listNoPay);
     router.get('/cuentas/get', cuentasController.get);
     router.get('/cuentas/getByExp', cuentasController.getByExp);
     router.get('/cuentas/pay', cuentasController.onPay);
@@ -160,6 +161,7 @@ module.exports = (app) => {
 
     //pedidos
     router.get('/detalle_pedidos/list', detallePedidosController.list);
+    router.get('/detalle_pedidos/getByAccount', detallePedidosController.getByAccountId);
 
     //CARPETA DE FARMACIA
     //alertas

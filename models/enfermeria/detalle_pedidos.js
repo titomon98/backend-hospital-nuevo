@@ -9,6 +9,12 @@ module.exports = (sequelize, DataTypes) => {
       detalle_pedido.belongsTo(models.medicamentos, {
         foreignKey: "id_medicamento",
       });
+      detalle_pedido.belongsTo(models.comunes, {
+        foreignKey: "id_comun",
+      });
+      detalle_pedido.belongsTo(models.quirurgicos, {
+        foreignKey: "id_quirurgico",
+      });
       detalle_pedido.belongsTo(models.pedidos, {
         foreignKey: "id_pedido",
       });

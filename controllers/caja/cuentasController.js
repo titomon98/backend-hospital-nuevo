@@ -18,13 +18,15 @@ module.exports = {
             total: form.total,
             estado: 1,
             id_expediente: form.id_expediente,
-            numero: form.numero,
         };
 
         Cuenta.create(datos)
         .then(tipo => {
-            console.log(tipo.cuentas)
-            res.send(tipo);
+            return tipo.update({ numero: tipo.id });
+        })
+        .then(updatedTipo => {
+            console.log(updatedTipo);
+            res.send(updatedTipo);
         })
         .catch(error => {
             console.log(error)
@@ -82,6 +84,53 @@ module.exports = {
         });
     },
 
+    listNoPay(req, res) {
+        const getPagingData = (data, page, limit) => {
+            const { count: totalItems, rows: referido } = data;
+
+            const currentPage = page ? +page : 0;
+            const totalPages = Math.ceil(totalItems / limit);
+
+            return { totalItems, referido, totalPages, currentPage };
+        };
+
+
+        const getPagination = (page, size) => {
+            const limit = size ? +size : 2;
+            const offset = page ? page * limit : 0;
+
+            return { limit, offset };
+        };
+
+        const busqueda=req.query.search;
+        const page=req.query.page-1;
+        const size=req.query.limit;
+        const criterio=req.query.criterio;
+        const order=req.query.order;
+        const { limit, offset } = getPagination(page, size);
+
+        var condition = busqueda ? { [Op.or]: [{ '$Expediente.nombres$': { [Op.like]: `%${busqueda}%` }, estado:1, '$Expediente.solvencia$': 0, [Op.or]:[{'$Expediente.estado$': 2},{'$Expediente.estado$': 6},{'$Expediente.estado$': 0}]}] } : {estado:1, '$Expediente.solvencia$': 0, [Op.or]:[{'$Expediente.estado$': 2},{'$Expediente.estado$': 6},{'$Expediente.estado$': 0}]} ;
+        console.log(busqueda)
+        Cuenta.findAndCountAll({ 
+            include: [
+                {
+                    model: Expediente,
+                }
+            ],
+            where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        .then(data => {
+
+        console.log('data: '+JSON.stringify(data))
+        const response = getPagingData(data, page, limit);
+
+        console.log('response: '+JSON.stringify(response))
+        res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
+        })
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
 
     find (req, res) {
         const id = req.params.id;
@@ -157,6 +206,7 @@ module.exports = {
                         deposito: req.body.deposito,
                         cheque: req.body.cheque,
                         seguro: req.body.seguro,
+                        transferencia: req.body.transferencia,
                         total: req.body.total,
                         tipo: req.body.tipo,
                         id_cuenta: req.body.id
@@ -189,6 +239,7 @@ module.exports = {
                         deposito: req.body.deposito,
                         cheque: req.body.cheque,
                         seguro: req.body.seguro,
+                        transferencia: req.body.transferencia,
                         total: req.body.total,
                         tipo: req.body.tipo,
                         id_cuenta: req.body.id
