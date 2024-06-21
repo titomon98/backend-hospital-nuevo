@@ -4,25 +4,29 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class banco extends Model {
-    static associate(models) {
-      /* banco.hasMany(models.cuenta_bancarias, {
-        foreignKey: "id_banco",
-      }); */
-    }
-  };
-  banco.init({
-    nombre: {
-      type: DataTypes.STRING,
-      allowNull: false
-    },
-    estado: {
-      type: DataTypes.INTEGER,
-      allowNull: false
-    },
-  }, {
+  class asuetos extends Model {};
+  asuetos.init({
+      nombre: {
+        type: DataTypes.STRING(250),
+        allowNull: false
+      },
+      fecha: {
+        type: DataTypes.DATEONLY,
+        allowNull: false
+      },
+      createdAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW
+      },
+      updatedAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW
+      }
+    }, {
     sequelize,
     modelName: 'asuetos',
   });
-  return banco;
+  return asuetos;
 };
