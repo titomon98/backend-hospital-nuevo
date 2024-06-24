@@ -86,7 +86,6 @@ module.exports = (sequelize, DataTypes) => {
     },
     factura: {
       type: DataTypes.INTEGER,
-      allowNull: false
     },
   }, {
     sequelize,

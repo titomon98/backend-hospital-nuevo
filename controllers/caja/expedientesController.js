@@ -235,8 +235,6 @@ module.exports = {
                 pendiente_de_pago: { [Sequelize.Op.gt]: 0 }
         }})
             .then((cuentas)=>{
-                console.log("PEPEPEPPEPEPE")
-                console.log(cuentas.length)
                 if(cuentas.length > 0){
                     Expediente.update(
                         { solvencia: 0 },
