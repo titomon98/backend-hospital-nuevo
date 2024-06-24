@@ -71,7 +71,6 @@ module.exports = {
         { where: { 
             id: form.id_medicine 
         }})
-        console.log("-------------------------  Movimiento: " + Movimiento)
 
         Movimiento.create(datos)
         .then(tipo => {

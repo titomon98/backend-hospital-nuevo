@@ -51,15 +51,16 @@ module.exports = {
             descripcion = 'Consumo de insumos quirúrgicos por la cuenta ' + numero_cuenta + ' En el area de Emergencia'
         }
 
-        existencia_nueva = parseInt(form.medicamento.existencia_actual) - parseInt(form.cantidad)
-        Total = (parseFloat(form.cantidad) * parseFloat(form.medicamento.precio_venta))
+        existencia_nueva = parseInt(form.existencia_actual) - parseInt(form.cantidad)
+        Total = (parseFloat(form.cantidad) * parseFloat(form.precio_venta))
+        console.dir(form)
         nuevoTotal = (parseFloat(totalCuenta) + parseFloat(Total))
         await cuentaSeleccionada.update({ total: nuevoTotal});
         const datos = {
-            id_quirurgico: form.medicamento.id,
+            id_quirurgico: form.id_medicine,
             descripcion: descripcion,
             cantidad: form.cantidad,
-            precio_venta: form.medicamento.precio_venta,
+            precio_venta: form.precio_venta,
             total: Total,
             estado: form.state,
             id_cuenta: id_cuenta,
@@ -70,7 +71,7 @@ module.exports = {
             existencia_actual: existencia_nueva
         },
         { where: { 
-            id: form.medicamento.id 
+            id: form.id_medicine
         }})
         Movimiento.create(datos)
         .then(tipo => {

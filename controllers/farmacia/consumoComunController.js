@@ -13,7 +13,7 @@ module.exports = {
             nuevaFecha.setHours(nuevaFecha.getHours() - horas);
             return nuevaFecha;
           };
-        console.log("___________________Mov: ", req.body.form)
+
         const cuentas = await Cuenta.findAll({
             where: {
                 id: req.body.form.id_cuenta
@@ -42,24 +42,24 @@ module.exports = {
         let descripcion;
 
         if (form.movimiento === 'SALIDAQ') {
-            descripcion = 'Consumo de medicamentos por la cuenta ' + numero_cuenta + ' En el area de Quirofano'
+            descripcion = 'Consumo de insumo común por la cuenta ' + numero_cuenta + ' En el area de Quirofano'
         } else if (form.movimiento === 'SALIDAH') {
-            descripcion = 'Consumo de medicamentos por la cuenta ' + numero_cuenta + ' En el area de Hospitalizacion'
+            descripcion = 'Consumo de insumo común por la cuenta ' + numero_cuenta + ' En el area de Hospitalizacion'
         } else if (form.movimiento === 'SALIDAI'){
-            descripcion = 'Consumo de medicamentos por la cuenta ' + numero_cuenta + ' En el area de Intensivo'
+            descripcion = 'Consumo de insumo común por la cuenta ' + numero_cuenta + ' En el area de Intensivo'
         } else if (form.movimiento === 'SALIDAE'){
-            descripcion = 'Consumo de medicamentos por la cuenta ' + numero_cuenta + ' En el area de Emergencia'
+            descripcion = 'Consumo de insumo común por la cuenta ' + numero_cuenta + ' En el area de Emergencia'
         }
 
-        existencia_nueva = parseInt(form.medicamento.existencia_actual) - parseInt(form.cantidad)
-        Total = (parseFloat(form.cantidad) * parseFloat(form.medicamento.precio_venta))
+        existencia_nueva = parseInt(form.existencia_actual) - parseInt(form.cantidad)
+        Total = (parseFloat(form.cantidad) * parseFloat(form.precio_venta))
         nuevoTotal = (parseFloat(totalCuenta) + parseFloat(Total))
         await cuentaSeleccionada.update({ total: nuevoTotal});
         const datos = {
-            id_comun: form.medicamento.id,
+            id_comun: form.id_medicine,
             descripcion: descripcion,
             cantidad: form.cantidad,
-            precio_venta: form.medicamento.precio_venta,
+            precio_venta: form.precio_venta,
             total: Total,
             estado: form.state,
             id_cuenta: id_cuenta,
@@ -70,7 +70,7 @@ module.exports = {
             existencia_actual: existencia_nueva
         },
         { where: { 
-            id: form.medicamento.id 
+            id: form.id_medicine
         }})
 
         Movimiento.create(datos)
