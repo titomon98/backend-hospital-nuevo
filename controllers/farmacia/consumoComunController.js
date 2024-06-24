@@ -1,7 +1,7 @@
 'use strict'
 const Sequelize     = require('sequelize');
 const db = require("../../models");
-const Movimiento = db.detalle_consumo_comun;
+const Movimiento = db.detalle_consumo_comunes;
 const Comun = db.comunes;
 const Cuenta = db.cuentas;
 const Op = db.Sequelize.Op;
@@ -13,7 +13,7 @@ module.exports = {
             nuevaFecha.setHours(nuevaFecha.getHours() - horas);
             return nuevaFecha;
           };
-
+        console.log("___________________Mov: ", req.body.form)
         const cuentas = await Cuenta.findAll({
             where: {
                 id: req.body.form.id_cuenta
@@ -51,16 +51,17 @@ module.exports = {
             descripcion = 'Consumo de medicamentos por la cuenta ' + numero_cuenta + ' En el area de Emergencia'
         }
 
-        existencia_nueva = parseInt(form.comun.existencia_actual) - parseInt(form.cantidad)
-        Total = (parseFloat(form.cantidad) * parseFloat(form.comun.precio_venta))
+        existencia_nueva = parseInt(form.medicamento.existencia_actual) - parseInt(form.cantidad)
+        Total = (parseFloat(form.cantidad) * parseFloat(form.medicamento.precio_venta))
         nuevoTotal = (parseFloat(totalCuenta) + parseFloat(Total))
         await cuentaSeleccionada.update({ total: nuevoTotal});
         const datos = {
-            id_comun: form.comun.id,
+            id_comun: form.medicamento.id,
             descripcion: descripcion,
             cantidad: form.cantidad,
-            precio_venta: form.comun.precio_venta,
+            precio_venta: form.medicamento.precio_venta,
             total: Total,
+            estado: form.state,
             id_cuenta: id_cuenta,
             createdAt: restarHoras(new Date(), 6),
             updatedAt: restarHoras(new Date(), 6),
@@ -69,7 +70,7 @@ module.exports = {
             existencia_actual: existencia_nueva
         },
         { where: { 
-            id: form.comun.id 
+            id: form.medicamento.id 
         }})
 
         Movimiento.create(datos)

@@ -42,25 +42,26 @@ module.exports = {
         let descripcion;
 
         if (form.movimiento === 'SALIDAQ') {
-            descripcion = 'Consumo de medicamentos por la cuenta ' + numero_cuenta + ' En el area de Quirofano'
+            descripcion = 'Consumo de insumos quirúrgicos por la cuenta ' + numero_cuenta + ' En el area de Quirofano'
         } else if (form.movimiento === 'SALIDAH') {
-            descripcion = 'Consumo de medicamentos por la cuenta ' + numero_cuenta + ' En el area de Hospitalizacion'
+            descripcion = 'Consumo de insumos quirúrgicos por la cuenta ' + numero_cuenta + ' En el area de Hospitalizacion'
         } else if (form.movimiento === 'SALIDAI'){
-            descripcion = 'Consumo de medicamentos por la cuenta ' + numero_cuenta + ' En el area de Intensivo'
+            descripcion = 'Consumo de insumos quirúrgicos por la cuenta ' + numero_cuenta + ' En el area de Intensivo'
         } else if (form.movimiento === 'SALIDAE'){
-            descripcion = 'Consumo de medicamentos por la cuenta ' + numero_cuenta + ' En el area de Emergencia'
+            descripcion = 'Consumo de insumos quirúrgicos por la cuenta ' + numero_cuenta + ' En el area de Emergencia'
         }
 
-        existencia_nueva = parseInt(form.quirurgico.existencia_actual) - parseInt(form.cantidad)
-        Total = (parseFloat(form.cantidad) * parseFloat(form.quirurgico.precio_venta))
+        existencia_nueva = parseInt(form.medicamento.existencia_actual) - parseInt(form.cantidad)
+        Total = (parseFloat(form.cantidad) * parseFloat(form.medicamento.precio_venta))
         nuevoTotal = (parseFloat(totalCuenta) + parseFloat(Total))
         await cuentaSeleccionada.update({ total: nuevoTotal});
         const datos = {
-            id_quirurgico: form.quirurgico.id,
+            id_quirurgico: form.medicamento.id,
             descripcion: descripcion,
             cantidad: form.cantidad,
-            precio_venta: form.quirurgico.precio_venta,
+            precio_venta: form.medicamento.precio_venta,
             total: Total,
+            estado: form.state,
             id_cuenta: id_cuenta,
             createdAt: restarHoras(new Date(), 6),
             updatedAt: restarHoras(new Date(), 6),
@@ -69,9 +70,8 @@ module.exports = {
             existencia_actual: existencia_nueva
         },
         { where: { 
-            id: form.quirurgico.id 
+            id: form.medicamento.id 
         }})
-
         Movimiento.create(datos)
         .then(tipo => {
             
