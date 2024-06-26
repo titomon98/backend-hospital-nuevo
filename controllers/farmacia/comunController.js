@@ -162,8 +162,7 @@ module.exports = {
         });
     },
     get (req, res) {
-        console.log('helou--------------------------')
-        Comun.findAll({attributes: ['id', 'nombre', 'existencia_actual'], 
+        Comun.findAll({attributes: ['id', 'nombre', 'existencia_actual', 'precio_venta'], 
             where: {
                 existencia_actual:{
                     [Op.gt]:0
