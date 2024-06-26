@@ -102,7 +102,75 @@ module.exports = {
                     
     },
 
- 
+    createFromEnfermeria(req, res) {
+        let form = req.body.form
+        const today = new Date();
+        let status = 0
+        if (form.selectedOption == 'hospi') {
+            status = 1
+        } else if (form.selectedOption == 'emergencia') {
+            status = 5
+        } else if (form.selectedOption == 'quirofano') {
+            status = 3
+        } else if (form.selectedOption == 'intensivo') {
+            status = 4
+        }
+        const datos = {
+            nombres: 'PENDIENTE',
+            apellidos: 'PENDIENTE',
+            expediente: 'PENDIENTE DE REVISIÓN',
+            primer_ingreso: today,
+            fecha_ingreso_reciente: form.fecha_ingreso_reciente,
+            hora_ingreso_reciente: form.hora_ingreso_reciente,
+            nacimiento: '0001-01-01',
+            cui: 0,
+            telefono: 'PENDIENTE',
+            direccion: 'PENDIENTE',
+            nombre_encargado: 'PENDIENTE',
+            contacto_encargado: 'PENDIENTE',
+            cui_encargado: 'PENDIENTE',
+            direccion_encargado: 'PENDIENTE',
+            estado: 10
+        };
+
+        Expediente.create(datos)
+        .then(expediente => {
+            const expediente_id = expediente.id
+            let datos_cuenta = {
+                numero: 1,
+                fecha_ingreso: today,
+                motivo: form.motivo,
+                descripcion: null,
+                otros: null,
+                total: 0.0,
+                id_expediente: expediente_id,
+                estado: 1
+            }
+            Cuenta.create(datos_cuenta)
+                .then(res=>{
+                    console.log(res)
+                })
+                .catch(err=>
+                    console.log(err)
+                )
+
+            Habitaciones.update(
+                {
+                    estado: 2,
+                },
+                { where: { 
+                    id: form.habitacion.id
+                }}
+            )
+            res.send(expediente);
+        })
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+                    
+    },
+
     list(req, res) {
         const getPagingData = (data, page, limit) => {
             const { count: totalItems, rows: referido } = data;
