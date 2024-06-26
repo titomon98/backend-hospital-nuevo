@@ -222,7 +222,7 @@ module.exports = (app) => {
     router.get('/marca/getSearch', marcaController.getSearch);
 
     //medicamentos
-    router.get('/medicamentos/list', medicamentosController.get);
+    router.get('/medicamentos/list', medicamentosController.list);
     router.post('/medicamentos/create', medicamentosController.create);
     router.put('/medicamentos/update', medicamentosController.update);
     router.put('/medicamentos/activate', medicamentosController.activate);

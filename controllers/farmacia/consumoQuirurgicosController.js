@@ -50,6 +50,7 @@ module.exports = {
         } else if (form.movimiento === 'SALIDAE'){
             descripcion = 'Consumo de medicamentos por la cuenta ' + numero_cuenta + ' En el area de Emergencia'
         }
+        console.log(form.quirurgico.existencia_actual)
 
         existencia_nueva = parseInt(form.quirurgico.existencia_actual) - parseInt(form.cantidad)
         Total = (parseFloat(form.cantidad) * parseFloat(form.quirurgico.precio_venta))

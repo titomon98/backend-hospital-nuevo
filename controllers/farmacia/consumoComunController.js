@@ -62,6 +62,7 @@ module.exports = {
             precio_venta: form.comun.precio_venta,
             total: Total,
             id_cuenta: id_cuenta,
+            estado: 1,
             createdAt: restarHoras(new Date(), 6),
             updatedAt: restarHoras(new Date(), 6),
         };
@@ -71,10 +72,10 @@ module.exports = {
         { where: { 
             id: form.comun.id 
         }})
+        console.log('--------MOVIMIENTO---------------------------'+Movimiento)
 
-        Movimiento.create(datos)
+        await Movimiento.create(datos)
         .then(tipo => {
-            
             res.send(tipo);
         })
         .catch(error => {

@@ -36,9 +36,9 @@ module.exports = {
           let Total = 0
           let nuevoTotal = 0
         
-          console.log(req.body.form.movimiento)
+          console.log(req.body.form)
         let form = req.body.form
-        let existencia_nueva = 0
+        let existencia_nueva;
         let descripcion
 
         if (form.movimiento === 'SALIDAQ') {
@@ -62,6 +62,7 @@ module.exports = {
             precio_venta: form.medicamento.precio_venta,
             total: Total,
             id_cuenta: id_cuenta,
+            estado: 1,
             createdAt: restarHoras(new Date(), 6),
             updatedAt: restarHoras(new Date(), 6),
         };
