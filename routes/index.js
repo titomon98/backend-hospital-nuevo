@@ -115,6 +115,7 @@ module.exports = (app) => {
     //expedientes
     router.get('/expedientes/list', expedientesController.list);
     router.post('/expedientes/create', expedientesController.create);
+    router.post('/expedientes/createEnfermeria', expedientesController.createFromEnfermeria);
     router.put('/expedientes/update', expedientesController.update);
     router.put('/expedientes/changeState', expedientesController.changeState);
     router.put('/expedientes/activate', expedientesController.activate);
@@ -222,7 +223,7 @@ module.exports = (app) => {
     router.get('/marca/getSearch', marcaController.getSearch);
 
     //medicamentos
-    router.get('/medicamentos/list', medicamentosController.get);
+    router.get('/medicamentos/list', medicamentosController.list);
     router.post('/medicamentos/create', medicamentosController.create);
     router.put('/medicamentos/update', medicamentosController.update);
     router.put('/medicamentos/activate', medicamentosController.activate);

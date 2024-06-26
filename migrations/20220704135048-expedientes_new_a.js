@@ -111,6 +111,14 @@ module.exports = {
       telefono_conyuge: {
         type: Sequelize.STRING
       },
+      fecha_ingreso_reciente: {
+        type: Sequelize.DATEONLY,
+        allowNull: true
+      },
+      hora_ingreso_reciente: {
+        type: Sequelize.TIME,
+        allowNull: true
+      },
     });
   },
   down: async (queryInterface, Sequelize) => {
