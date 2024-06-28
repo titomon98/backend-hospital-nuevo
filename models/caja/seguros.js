@@ -12,9 +12,6 @@ module.exports = (sequelize, DataTypes) => {
         seguro.belongsTo(models.expedientes, {
             foreignKey: "id_expediente",
         });
-        seguro.belongsTo(models.detalle_pago_cuentas, {
-            foreignKey: "id_detalle_pago_cuentas",
-        });
     }
   };
   seguro.init({

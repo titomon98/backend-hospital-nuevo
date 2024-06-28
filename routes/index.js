@@ -20,6 +20,9 @@ const contratosController = require('../controllers/caja/contratosController')
 const consumosController = require('../controllers/caja/consumosController')
 const cuentasController = require('../controllers/caja/cuentasController')
 const expedientesController = require('../controllers/caja/expedientesController')
+const aseguradorasController = require('../controllers/caja/aseguradorasController')
+const segurosController = require('../controllers/caja/segurosController')
+
 
 //CARPETA DE ENFERMERIA
 const habitacionesController = require('../controllers/enfermeria/habitacionesController')
@@ -111,6 +114,14 @@ module.exports = (app) => {
     router.put('/cuentas/activate', cuentasController.activate);
     router.put('/cuentas/deactivate', cuentasController.deactivate);
     router.get('/cuentas/getSearch', cuentasController.getSearch);
+    
+    //Seguros
+    router.post('/seguros/create', segurosController.create);
+    router.get('/seguros/list', segurosController.list);
+
+    //Aseguradoras
+    router.post('/aseguradoras/create', aseguradorasController.create);
+    router.get('/aseguradoras/get', aseguradorasController.get);
 
     //expedientes
     router.get('/expedientes/list', expedientesController.list);
