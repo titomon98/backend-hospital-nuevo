@@ -48,7 +48,9 @@ module.exports = {
             direccion_encargado: form.direccion_encargado,
             nombre_conyuge: form.nombre_conyuge,
             direccion_conyuge: form.direccion_conyuge,
-            telefono_conyuge: form.telefono_conyuge
+            telefono_conyuge: form.telefono_conyuge,
+            fecha_ingreso_reciente: form.fecha,
+            hora_ingreso_reciente: form.hora,
         };
 
         Expediente.create(datos)
@@ -79,18 +81,10 @@ module.exports = {
             resto = year + '-' + idFormateado
             Expediente.update(
                 {
-                    expediente: resto,
+                    expediente: resto
                 },
                 { where: { 
                     id: expediente_id
-                }}
-            )
-            Habitaciones.update(
-                {
-                    estado: 2,
-                },
-                { where: { 
-                    id: form.habitacion.id
                 }}
             )
             res.send(expediente);
@@ -120,8 +114,8 @@ module.exports = {
             apellidos: 'PENDIENTE',
             expediente: 'PENDIENTE DE REVISIÓN',
             primer_ingreso: today,
-            fecha_ingreso_reciente: form.fecha_ingreso_reciente,
-            hora_ingreso_reciente: form.hora_ingreso_reciente,
+            fecha_ingreso_reciente: form.fecha,
+            hora_ingreso_reciente: form.hora,
             nacimiento: '0001-01-01',
             cui: 0,
             telefono: 'PENDIENTE',
