@@ -235,6 +235,7 @@ module.exports = (app) => {
 
     //medicamentos
     router.get('/medicamentos/list', medicamentosController.list);
+    router.get('/medicamentos/list2', medicamentosController.get);
     router.post('/medicamentos/create', medicamentosController.create);
     router.put('/medicamentos/update', medicamentosController.update);
     router.put('/medicamentos/activate', medicamentosController.activate);
