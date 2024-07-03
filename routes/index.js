@@ -19,6 +19,7 @@ const authController = require('../controllers/authController');
 const contratosController = require('../controllers/caja/contratosController')
 const consumosController = require('../controllers/caja/consumosController')
 const cuentasController = require('../controllers/caja/cuentasController')
+const detallePagoSegurosController = require('../controllers/caja/pagoSegurosController.js')
 const expedientesController = require('../controllers/caja/expedientesController')
 const aseguradorasController = require('../controllers/caja/aseguradorasController')
 const segurosController = require('../controllers/caja/segurosController')
@@ -118,6 +119,8 @@ module.exports = (app) => {
     //Seguros
     router.post('/seguros/create', segurosController.create);
     router.get('/seguros/list', segurosController.list);
+    router.get('/pagoSeguros/list', detallePagoSegurosController.listAssuranceNoPay);
+
 
     //Aseguradoras
     router.post('/aseguradoras/create', aseguradorasController.create);
@@ -131,7 +134,8 @@ module.exports = (app) => {
     router.put('/expedientes/changeState', expedientesController.changeState);
     router.put('/expedientes/activate', expedientesController.activate);
     router.put('/expedientes/deactivate', expedientesController.deactivate);
-    router.get('/expedientes/getSearch', expedientesController.getSearch);
+    router.get('/expedientes/getSearch', expedientesController.getSearch)
+    router.get('/expedientes/getAll', expedientesController.get);
     router.get('/expedientes/listQuirofano', expedientesController.listQuirofano);
     router.get('/expedientes/listEmergencia', expedientesController.listEmergencia);
     router.get('/expedientes/listIntensivo', expedientesController.listIntensivo);
