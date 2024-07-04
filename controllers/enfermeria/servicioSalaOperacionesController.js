@@ -25,7 +25,7 @@ const getPagination = (page, size) => {
 
 module.exports = {
   async create(req, res) {
-
+    console.log(req.body)
     const restarHoras = (fecha, horas) => {
       let nuevaFecha = new Date(fecha);
       nuevaFecha.setHours(nuevaFecha.getHours() - horas);
@@ -93,7 +93,7 @@ module.exports = {
       TotalCateg = parseFloat(categoriaselect.dataValues.precio)
     }
 
-    console.log(req.body)
+    console.log(req.body )
 
    let Oximetro = req.body.oximetro;
    let Cauterio = req.body.cauterio;
