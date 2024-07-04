@@ -305,15 +305,26 @@ module.exports = {
         const idExpediente = parseInt(req.query.search, 10)// Obtener el id_expediente de la consulta
         console.log("ID Expediente recibido:", idExpediente); 
         try {
-          const cuenta = await Cuenta.findOne({
-            where: { id_expediente: idExpediente }, // Buscar por id_expediente
+          const cuenta = await Cuenta.findAll({
+            where: { id_expediente: idExpediente },
+            order: [['createdAt', 'DESC']], // Buscar por id_expediente
             include: [{ model: db.expedientes, as: 'expediente' }] 
           });
-        console.log("Cuenta encontrada:", cuenta);
-          if (cuenta) {
-            res.send(cuenta); // Enviar la cuenta encontrada
+          let cuentaSeleccionada = null;
+          for (const cuentas of cuenta) {
+            if (cuentas.dataValues.estado == 1) {
+              cuentaSeleccionada = cuentas;
+              break;
+            }
+          }
+          if (!cuentaSeleccionada) {
+            return res.status(400).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
+          }
+        console.log("Cuenta encontrada:", cuentaSeleccionada);
+          if (cuentaSeleccionada) {
+            res.send(cuentaSeleccionada); // Enviar la cuenta encontrada
           } else {
-            res.status(404).json({ msg: 'No se encontró ninguna cuenta para este expediente' });
+            res.status(400).json({ msg: 'No se encontró ninguna cuenta para este expediente' });
           }
         } catch (error) {
             console.error("Error en getSearch:", error);
