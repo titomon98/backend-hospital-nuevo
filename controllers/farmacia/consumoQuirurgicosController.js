@@ -51,7 +51,7 @@ module.exports = {
             descripcion = 'Consumo de insumos quirúrgicos por la cuenta ' + numero_cuenta + ' En el area de Emergencia'
         }
 
-        existencia_nueva = parseInt(form.existencia_actual) - parseInt(form.cantidad)
+        existencia_nueva = parseInt(form.existencias_actuales) - parseInt(form.cantidad)
         Total = (parseFloat(form.cantidad) * parseFloat(form.precio_venta))
         console.dir(form)
         nuevoTotal = (parseFloat(totalCuenta) + parseFloat(Total))
