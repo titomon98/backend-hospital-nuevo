@@ -52,7 +52,7 @@ module.exports = {
         }
         console.log(form.quirurgico.existencia_actual)
 
-        existencia_nueva = parseInt(form.existencia_actual) - parseInt(form.cantidad)
+        existencia_nueva = parseInt(form.existencias_actuales) - parseInt(form.cantidad)
         Total = (parseFloat(form.cantidad) * parseFloat(form.precio_venta))
         console.dir(form)
         nuevoTotal = (parseFloat(totalCuenta) + parseFloat(Total))
