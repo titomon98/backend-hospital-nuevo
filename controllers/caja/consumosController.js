@@ -25,7 +25,7 @@ module.exports = {
         }
 
         if (!cuentaSeleccionada) {
-            return res.status(404).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
+            return res.status(400).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
           }
         const id_cuenta = cuentaSeleccionada.dataValues.id
 
@@ -209,7 +209,7 @@ module.exports = {
         }
 
         if (!cuentaSeleccionada) {
-            return res.status(404).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
+            return res.status(400).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
           }
         const id_cuenta = cuentaSeleccionada.dataValues.id
         console.log(id)
