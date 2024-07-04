@@ -13,7 +13,7 @@ module.exports = {
             nuevaFecha.setHours(nuevaFecha.getHours() - horas);
             return nuevaFecha;
           };
-
+        console.log(req.body.form)
         const cuentas = await Cuenta.findAll({
             where: {
                 id: req.body.form.id_cuenta
@@ -28,7 +28,7 @@ module.exports = {
             }
           }
           if (!cuentaSeleccionada) {
-            return res.status(404).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
+            return res.status(400).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
           }
           const id_cuenta = cuentaSeleccionada.dataValues.id
           const numero_cuenta = cuentaSeleccionada.dataValues.numero
@@ -37,7 +37,7 @@ module.exports = {
           let nuevoTotal = 0
 
         let form = req.body.form
-        let existencia_nueva = 0
+        let existencia_nueva;
         let descripcion
 
         if (form.movimiento === 'SALIDAQ') {
@@ -62,6 +62,7 @@ module.exports = {
             total: Total,
             estado: form.state,
             id_cuenta: id_cuenta,
+            estado: 1,
             createdAt: restarHoras(new Date(), 6),
             updatedAt: restarHoras(new Date(), 6),
         };

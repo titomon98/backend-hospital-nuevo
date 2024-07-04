@@ -28,7 +28,7 @@ module.exports = {
             }
           }
           if (!cuentaSeleccionada) {
-            return res.status(404).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
+            return res.status(400).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
           }
           const id_cuenta = cuentaSeleccionada.dataValues.id
           const numero_cuenta = cuentaSeleccionada.dataValues.numero
@@ -63,6 +63,7 @@ module.exports = {
             total: Total,
             estado: form.state,
             id_cuenta: id_cuenta,
+            estado: 1,
             createdAt: restarHoras(new Date(), 6),
             updatedAt: restarHoras(new Date(), 6),
         };
@@ -72,10 +73,10 @@ module.exports = {
         { where: { 
             id: form.id_medicine
         }})
+        console.log('--------MOVIMIENTO---------------------------'+Movimiento)
 
-        Movimiento.create(datos)
+        await Movimiento.create(datos)
         .then(tipo => {
-            
             res.send(tipo);
         })
         .catch(error => {
