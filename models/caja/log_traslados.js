@@ -19,6 +19,10 @@ module.exports = (sequelize, DataTypes) => {
     destino: {
       type: DataTypes.INTEGER,
       allowNull: false
+    },
+    motivo: {
+      type: DataTypes.STRING,
+      allowNull: true
     }
   }, {
     sequelize,

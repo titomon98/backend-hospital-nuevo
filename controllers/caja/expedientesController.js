@@ -282,13 +282,17 @@ module.exports = {
             'Quirófano',
             'Cuidados Intensivos',
             'Emergencias',
-            'Desahuciado'
+            'Desahuciado',
+            'Alta médica',
+            'Contraindicado',
+            'Referido'
         ]
 
         Logs.create({
             id_expediente: req.body.id,
             origen: dat[req.body.estado_anterior],
-            destino: dat[req.body.estado]
+            destino: dat[req.body.estado],
+            motivo: req.body.motivo
         })
 
         Cuenta.findAll({
