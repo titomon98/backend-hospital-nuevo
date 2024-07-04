@@ -131,6 +131,7 @@ module.exports = {
     },
 
     deactivate (req, res) {
+        console.log("HOLA")
         Seguro.update(
             { solvente: 2 },
             { where: { 
