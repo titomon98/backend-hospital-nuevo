@@ -26,6 +26,7 @@ const habitacionesController = require('../controllers/enfermeria/habitacionesCo
 const pedidosController = require('../controllers/enfermeria/pedidosController')
 const detallePedidosController = require('../controllers/enfermeria/detallePedidosController')
 const servicioSalaOperacionesController = require('../controllers/enfermeria/servicioSalaOperacionesController')
+const CategoriaSalaOperacionesController = require('../controllers/enfermeria/categoriaSalaOperacionesController')
 
 //CARPETA DE FARMACIA
 const alertasController = require('../controllers/farmacia/alertasController')
@@ -154,6 +155,16 @@ module.exports = (app) => {
     router.put('/servicios/activate', serviciosController.activate);
     router.put('/servicios/deactivate', serviciosController.deactivate);
     router.get('/servicios/get', serviciosController.get);
+
+    //categoria sala opereciones
+    router.post('/Categorias_Sala_Operaciones/create', CategoriaSalaOperacionesController.create);
+    router.get('/Categorias_Sala_Operaciones/list', CategoriaSalaOperacionesController.list);
+    router.put('/Categorias_Sala_Operaciones/update', CategoriaSalaOperacionesController.update);
+    router.put('/Categorias_Sala_Operaciones/activate', CategoriaSalaOperacionesController.activate);
+    router.put('/Categorias_Sala_Operaciones/deactivate', CategoriaSalaOperacionesController.deactivate);
+    router.get('/Categorias_Sala_Operaciones/get', CategoriaSalaOperacionesController.get);
+    router.get('/Categorias_Sala_Operaciones/get/:id', CategoriaSalaOperacionesController.getId);
+    router.get('/Categorias_Sala_Operaciones/getSearch', CategoriaSalaOperacionesController.getSearch);
 
     //pedidos
     router.get('/pedidos/list', pedidosController.list);
