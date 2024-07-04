@@ -19,7 +19,11 @@ const authController = require('../controllers/authController');
 const contratosController = require('../controllers/caja/contratosController')
 const consumosController = require('../controllers/caja/consumosController')
 const cuentasController = require('../controllers/caja/cuentasController')
+const detallePagoSegurosController = require('../controllers/caja/pagoSegurosController.js')
 const expedientesController = require('../controllers/caja/expedientesController')
+const aseguradorasController = require('../controllers/caja/aseguradorasController')
+const segurosController = require('../controllers/caja/segurosController')
+
 
 //CARPETA DE ENFERMERIA
 const habitacionesController = require('../controllers/enfermeria/habitacionesController')
@@ -112,6 +116,19 @@ module.exports = (app) => {
     router.put('/cuentas/activate', cuentasController.activate);
     router.put('/cuentas/deactivate', cuentasController.deactivate);
     router.get('/cuentas/getSearch', cuentasController.getSearch);
+    
+    //Seguros
+    router.post('/seguros/create', segurosController.create);
+    router.get('/seguros/list', segurosController.list);
+    router.get('/seguros/debtList', segurosController.assurancePayList);
+    router.put('/seguros/deactivate', segurosController.deactivate);
+    router.put('/seguros/paid', segurosController.paid);
+    router.put('/seguros/debt', segurosController.debt);
+
+
+    //Aseguradoras
+    router.post('/aseguradoras/create', aseguradorasController.create);
+    router.get('/aseguradoras/get', aseguradorasController.get);
 
     //expedientes
     router.get('/expedientes/list', expedientesController.list);
@@ -121,7 +138,8 @@ module.exports = (app) => {
     router.put('/expedientes/changeState', expedientesController.changeState);
     router.put('/expedientes/activate', expedientesController.activate);
     router.put('/expedientes/deactivate', expedientesController.deactivate);
-    router.get('/expedientes/getSearch', expedientesController.getSearch);
+    router.get('/expedientes/getSearch', expedientesController.getSearch)
+    router.get('/expedientes/getAll', expedientesController.get);
     router.get('/expedientes/listQuirofano', expedientesController.listQuirofano);
     router.get('/expedientes/listEmergencia', expedientesController.listEmergencia);
     router.get('/expedientes/listIntensivo', expedientesController.listIntensivo);
@@ -235,6 +253,7 @@ module.exports = (app) => {
 
     //medicamentos
     router.get('/medicamentos/list', medicamentosController.list);
+    router.get('/medicamentos/list2', medicamentosController.get);
     router.post('/medicamentos/create', medicamentosController.create);
     router.put('/medicamentos/update', medicamentosController.update);
     router.put('/medicamentos/activate', medicamentosController.activate);

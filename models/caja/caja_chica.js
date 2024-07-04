@@ -4,29 +4,33 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class pedido extends Model {
+  class caja extends Model {
     static associate(models) {
-      pedido.belongsTo(models.expedientes, {
-        foreignKey: "id_expediente",
+      caja.belongsTo(models.rubros, {
+        foreignKey: "id_rubro",
       });
     }
   };
-  pedido.init({
-    origen: {
+  caja.init({
+    cantidad: {
       type: DataTypes.STRING,
       allowNull: false
     },
-    destino: {
+    nombre: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    estado: {
       type: DataTypes.INTEGER,
       allowNull: false
     },
-    motivo: {
-      type: DataTypes.STRING,
-      allowNull: true
-    }
+    id_rubro: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
   }, {
     sequelize,
-    modelName: 'log_traslados',
+    modelName: 'caja_chicas',
   });
-  return pedido;
+  return caja;
 };
