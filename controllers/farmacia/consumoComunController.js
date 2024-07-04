@@ -63,6 +63,7 @@ module.exports = {
             total: Total,
             estado: form.state,
             id_cuenta: id_cuenta,
+            estado: 1,
             createdAt: restarHoras(new Date(), 6),
             updatedAt: restarHoras(new Date(), 6),
         };
@@ -72,10 +73,10 @@ module.exports = {
         { where: { 
             id: form.id_medicine
         }})
+        console.log('--------MOVIMIENTO---------------------------'+Movimiento)
 
-        Movimiento.create(datos)
+        await Movimiento.create(datos)
         .then(tipo => {
-            
             res.send(tipo);
         })
         .catch(error => {
