@@ -119,7 +119,10 @@ module.exports = (app) => {
     //Seguros
     router.post('/seguros/create', segurosController.create);
     router.get('/seguros/list', segurosController.list);
-    router.get('/pagoSeguros/list', detallePagoSegurosController.listAssuranceNoPay);
+    router.get('/seguros/debtList', segurosController.assurancePayList);
+    router.put('/seguros/deactivate', segurosController.deactivate);
+    router.put('/seguros/paid', segurosController.paid);
+    router.put('/seguros/debt', segurosController.debt);
 
 
     //Aseguradoras
