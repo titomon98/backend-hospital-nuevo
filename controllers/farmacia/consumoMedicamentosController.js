@@ -37,7 +37,7 @@ module.exports = {
           let nuevoTotal = 0
 
         let form = req.body.form
-        let existencia_nueva = 0
+        let existencia_nueva;
         let descripcion
 
         if (form.movimiento === 'SALIDAQ') {
@@ -62,6 +62,7 @@ module.exports = {
             total: Total,
             estado: form.state,
             id_cuenta: id_cuenta,
+            estado: 1,
             createdAt: restarHoras(new Date(), 6),
             updatedAt: restarHoras(new Date(), 6),
         };

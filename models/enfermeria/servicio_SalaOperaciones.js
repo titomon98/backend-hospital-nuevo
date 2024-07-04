@@ -7,17 +7,24 @@ module.exports = (sequelize, DataTypes) => {
       servicio_sala_operaciones.belongsTo(models.cuentas, {
         foreignKey: 'id_cuenta',
       });
+      servicio_sala_operaciones.belongsTo(models.categoria_sala_operaciones, {
+        foreignKey: 'id_categoria',
+      });
     }
   }
   servicio_sala_operaciones.init({
     descripcion: {
       type: DataTypes.STRING(250),
       allowNull: true
-    },
-    precio: {
-      type: DataTypes.DECIMAL(20, 6),
-      allowNull: false
-    },
+    },    
+    id_categoria: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'categoria_sala_operaciones',
+        key: 'id'
+        }
+      },
     horas: {
       type: DataTypes.DECIMAL(20, 6),
       allowNull: false
