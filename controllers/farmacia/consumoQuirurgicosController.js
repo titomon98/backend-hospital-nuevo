@@ -7,6 +7,47 @@ const Cuenta = db.cuentas;
 const Op = db.Sequelize.Op;
 
 module.exports = {
+    get(req, res) {
+        const id = req.params.id;
+        const getPagingData = (data, page, limit) => {
+            const { count: totalItems, rows: referido } = data;
+
+            const currentPage = page ? +page : 0;
+            const totalPages = Math.ceil(totalItems / limit);
+
+            return { totalItems, referido, totalPages, currentPage };
+        };
+
+
+        const getPagination = (page, size) => {
+            const limit = size ? +size : 2;
+            const offset = page ? page * limit : 0;
+
+            return { limit, offset };
+        };
+
+        const page=req.query.page-1;
+        const size=req.query.limit;
+        const criterio=req.query.criterio;
+        const order=req.query.order;
+
+
+        const { limit, offset } = getPagination(page, size);
+
+        var condition = { id_cuenta: { [Op.like]: `%${id}%` } };
+
+        Movimiento.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        .then(data => {
+
+        const response = getPagingData(data, page, limit);
+        res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
+        })
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
+    
     async create(req, res) {
         const restarHoras = (fecha, horas) => {
             let nuevaFecha = new Date(fecha); // Crear una nueva instancia de fecha
