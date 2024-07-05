@@ -9,7 +9,6 @@ const Op = db.Sequelize.Op;
 module.exports = {
     get(req, res) {
         const id = req.params.id;
-        console.log('------- hola', id)
         const getPagingData = (data, page, limit) => {
             const { count: totalItems, rows: referido } = data;
 
@@ -34,8 +33,7 @@ module.exports = {
 
 
         const { limit, offset } = getPagination(page, size);
-
-        var condition = { [Op.or]: [{ id_cuenta: { [Op.like]: `%${id}%` } }] };
+        var condition = { id_cuenta: { [Op.like]: `%${id}%` } };
 
         Movimiento.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
