@@ -4,6 +4,8 @@ const db = require("../../models");
 const Cuenta = db.cuentas;
 const Expediente = db.expedientes;
 const detallePagoCuentas = db.detalle_pago_cuentas;
+const Seguro = db.seguros;
+const PagoSeguro = db.pago_seguros;
 const Op = db.Sequelize.Op;
 
 module.exports = {
@@ -211,11 +213,54 @@ module.exports = {
                         tipo: req.body.tipo,
                         id_cuenta: req.body.id
                     })
-                .then(detalle_cuenta =>res.status(200).send('El registro ha sido desactivado'))
+                .then(detalle_cuenta =>{
+                    console.log(detalle_cuenta)
+                    if ( parseInt(req.body.seguro)>0){
+                    
+                        Seguro.update(
+                            { 
+                                solvente: 0
+                            },
+                            { where: { 
+                                id: req.body.id_seguro
+                            } }
+                        )
+                        .then((seg)=>{
+                            console.log(seg)
+                        })
+                        .catch((errSeg)=>{
+                            console.log("---------------pagoSeguros")
+                            console.error(errSeg)
+                        })
+    
+                        PagoSeguro.create(
+                            {
+                                id_detalle_pago_cuenta: detalle_cuenta.id,
+                                monto: req.body.seguro,
+                                id_seguro: req.body.id_seguro,
+                                total: req.body.seguro,
+                                pagado: 0,
+                                por_pagar: req.body.seguro
+                            })
+                            .then((pagoseg)=>{
+                                res.status(200).send('El registro ha sido desactivado')
+                            }
+
+                            )
+                            .catch((errSeg)=>{
+                                console.error(errSeg)
+                            })
+                        
+                    }else{
+                        res.status(200).send('El registro ha sido desactivado')
+                    }
+
+                })
                 .catch(error=>{
                     console.log(error)
                     return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
                 })
+                
             })
             .catch(error => {
                 console.log(error)
