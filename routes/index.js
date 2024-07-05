@@ -328,6 +328,7 @@ module.exports = (app) => {
 
     //detalle_consumo_medicamentos
     router.post('/detalle_consumo_medicamentos/create', detalle_consumo_medicamentos.create);
+    router.get('/detalle_consumo_medicamentos/list/:id', detalle_consumo_medicamentos.get);
 
     //detalle_consumo_quirurgicos
     router.post('/detalle_consumo_quirugicos/create', detalle_consumo_quirugicos.create);
