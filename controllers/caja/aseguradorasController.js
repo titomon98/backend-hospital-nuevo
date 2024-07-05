@@ -6,18 +6,18 @@ const Aseguradora = db.aseguradoras;
 module.exports = {
     
     create(req, res) {
+        console.log("HOA")
         let form = req.body
-
+        console.log(req.body)
         const datos = {
             telefono: form.telefono,
-            nombre: req.nombre
+            nombre: form.nombre
         };
 
         Aseguradora.create(datos)
         .then(tipo => {
-            tipo => {
-                res.send(tipo);
-        }})   
+                return res.status(200).send(tipo);
+        })   
         .catch(error => {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });

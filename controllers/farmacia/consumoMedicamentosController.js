@@ -54,7 +54,7 @@ module.exports = {
             nuevaFecha.setHours(nuevaFecha.getHours() - horas);
             return nuevaFecha;
           };
-        console.log(req.body.form)
+          console.log(req.body.form)
         const cuentas = await Cuenta.findAll({
             where: {
                 id: req.body.form.id_cuenta
@@ -69,8 +69,11 @@ module.exports = {
             }
           }
           if (!cuentaSeleccionada) {
+       
             return res.status(400).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
           }
+          console.log("LUNA")
+
           const id_cuenta = cuentaSeleccionada.dataValues.id
           const numero_cuenta = cuentaSeleccionada.dataValues.numero
           let totalCuenta = cuentaSeleccionada.dataValues.total || 0
@@ -113,7 +116,6 @@ module.exports = {
         { where: { 
             id: form.id_medicine 
         }})
-
         Movimiento.create(datos)
         .then(tipo => {
             
