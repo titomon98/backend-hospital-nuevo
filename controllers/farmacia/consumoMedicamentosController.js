@@ -28,8 +28,8 @@ module.exports = {
             }
           }
           if (!cuentaSeleccionada) {
-            console.log("PEPE")
-            return res.status(404).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
+       
+            return res.status(400).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
           }
           console.log("LUNA")
 
