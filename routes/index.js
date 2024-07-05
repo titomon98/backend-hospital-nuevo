@@ -330,12 +330,15 @@ module.exports = (app) => {
 
     //detalle_consumo_medicamentos
     router.post('/detalle_consumo_medicamentos/create', detalle_consumo_medicamentos.create);
+    router.get('/detalle_consumo_medicamentos/list/:id', detalle_consumo_medicamentos.get);
 
     //detalle_consumo_quirurgicos
     router.post('/detalle_consumo_quirugicos/create', detalle_consumo_quirugicos.create);
+    router.get('/detalle_consumo_quirugicos/list/:id', detalle_consumo_quirugicos.get);
     
     //detalle_consumo_comunes
     router.post('/detalle_consumo_comun/create', detalle_consumo_comunes.create);
+    router.get('/detalle_consumo_comun/list/:id', detalle_consumo_comunes.get);
 
     //CARPETA GERENCIA
     //asuetos
