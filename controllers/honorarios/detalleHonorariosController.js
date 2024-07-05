@@ -48,7 +48,7 @@ module.exports = {
       }
     }
     if (!cuentaSeleccionada) {
-      return res.status(404).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
+      return res.status(400).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
     }
     const id_cuenta = cuentaSeleccionada.dataValues.id
     let totalCuenta = cuentaSeleccionada.dataValues.total || 0;
@@ -101,7 +101,7 @@ module.exports = {
     try {
       const detalle = await DetalleHonorarios.findByPk(id, { include: [Medico, Cuenta] });
       if (!detalle) {
-        return res.status(404).json({ mensaje: 'Detalle de honorario no encontrado' });
+        return res.status(400).json({ mensaje: 'Detalle de honorario no encontrado' });
       }
       res.status(200).send(detalle);
     } catch (error) {
@@ -134,7 +134,7 @@ module.exports = {
           data: rows
         });
       } else {
-        res.status(404).json({ msg: 'No se encontró ninguna cuenta para este expediente' });
+        res.status(400).json({ msg: 'No se encontró ninguna cuenta para este expediente' });
       }
     } catch (error) {
       console.error("Error en getSearch:", error);

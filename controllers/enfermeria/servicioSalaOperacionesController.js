@@ -25,7 +25,7 @@ const getPagination = (page, size) => {
 
 module.exports = {
   async create(req, res) {
-
+    console.log(req.body)
     const restarHoras = (fecha, horas) => {
       let nuevaFecha = new Date(fecha);
       nuevaFecha.setHours(nuevaFecha.getHours() - horas);
@@ -93,7 +93,7 @@ module.exports = {
       TotalCateg = parseFloat(categoriaselect.dataValues.precio)
     }
 
-    console.log(req.body)
+    console.log(req.body )
 
    let Oximetro = req.body.oximetro;
    let Cauterio = req.body.cauterio;
@@ -201,7 +201,7 @@ module.exports = {
     try {
       const detalle = await SalaOperaciones.findByPk(id, { include: [ Cuenta] });
       if (!detalle) {
-        return res.status(404).json({ mensaje: 'Detalle de honorario no encontrado' });
+        return res.status(400).json({ mensaje: 'Detalle de honorario no encontrado' });
       }
       res.status(200).send(detalle);
     } catch (error) {
@@ -233,7 +233,7 @@ module.exports = {
           data: rows
         });
       } else {
-        res.status(404).json({ msg: 'No se encontró ninguna cuenta para este expediente' });
+        res.status(400).json({ msg: 'No se encontró ninguna cuenta para este expediente' });
       }
     } catch (error) {
       console.error("Error en getSearch:", error);

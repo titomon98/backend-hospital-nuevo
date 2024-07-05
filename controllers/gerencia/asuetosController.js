@@ -36,7 +36,7 @@ async gitId (req, res) {
       if (asueto) {
         res.json(asueto);
       } else {
-        res.status(404).json({ error: 'Asueto no encontrado' });
+        res.status(400).json({ error: 'Asueto no encontrado' });
       }
     } catch (error) {
       console.error(error);
@@ -53,7 +53,7 @@ async update (req, res) {
       await asuetoActualizado.update({ nombre, fecha });
       res.json({ mensaje: 'Asueto actualizado' });
     } else {
-      res.status(404).json({ error: 'Asueto no encontrado' });
+      res.status(400).json({ error: 'Asueto no encontrado' });
     }
   } catch (error) {
     console.error(error);
@@ -69,7 +69,7 @@ async delete (req, res) {
     if (asuetoEliminado) {
       res.json({ mensaje: 'Asueto eliminado' });
     } else {
-      res.status(404).json({ error: 'Asueto no encontrado' });
+      res.status(400).json({ error: 'Asueto no encontrado' });
     }
   } catch (error) {
     console.error(error);
