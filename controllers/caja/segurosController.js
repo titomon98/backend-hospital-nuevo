@@ -103,7 +103,7 @@ module.exports = {
 
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Op.or]: [{ no_poliza: { [Op.like]: `%${busqueda}%` } }] } : {} ;
+        var condition = busqueda ? { [Sequelize.Op.or]: [{ no_poliza: { [Sequelize.Op.like]: `%${busqueda}%` } }, {solvente: {[Sequelize.Op.ne]:1}}] } : {solvente: {[Sequelize.Op.ne]:1}} ;
 
         Seguro.findAndCountAll({
             include: [
@@ -169,6 +169,20 @@ module.exports = {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
+    },
+
+    getAssuranceByExp (req, res) {
+        
+        console.log(req.query)
+        Seguro.findAll({ where: {id_expediente: req.query.id_expediente}})
+        .then(tipo => {
+          console.log(tipo)
+            res.status(200).send(tipo)
+        })
+            .catch(error => {
+                console.log(error)
+                res.status(400).send(error)
+            })
     },
 
 };

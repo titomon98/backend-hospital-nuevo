@@ -124,6 +124,8 @@ module.exports = (app) => {
     router.put('/seguros/deactivate', segurosController.deactivate);
     router.put('/seguros/paid', segurosController.paid);
     router.put('/seguros/debt', segurosController.debt);
+    router.get('/seguros/getByExp', segurosController.getAssuranceByExp);
+
 
 
     //Aseguradoras
