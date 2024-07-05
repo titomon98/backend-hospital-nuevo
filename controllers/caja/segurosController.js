@@ -61,7 +61,18 @@ module.exports = {
 
         var condition = busqueda ? { [Op.or]: [{ no_poliza: { [Op.like]: `%${busqueda}%` } }] } : {} ;
 
-        Seguro.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        Seguro.findAndCountAll({ 
+            include: [
+                {
+                    model: Expediente
+                },
+                {
+                    
+                    model: Aseguradora
+                }
+            ],
+            where: condition,order:[[`${criterio}`,`${order}`]],limit,offset
+        })
         .then(data => {
 
         console.log('data: '+JSON.stringify(data))
@@ -103,7 +114,7 @@ module.exports = {
 
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Sequelize.Op.or]: [{ no_poliza: { [Sequelize.Op.like]: `%${busqueda}%` } }, {solvente: {[Sequelize.Op.ne]:1}}] } : {solvente: {[Sequelize.Op.ne]:1}} ;
+        var condition = busqueda ? { [Sequelize.Op.or]: [{ no_poliza: { [Sequelize.Op.like]: `%${busqueda}%` } }, {solvente: {[Sequelize.Op.eq]:0}}] } : {solvente: {[Sequelize.Op.eq]:0}} ;
 
         Seguro.findAndCountAll({
             include: [
