@@ -603,7 +603,7 @@ module.exports = {
 
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Op.or]: [{ [criterio]: { [Op.like]: `%${busqueda}%` }, estado: 2 }] } : {estado: 2} ;
+        var condition = busqueda ? { [Op.or]: [{ [criterio]: { [Op.like]: `%${busqueda}%` }, estado:{[Op.or]:[7,8,9]} }] } : {estado:{[Op.or]:[7,8,9]}} ;
 
         Expediente.findAndCountAll({ where: condition, order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
