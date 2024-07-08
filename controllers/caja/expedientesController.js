@@ -287,13 +287,23 @@ module.exports = {
             'Contraindicado',
             'Referido'
         ]
-
+        console.log('DATATAOOOOOO---------------------------' + req.body.habitaciones + 'MAS DATOS COMPLETOPS------------------------' + req.body)
         Logs.create({
             id_expediente: req.body.id,
             origen: dat[req.body.estado_anterior],
             destino: dat[req.body.estado],
-            motivo: req.body.motivo
+            motivo: req.body.motivo,
+            id_habitacionDestino : parseInt(req.body.habitaciones)
         })
+
+        if (req.body.estado == 'Alta médica' || req.body.estado == 'egreso por fallecimiento' || req.body.estado == 'Contraindicado' || req.body.estado == 'Referido'){
+            Logs.finAll({
+                where: {
+                    id_expediente: req.body.id,
+                    
+                }
+            })
+        }
 
         Cuenta.findAll({
             where: { 
