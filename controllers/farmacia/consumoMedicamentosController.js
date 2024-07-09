@@ -33,7 +33,6 @@ module.exports = {
 
 
         const { limit, offset } = getPagination(page, size);
-
         var condition = { id_cuenta: { [Op.like]: `%${id}%` } };
 
         Movimiento.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
