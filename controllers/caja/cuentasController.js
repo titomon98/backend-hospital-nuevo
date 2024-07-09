@@ -24,6 +24,13 @@ module.exports = {
 
         Cuenta.create(datos)
         .then(tipo => {
+            Expediente.update({
+                solvente:0,
+            },{
+                where:{
+                    id:form.id_expediente
+                }
+            })
             return tipo.update({ numero: tipo.id });
         })
         .then(updatedTipo => {
@@ -111,7 +118,7 @@ module.exports = {
         const order=req.query.order;
         const { limit, offset } = getPagination(page, size);
 
-        var condition = {estado:1, '$Expediente.solvencia$': 1, [Op.or]:[{'$Expediente.estado$': 0},{'$Expediente.estado$': 6},{'$Expediente.estado$': 7},{'$Expediente.estado$': 8},{'$Expediente.estado$': 9}]}
+        var condition = {estado:1, '$Expediente.solvencia$': 0, [Op.or]:[{'$Expediente.estado$': 0},{'$Expediente.estado$': 6},{'$Expediente.estado$': 7},{'$Expediente.estado$': 8},{'$Expediente.estado$': 9}]}
         console.log(busqueda)
         Cuenta.findAndCountAll({ 
             include: [
@@ -203,7 +210,7 @@ module.exports = {
             .then((cuenta) =>{
                 console.log(cuenta)
                 Expediente.update(
-                    {solvente: 1},
+                    {solvente: 0},
                     {where: {
                         id: req.body.id_expediente
                     }}
