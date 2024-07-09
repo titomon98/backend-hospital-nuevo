@@ -44,7 +44,7 @@ module.exports = {
         type: Sequelize.DATE
       },
       id_expediente: {
-        allowNull: false,
+        allowNull: true,
         type: Sequelize.INTEGER,
         references: {
             model: 'expedientes',
