@@ -5,6 +5,7 @@ const Expediente = db.expedientes;
 const Cuenta = db.cuentas;
 const Habitaciones = db.habitaciones;
 const Logs = db.log_traslados;
+const DetalleCuentas = db.detalle_cuentas;
 const Op = db.Sequelize.Op;
 
 module.exports = {
@@ -287,24 +288,106 @@ module.exports = {
             'Contraindicado',
             'Referido'
         ]
+        const restarHoras = (fecha, horas) => {
+            let nuevaFecha = new Date(fecha);
+            nuevaFecha.setHours(nuevaFecha.getHours() - horas);
+            return nuevaFecha;
+          };
         console.log('DATATAOOOOOO---------------------------' + req.body.habitaciones + 'MAS DATOS COMPLETOPS------------------------' + req.body)
         Logs.create({
             id_expediente: req.body.id,
             origen: dat[req.body.estado_anterior],
             destino: dat[req.body.estado],
-            motivo: req.body.motivo,
-            id_habitacionDestino : parseInt(req.body.habitaciones)
+            motivo: dat[req.body.motivo],
+            id_habitacionDestino : parseInt(req.body.habitaciones),
+            createdAt: restarHoras(new Date(), 6),
+            updatedAt: restarHoras(new Date(), 6),
         })
 
-        if (req.body.estado == 'Alta médica' || req.body.estado == 'egreso por fallecimiento' || req.body.estado == 'Contraindicado' || req.body.estado == 'Referido'){
-            Logs.finAll({
-                where: {
-                    id_expediente: req.body.id,
-                    
-                }
-            })
-        }
+        const moment = require('moment');
+        if (dat[req.body.estado] === 'Alta médica' || dat[req.body.estado] === 'egreso por fallecimiento' || dat[req.body.estado] === 'Contraindicado' || dat[req.body.estado] === 'Referido' || dat[req.body.estado] === 'Desahuciado') {
+          console.log('-----------------------------------------------------------------------------INGRESO PARA COBRAR---------------------------------------------');
+        
+          Logs.findAll({
+            where: {
+              id_expediente: req.body.id,
+              destino: dat[req.body.estado_anterior],
+            },
+            order: [['createdAt', 'DESC']],
+            limit: 1,
+          })
+          .then(async logs => {
+            if (logs.length > 0) {
+              const registroMasReciente = logs[0];
+        
+              try {
+                // SELECCIONAR HABITACIÓN
+                const habitacionSeleccionada = await Habitaciones.findOne({
 
+                  where: { id: registroMasReciente.id_habitacionDestino },
+                });
+        console.log("----------------------------------------HABITACION SELECCIONADA---------------------------------------" + habitacionSeleccionada);
+                if (!habitacionSeleccionada) {
+                  console.log("----------------------------------------No se encontró habitación---------------------------------------");
+                  return res.status(4001).json({ msg: 'No se encontró habitación' })
+                }
+                const precioAmbulatorio = parseFloat(habitacionSeleccionada.costo_ambulatorio)
+                const precioDiario = parseFloat(habitacionSeleccionada.costo_diario)
+                const cuentas = await Cuenta.findAll({
+                  where: { id_expediente: req.body.id, estado: 1 },
+                  order: [['createdAt', 'DESC']],
+                });
+        
+                if (cuentas.length === 0) {
+                  return res.status(4002).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
+                }
+                const cuentaSeleccionada = cuentas[0]
+                console.log("Cuenta encontrada: ------------------------", cuentaSeleccionada);
+        
+                // CALCULAR EL TOTAL A PAGAR POR UTILIZAR LA HABITACIÓN
+                const fechaHora1 = moment(registroMasReciente.createdAt)
+                const fechaHora2 = moment()
+                const diferenciaEnMilisegundos = fechaHora2.diff(fechaHora1)
+                const diferenciaEnHoras = moment.duration(diferenciaEnMilisegundos).asHours()
+                console.log(" ------------------------ FECHA INGRESO " + fechaHora1 + " ----------------FECHA EGRESO------------------ " +fechaHora2);
+                
+                console.log(" ------------------------ TOTAL HORAS " + diferenciaEnHoras.toFixed(2) + "----------------------------------");
+                if (diferenciaEnHoras.toFixed(2) <= 6) {
+                    console.log(" ------------------------ENTRANDO AL IF ---------------------------");
+                  await DetalleCuentas.create({
+                    id_cuenta: cuentaSeleccionada.id,
+                    tipo: "Pago por servicio de habitación",
+                    id_externo: parseInt(registroMasReciente.id_habitacionDestino),
+                    subtotal: precioAmbulatorio,
+                  });
+                  await cuentaSeleccionada.update({ total: precioAmbulatorio});
+
+                } else {
+                    console.log(" ------------------------ENTRANDO AL ELSE ---------------------------");
+                    const diasCompletos = Math.ceil(diferenciaEnHoras / 24)
+                    const subtotal = precioDiario * diasCompletos
+                    await DetalleCuentas.create({
+                        id_cuenta: cuentaSeleccionada.id,
+                        tipo: "Pago por servicio de habitación",
+                        id_externo: parseInt(registroMasReciente.id_habitacionDestino),
+                        subtotal: subtotal,
+                    });
+                    await cuentaSeleccionada.update({ total: subtotal});
+                }
+              } catch (err) {
+                console.error('Error al procesar la solicitud:', err);
+                return res.status(500).json({ msg: 'Error interno del servidor' });
+              }
+            } else {
+              console.log('----------------------------------No se encontró un log que coincida con los datos-------------------------------------');
+            }
+          })
+          .catch(err => {
+            console.error('Error al obtener logs:', err);
+            return res.status(4003).json({ msg: 'No se encontró un log que coincida con los datos' });
+          });
+        }
+        
         Cuenta.findAll({
             where: { 
                 id_expediente:req.body.id,
