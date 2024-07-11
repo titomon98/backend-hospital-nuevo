@@ -220,7 +220,7 @@ module.exports = {
             'Quirófano',
             'Cuidados Intensivos',
             'Emergencias',
-            'Desahuciado'
+            'Contraindicado'
         ]
 
         Logs.create({
