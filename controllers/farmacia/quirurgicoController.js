@@ -161,7 +161,7 @@ module.exports = {
         });
     },
     get (req, res) {
-        Quirurgico.findAll({attributes: ['id', 'nombre', 'existencia_actual'], 
+        Quirurgico.findAll({attributes: ['id', 'nombre', 'existencia_actual', 'precio_venta'], 
             where: {
                 existencia_actual:{
                     [Op.gt]:0
@@ -180,8 +180,8 @@ module.exports = {
         var busqueda = req.query.search;
         var condition = busqueda ? {
             [Op.or]: [{ nombre: { [Op.like]: `%${busqueda}%` }}],
-            [Op.and]: [{ estado: 1 }, { factura: 1 }]
-        } : [{ estado: 1 }, { factura: 1 }];
+            [Op.and]: [{inventariado: 'INVENTARIADO'},{ estado: 1 }, { factura: 1 }]
+        } : [{inventariado: 'INVENTARIADO'}, { estado: 1 }, { factura: 1 }];
         Quirurgico.findAll({
             include: [
                 {

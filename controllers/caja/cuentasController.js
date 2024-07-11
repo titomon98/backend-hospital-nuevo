@@ -4,6 +4,8 @@ const db = require("../../models");
 const Cuenta = db.cuentas;
 const Expediente = db.expedientes;
 const detallePagoCuentas = db.detalle_pago_cuentas;
+const Seguro = db.seguros;
+const PagoSeguro = db.pago_seguros;
 const Op = db.Sequelize.Op;
 
 module.exports = {
@@ -22,6 +24,13 @@ module.exports = {
 
         Cuenta.create(datos)
         .then(tipo => {
+            /* Expediente.update({
+                solvente:1,
+            },{
+                where:{
+                    id:form.id_expediente
+                }
+            }) */
             return tipo.update({ numero: tipo.id });
         })
         .then(updatedTipo => {
@@ -109,7 +118,7 @@ module.exports = {
         const order=req.query.order;
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Op.or]: [{ '$Expediente.nombres$': { [Op.like]: `%${busqueda}%` }, estado:1, '$Expediente.solvencia$': 0, [Op.or]:[{'$Expediente.estado$': 2},{'$Expediente.estado$': 6},{'$Expediente.estado$': 0}]}] } : {estado:1, '$Expediente.solvencia$': 0, [Op.or]:[{'$Expediente.estado$': 2},{'$Expediente.estado$': 6},{'$Expediente.estado$': 0}]} ;
+        var condition = {estado:1, '$Expediente.solvencia$': 1, [Op.or]:[{'$Expediente.estado$': 0},{'$Expediente.estado$': 6},{'$Expediente.estado$': 7},{'$Expediente.estado$': 8},{'$Expediente.estado$': 9}]}
         console.log(busqueda)
         Cuenta.findAndCountAll({ 
             include: [
@@ -187,7 +196,7 @@ module.exports = {
 
     deactivate (req, res) {
         if (req.body.tipo === 'finiquito'){
-
+            console.log("HOLA")
             Cuenta.update(
                 { 
                     estado: 0,
@@ -198,7 +207,14 @@ module.exports = {
                     id: req.body.id
                 } }
             )
-            .then(cuenta =>{
+            .then((cuenta) =>{
+                console.log(cuenta)
+                Expediente.update(
+                    {solvente: 0},
+                    {where: {
+                        id: req.body.id_expediente
+                    }}
+                ).catch((error)=>{console.error(error)})
                 detallePagoCuentas.create(
                     {
                         efectivo: req.body.efectivo,
@@ -211,11 +227,56 @@ module.exports = {
                         tipo: req.body.tipo,
                         id_cuenta: req.body.id
                     })
-                .then(detalle_cuenta =>res.status(200).send('El registro ha sido desactivado'))
+                .then(detalle_cuenta =>{
+                    console.log(detalle_cuenta)
+                    console.log(req.body.seguro)
+                    console.log(req.body.id_seguro)
+                    if ( parseInt(req.body.seguro)>0){
+                    
+                        Seguro.update(
+                            { 
+                                solvente: 0
+                            },
+                            { where: { 
+                                id: req.body.id_seguro
+                            } }
+                        )
+                        .then((seg)=>{
+                            console.log(seg)
+                        })
+                        .catch((errSeg)=>{
+                            console.log("---------------pagoSeguros")
+                            console.error(errSeg)
+                        })
+    
+                        PagoSeguro.create(
+                            {
+                                id_detalle_pago_cuenta: detalle_cuenta.id,
+                                monto: req.body.seguro,
+                                id_seguro: req.body.id_seguro,
+                                total: req.body.seguro,
+                                pagado: 0,
+                                por_pagar: req.body.seguro
+                            })
+                            .then((pagoseg)=>{
+                                res.status(200).send('El registro ha sido desactivado')
+                            }
+
+                            )
+                            .catch((errSeg)=>{
+                                console.error(errSeg)
+                            })
+                        
+                    }else{
+                        res.status(200).send('El registro ha sido desactivado')
+                    }
+
+                })
                 .catch(error=>{
                     console.log(error)
                     return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
                 })
+                
             })
             .catch(error => {
                 console.log(error)
@@ -305,15 +366,26 @@ module.exports = {
         const idExpediente = parseInt(req.query.search, 10)// Obtener el id_expediente de la consulta
         console.log("ID Expediente recibido:", idExpediente); 
         try {
-          const cuenta = await Cuenta.findOne({
-            where: { id_expediente: idExpediente }, // Buscar por id_expediente
+          const cuenta = await Cuenta.findAll({
+            where: { id_expediente: idExpediente },
+            order: [['createdAt', 'DESC']], // Buscar por id_expediente
             include: [{ model: db.expedientes, as: 'expediente' }] 
           });
-        console.log("Cuenta encontrada:", cuenta);
-          if (cuenta) {
-            res.send(cuenta); // Enviar la cuenta encontrada
+          let cuentaSeleccionada = null;
+          for (const cuentas of cuenta) {
+            if (cuentas.dataValues.estado == 1) {
+              cuentaSeleccionada = cuentas;
+              break;
+            }
+          }
+          if (!cuentaSeleccionada) {
+            return res.status(400).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
+          }
+        console.log("Cuenta encontrada:", cuentaSeleccionada);
+          if (cuentaSeleccionada) {
+            res.send(cuentaSeleccionada); // Enviar la cuenta encontrada
           } else {
-            res.status(404).json({ msg: 'No se encontró ninguna cuenta para este expediente' });
+            res.status(400).json({ msg: 'No se encontró ninguna cuenta para este expediente' });
           }
         } catch (error) {
             console.error("Error en getSearch:", error);

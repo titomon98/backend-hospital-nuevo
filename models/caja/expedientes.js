@@ -117,6 +117,18 @@ module.exports = (sequelize, DataTypes) => {
     telefono_conyuge: {
       type: DataTypes.STRING
     },
+    fecha_ingreso_reciente: {
+      type: DataTypes.DATEONLY,
+      allowNull: true
+    },
+    hora_ingreso_reciente: {
+      type: DataTypes.TIME,
+      allowNull: true
+    },
+    id_medico: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    }
   }, {
     sequelize,
     modelName: 'expedientes',

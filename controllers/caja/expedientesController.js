@@ -5,6 +5,7 @@ const Expediente = db.expedientes;
 const Cuenta = db.cuentas;
 const Habitaciones = db.habitaciones;
 const Logs = db.log_traslados;
+const DetalleCuentas = db.detalle_cuentas;
 const Op = db.Sequelize.Op;
 
 module.exports = {
@@ -48,7 +49,9 @@ module.exports = {
             direccion_encargado: form.direccion_encargado,
             nombre_conyuge: form.nombre_conyuge,
             direccion_conyuge: form.direccion_conyuge,
-            telefono_conyuge: form.telefono_conyuge
+            telefono_conyuge: form.telefono_conyuge,
+            fecha_ingreso_reciente: form.fecha,
+            hora_ingreso_reciente: form.hora,
         };
 
         Expediente.create(datos)
@@ -79,12 +82,54 @@ module.exports = {
             resto = year + '-' + idFormateado
             Expediente.update(
                 {
-                    expediente: resto,
+                    expediente: resto
                 },
                 { where: { 
                     id: expediente_id
                 }}
             )
+            res.send(expediente);
+        })
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+                    
+    },
+
+    createFromEnfermeria(req, res) {
+        let form = req.body.form
+        const today = new Date();
+        let status = 0
+        if (form.selectedOption == 'hospi') {
+            status = 1
+        } else if (form.selectedOption == 'emergencia') {
+            status = 5
+        } else if (form.selectedOption == 'quirofano') {
+            status = 3
+        } else if (form.selectedOption == 'intensivo') {
+            status = 4
+        }
+        const datos = {
+            nombres: 'PENDIENTE',
+            apellidos: 'PENDIENTE',
+            expediente: 'PENDIENTE DE REVISIÓN',
+            primer_ingreso: today,
+            fecha_ingreso_reciente: form.fecha,
+            hora_ingreso_reciente: form.hora,
+            nacimiento: '0001-01-01',
+            cui: 0,
+            telefono: 'PENDIENTE',
+            direccion: 'PENDIENTE',
+            nombre_encargado: 'PENDIENTE',
+            contacto_encargado: 'PENDIENTE',
+            cui_encargado: 'PENDIENTE',
+            direccion_encargado: 'PENDIENTE',
+            estado: 10
+        };
+
+        Expediente.create(datos)
+        .then(expediente => {
             Habitaciones.update(
                 {
                     estado: 2,
@@ -102,7 +147,6 @@ module.exports = {
                     
     },
 
- 
     list(req, res) {
         const getPagingData = (data, page, limit) => {
             const { count: totalItems, rows: referido } = data;
@@ -158,7 +202,132 @@ module.exports = {
 
     update (req, res) {
         let form = req.body.form
-        Expediente.update(
+        const today = new Date();
+        if(form.expediente==='PENDIENTE DE REVISIÓN'){
+            Expediente.findAndCountAll({
+                where: {
+                    cui: {
+                        [Op.eq]: form.cui,
+                    },
+                    id: {
+                        [Op.notLike]: form.id
+                    }
+                }
+            })
+            .then(result => {
+                if(result.count >= 1){
+                    Expediente.update(
+                    { 
+                        nombres: form.nombre,
+                        apellidos: form.apellidos,
+                        primer_ingreso: today,
+                        casada: form.casada,
+                        nacimiento: form.nacimiento,
+                        cui: form.cui,
+                        nacionalidad: form.nacionalidad,
+                        telefono: form.telefono,
+                        direccion: form.direccion,
+                        genero: form.generos,
+                        nombre_encargado: form.nombre_encargado,
+                        contacto_encargado: form.contacto_encargado,
+                        cui_encargado: form.cui_encargado,
+                        parentesco_encargado: form.parentesco_encargado,
+                        estado: 1, 
+                        estado_civil: form.estado_civil,
+                        profesion: form.profesion,
+                        nombre_padre: form.nombre_padre,
+                        nombre_madre: form.nombre_madre,
+                        lugar_nacimiento: form.lugar_nacimiento,
+                        estado_civil_encargado: form.estado_civil_encargado,
+                        profesion_encargado: form.profesion_encargado,
+                        direccion_encargado: form.direccion_encargado,
+                        nombre_conyuge: form.nombre_conyuge,
+                        direccion_conyuge: form.direccion_conyuge,
+                        telefono_conyuge: form.telefono_conyuge
+                    },
+                    { where: { 
+                        id: result.rows[0].dataValues.id
+                    } }).then(()=>{
+                        Expediente.destroy({
+                            where: {
+                                id: form.id
+                            }
+                        }).then(res.send(form)).catch(error => console.log(error))
+                        
+                    }).catch(error => console.log(error))
+                }
+                else{
+                    Expediente.update(
+                    { 
+                        nombres: form.nombre,
+                        apellidos: form.apellidos,
+                        expediente: form.expediente,
+                        primer_ingreso: today,
+                        casada: form.casada,
+                        nacimiento: form.nacimiento,
+                        cui: form.cui,
+                        nacionalidad: form.nacionalidad,
+                        telefono: form.telefono,
+                        direccion: form.direccion,
+                        genero: form.generos,
+                        nombre_encargado: form.nombre_encargado,
+                        contacto_encargado: form.contacto_encargado,
+                        cui_encargado: form.cui_encargado,
+                        parentesco_encargado: form.parentesco_encargado,
+                        estado: 1, 
+                        estado_civil: form.estado_civil,
+                        profesion: form.profesion,
+                        nombre_padre: form.nombre_padre,
+                        nombre_madre: form.nombre_madre,
+                        lugar_nacimiento: form.lugar_nacimiento,
+                        estado_civil_encargado: form.estado_civil_encargado,
+                        profesion_encargado: form.profesion_encargado,
+                        direccion_encargado: form.direccion_encargado,
+                        nombre_conyuge: form.nombre_conyuge,
+                        direccion_conyuge: form.direccion_conyuge,
+                        telefono_conyuge: form.telefono_conyuge
+                    },
+                    { where: { 
+                        id: form.id 
+                    } }).then(()=>{
+                        const year = today.getFullYear();
+                        let resto
+                        var idFormateado = String(form.id).padStart(4, '0');
+                        resto = year + '-' + idFormateado
+                        Expediente.update(
+                            {
+                                expediente: resto
+                            },
+                            { where: { 
+                                id: form.id 
+                            }}
+                        ).then(()=>{
+                            let datos_cuenta = {
+                                numero: 1,
+                                fecha_ingreso: today,
+                                motivo: form.motivo,
+                                descripcion: null,
+                                otros: null,
+                                total: 0.0,
+                                id_expediente: form.id,
+                                estado: 1
+                            }
+                            Cuenta.create(datos_cuenta)
+                            .then((resultCuenta_create)=>{
+                                res.send(form)
+                            })
+                            .catch(err=>
+                                console.log(err)
+                            )
+
+                        }).catch(error => console.log(error))
+                    }).catch(error => console.log(error))
+                }
+            })
+            .catch(error => console.log(error))
+        }
+        else {
+            Expediente.update(
             { 
                 nombres: form.nombre,
                 apellidos: form.apellidos,
@@ -191,14 +360,30 @@ module.exports = {
             { where: { 
                 id: form.id 
             } }
+            )
+            .then(marca => res.status(200).send('El registro ha sido actualizado'))
+            .catch(error => {
+                console.log(error)
+                return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+            });
+        }
+    },
+    updateMedico (req, res) {
+        console.log(req.body.form)
+        Expediente.update(
+            { id_medico: req.body.form.assignedDoctor },
+            { where: { 
+                expediente: req.body.form.expediente 
+            } }
         )
-        .then(marca => res.status(200).send('El registro ha sido actualizado'))
+        .then(marca => {
+            res.status(200).send('Se ha asignado al médico correctamente')
+        })
         .catch(error => {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
-
     activate (req, res) {
         Expediente.update(
             { estado: 1 },
@@ -220,15 +405,111 @@ module.exports = {
             'Quirófano',
             'Cuidados Intensivos',
             'Emergencias',
-            'Contraindicado'
+            'Desahuciado',
+            'Alta médica',
+            'Contraindicado',
+            'Referido'
         ]
-
+        const restarHoras = (fecha, horas) => {
+            let nuevaFecha = new Date(fecha);
+            nuevaFecha.setHours(nuevaFecha.getHours() - horas);
+            return nuevaFecha;
+          };
+        console.log('DATATAOOOOOO---------------------------' + req.body.habitaciones + 'MAS DATOS COMPLETOPS------------------------' + req.body)
         Logs.create({
             id_expediente: req.body.id,
             origen: dat[req.body.estado_anterior],
-            destino: dat[req.body.estado]
+            destino: dat[req.body.estado],
+            motivo: dat[req.body.motivo],
+            id_habitacionDestino : parseInt(req.body.habitaciones),
+            createdAt: restarHoras(new Date(), 6),
+            updatedAt: restarHoras(new Date(), 6),
         })
 
+        const moment = require('moment');
+        if (dat[req.body.estado] === 'Alta médica' || dat[req.body.estado] === 'egreso por fallecimiento' || dat[req.body.estado] === 'Contraindicado' || dat[req.body.estado] === 'Referido' || dat[req.body.estado] === 'Desahuciado') {
+          console.log('-----------------------------------------------------------------------------INGRESO PARA COBRAR---------------------------------------------');
+        
+          Logs.findAll({
+            where: {
+              id_expediente: req.body.id,
+              destino: dat[req.body.estado_anterior],
+            },
+            order: [['createdAt', 'DESC']],
+            limit: 1,
+          })
+          .then(async logs => {
+            if (logs.length > 0) {
+              const registroMasReciente = logs[0];
+        
+              try {
+                // SELECCIONAR HABITACIÓN
+                const habitacionSeleccionada = await Habitaciones.findOne({
+
+                  where: { id: registroMasReciente.id_habitacionDestino },
+                });
+        console.log("----------------------------------------HABITACION SELECCIONADA---------------------------------------" + habitacionSeleccionada);
+                if (!habitacionSeleccionada) {
+                  console.log("----------------------------------------No se encontró habitación---------------------------------------");
+                  return res.status(4001).json({ msg: 'No se encontró habitación' })
+                }
+                const precioAmbulatorio = parseFloat(habitacionSeleccionada.costo_ambulatorio)
+                const precioDiario = parseFloat(habitacionSeleccionada.costo_diario)
+                const cuentas = await Cuenta.findAll({
+                  where: { id_expediente: req.body.id, estado: 1 },
+                  order: [['createdAt', 'DESC']],
+                });
+        
+                if (cuentas.length === 0) {
+                  return res.status(4002).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
+                }
+                const cuentaSeleccionada = cuentas[0]
+                console.log("Cuenta encontrada: ------------------------", cuentaSeleccionada);
+        
+                // CALCULAR EL TOTAL A PAGAR POR UTILIZAR LA HABITACIÓN
+                const fechaHora1 = moment(registroMasReciente.createdAt)
+                const fechaHora2 = moment()
+                const diferenciaEnMilisegundos = fechaHora2.diff(fechaHora1)
+                const diferenciaEnHoras = moment.duration(diferenciaEnMilisegundos).asHours()
+                console.log(" ------------------------ FECHA INGRESO " + fechaHora1 + " ----------------FECHA EGRESO------------------ " +fechaHora2);
+                
+                console.log(" ------------------------ TOTAL HORAS " + diferenciaEnHoras.toFixed(2) + "----------------------------------");
+                if (diferenciaEnHoras.toFixed(2) <= 6) {
+                    console.log(" ------------------------ENTRANDO AL IF ---------------------------");
+                  await DetalleCuentas.create({
+                    id_cuenta: cuentaSeleccionada.id,
+                    tipo: "Pago por servicio de habitación",
+                    id_externo: parseInt(registroMasReciente.id_habitacionDestino),
+                    subtotal: precioAmbulatorio,
+                  });
+                  await cuentaSeleccionada.update({ total: precioAmbulatorio});
+
+                } else {
+                    console.log(" ------------------------ENTRANDO AL ELSE ---------------------------");
+                    const diasCompletos = Math.ceil(diferenciaEnHoras / 24)
+                    const subtotal = precioDiario * diasCompletos
+                    await DetalleCuentas.create({
+                        id_cuenta: cuentaSeleccionada.id,
+                        tipo: "Pago por servicio de habitación",
+                        id_externo: parseInt(registroMasReciente.id_habitacionDestino),
+                        subtotal: subtotal,
+                    });
+                    await cuentaSeleccionada.update({ total: subtotal});
+                }
+              } catch (err) {
+                console.error('Error al procesar la solicitud:', err);
+                return res.status(500).json({ msg: 'Error interno del servidor' });
+              }
+            } else {
+              console.log('----------------------------------No se encontró un log que coincida con los datos-------------------------------------');
+            }
+          })
+          .catch(err => {
+            console.error('Error al obtener logs:', err);
+            return res.status(4003).json({ msg: 'No se encontró un log que coincida con los datos' });
+          });
+        }
+        
         Cuenta.findAll({
             where: { 
                 id_expediente:req.body.id,
@@ -527,7 +808,7 @@ module.exports = {
 
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Op.or]: [{ [criterio]: { [Op.like]: `%${busqueda}%` }, estado: 2 }] } : {estado: 2} ;
+        var condition = busqueda ? { [Op.or]: [{ [criterio]: { [Op.like]: `%${busqueda}%` }, estado:{[Op.or]:[7,8,9]} }] } : {estado:{[Op.or]:[7,8,9]}} ;
 
         Expediente.findAndCountAll({ where: condition, order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {

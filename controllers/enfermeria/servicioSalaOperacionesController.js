@@ -4,6 +4,8 @@ const Sequelize = require('sequelize');
 const db = require('../../models');
 const SalaOperaciones = db.servicio_sala_operaciones; // Asegúrate de que el nombre es correcto
 const Cuenta = db.cuentas;
+const Categoria = db.categoria_sala_operaciones;
+const Servicios = db.servicios;
 const Op = db.Sequelize.Op;
 
 
@@ -23,9 +25,9 @@ const getPagination = (page, size) => {
 
 module.exports = {
   async create(req, res) {
-
+    console.log(req.body)
     const restarHoras = (fecha, horas) => {
-      let nuevaFecha = new Date(fecha); // Crear una nueva instancia de fecha
+      let nuevaFecha = new Date(fecha);
       nuevaFecha.setHours(nuevaFecha.getHours() - horas);
       return nuevaFecha;
     };
@@ -43,18 +45,117 @@ module.exports = {
       }
     }
     if (!cuentaSeleccionada) {
-      return res.status(404).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
+      return res.status(401).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
     }
     const id_cuenta = cuentaSeleccionada.dataValues.id
     const numero_cuenta = cuentaSeleccionada.dataValues.numero
     let totalCuenta = cuentaSeleccionada.dataValues.total || 0
-    let Total = (parseFloat(req.body.precio) * parseFloat(req.body.horas))
+
+    let id_categoria = null ;
+    if (req.body.categoria == 'Cirugia menor'){
+      id_categoria = 1
+    } else if (req.body.categoria == 'Cirugia media'){
+      id_categoria = 2
+    } else if (req.body.categoria == 'Cirugia mayor'){
+      id_categoria = 3
+    } else if (req.body.categoria == 'Parto'){
+      id_categoria = 4
+    } else if (req.body.categoria == 'Legrado'){
+      id_categoria = 5
+    }
+
+    const categorias = await Categoria.findAll({
+      where: {
+        id : id_categoria
+      }
+    })
+    let categoriaselect = null;
+    for (const categoria of categorias) {
+      if (categoria.dataValues.estado == 1) {
+        categoriaselect = categoria;
+        break;
+      }
+    }
+    if (!categoriaselect) {
+      return res.status(402).json({ msg: 'La cuenta seleccionada esta desactivada o no se encuentra registrada' });
+    }
+    let hora = parseFloat(req.body.horas)
+    let minuto = parseFloat(req.body.minutos)
+    let TotalCateg = null;
+
+    if (hora == 2 && minuto > 30 ) {
+      TotalCateg = (parseFloat(categoriaselect.dataValues.precio) + parseFloat(categoriaselect.dataValues.cobro_extra))
+    } else if (hora > 2 ){
+      let multi = (hora - 2)
+      let cobros_extra = (multi * parseFloat(categoriaselect.dataValues.cobro_extra))
+      TotalCateg = (parseFloat(categoriaselect.dataValues.precio) + cobros_extra)
+    } else if (hora <=2 && minuto <=30){
+      TotalCateg = parseFloat(categoriaselect.dataValues.precio)
+    }
+
+    console.log(req.body )
+
+   let Oximetro = req.body.oximetro;
+   let Cauterio = req.body.cauterio;
+
+    console.log('DATOS ---------------- ' + Oximetro + '-----------' + Cauterio)
+
+    let PrecioServicios = 0;
+    let precioOximetro = 0;
+    let precioCauterio = 0;
+
+    async function findServicio(descripcion, estado) {
+      const servicios = await Servicios.findAll({
+        where: {
+          descripcion: {
+            [Op.like]: `%${descripcion}%`, // Case-insensitive search
+          },
+          estado: estado,
+        },
+      });
+      return servicios;
+    }
+
+    if (Oximetro == true && Cauterio == true){
+      const oximetroService = await findServicio('oximetro', 1); 
+      const cauterioService = await findServicio('cauterio', 1); 
+      if (oximetroService) {
+          precioOximetro = parseFloat(oximetroService[0].precio);
+        }
+      if (cauterioService) {
+          precioCauterio = parseFloat(cauterioService[0].precio);
+        }
+
+        console.log('PRECIOS ---------------- ' + cauterioService[0].precio + ' ----------- ' + oximetroService[0].precio)
+
+        PrecioServicios = precioOximetro + precioCauterio; //FIN IF
+    } else if (Oximetro == true){
+      const oximetroService = await findServicio('oximetro', 1);
+      if (oximetroService) {
+        precioOximetro = parseFloat(oximetroService[0].precio);;
+      }
+      PrecioServicios = precioOximetro;                     //FIN IF
+    } else if (Cauterio == true){
+      const cauterioService = await findServicio('cauterio', 1);
+      if (cauterioService) {
+        precioCauterio = parseFloat(cauterioService[0].precio);;
+      }
+      PrecioServicios = precioCauterio;                       //FIN IF 
+    } else if (Oximetro == false && Cauterio == false){
+      PrecioServicios = 0;
+      precioOximetro = 0;
+      precioCauterio = 0;
+    }
+
+    console.log('DATOS ---------------- ' + PrecioServicios + '-----------' + TotalCateg)
+
+    let Total = (parseFloat(TotalCateg) + parseFloat(PrecioServicios));
     let nuevoTotal = (parseFloat(totalCuenta) + parseFloat(Total))
 
     const datos = {
       descripcion: `Sele sumo el total del uso de la sala de operaciones a la cuenta (${numero_cuenta})`,
-      precio: req.body.precio,
-      horas: req.body.horas,
+      id_categoria: categoriaselect.dataValues.id,
+      horas: req.body.horas + ':' + req.body.minutos,
       total: Total,
       id_cuenta: id_cuenta,
       createdAt: restarHoras(new Date(), 6),
@@ -100,7 +201,7 @@ module.exports = {
     try {
       const detalle = await SalaOperaciones.findByPk(id, { include: [ Cuenta] });
       if (!detalle) {
-        return res.status(404).json({ mensaje: 'Detalle de honorario no encontrado' });
+        return res.status(400).json({ mensaje: 'Detalle de honorario no encontrado' });
       }
       res.status(200).send(detalle);
     } catch (error) {
@@ -132,7 +233,7 @@ module.exports = {
           data: rows
         });
       } else {
-        res.status(404).json({ msg: 'No se encontró ninguna cuenta para este expediente' });
+        res.status(400).json({ msg: 'No se encontró ninguna cuenta para este expediente' });
       }
     } catch (error) {
       console.error("Error en getSearch:", error);

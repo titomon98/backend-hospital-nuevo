@@ -19,13 +19,18 @@ const authController = require('../controllers/authController');
 const contratosController = require('../controllers/caja/contratosController')
 const consumosController = require('../controllers/caja/consumosController')
 const cuentasController = require('../controllers/caja/cuentasController')
+const detallePagoSegurosController = require('../controllers/caja/pagoSegurosController.js')
 const expedientesController = require('../controllers/caja/expedientesController')
+const aseguradorasController = require('../controllers/caja/aseguradorasController')
+const segurosController = require('../controllers/caja/segurosController')
+
 
 //CARPETA DE ENFERMERIA
 const habitacionesController = require('../controllers/enfermeria/habitacionesController')
 const pedidosController = require('../controllers/enfermeria/pedidosController')
 const detallePedidosController = require('../controllers/enfermeria/detallePedidosController')
 const servicioSalaOperacionesController = require('../controllers/enfermeria/servicioSalaOperacionesController')
+const CategoriaSalaOperacionesController = require('../controllers/enfermeria/categoriaSalaOperacionesController')
 
 //CARPETA DE FARMACIA
 const alertasController = require('../controllers/farmacia/alertasController')
@@ -111,15 +116,33 @@ module.exports = (app) => {
     router.put('/cuentas/activate', cuentasController.activate);
     router.put('/cuentas/deactivate', cuentasController.deactivate);
     router.get('/cuentas/getSearch', cuentasController.getSearch);
+    
+    //Seguros
+    router.post('/seguros/create', segurosController.create);
+    router.get('/seguros/list', segurosController.list);
+    router.get('/seguros/debtList', segurosController.assurancePayList);
+    router.put('/seguros/deactivate', segurosController.deactivate);
+    router.put('/seguros/paid', segurosController.paid);
+    router.put('/seguros/debt', segurosController.debt);
+    router.get('/seguros/getByExp', segurosController.getAssuranceByExp);
+
+
+
+    //Aseguradoras
+    router.post('/aseguradoras/create', aseguradorasController.create);
+    router.get('/aseguradoras/get', aseguradorasController.get);
 
     //expedientes
     router.get('/expedientes/list', expedientesController.list);
     router.post('/expedientes/create', expedientesController.create);
+    router.post('/expedientes/createEnfermeria', expedientesController.createFromEnfermeria);
     router.put('/expedientes/update', expedientesController.update);
     router.put('/expedientes/changeState', expedientesController.changeState);
+    router.put('/expedientes/assignDoctor', expedientesController.updateMedico);
     router.put('/expedientes/activate', expedientesController.activate);
     router.put('/expedientes/deactivate', expedientesController.deactivate);
-    router.get('/expedientes/getSearch', expedientesController.getSearch);
+    router.get('/expedientes/getSearch', expedientesController.getSearch)
+    router.get('/expedientes/getAll', expedientesController.get);
     router.get('/expedientes/listQuirofano', expedientesController.listQuirofano);
     router.get('/expedientes/listEmergencia', expedientesController.listEmergencia);
     router.get('/expedientes/listIntensivo', expedientesController.listIntensivo);
@@ -153,6 +176,16 @@ module.exports = (app) => {
     router.put('/servicios/activate', serviciosController.activate);
     router.put('/servicios/deactivate', serviciosController.deactivate);
     router.get('/servicios/get', serviciosController.get);
+
+    //categoria sala opereciones
+    router.post('/Categorias_Sala_Operaciones/create', CategoriaSalaOperacionesController.create);
+    router.get('/Categorias_Sala_Operaciones/list', CategoriaSalaOperacionesController.list);
+    router.put('/Categorias_Sala_Operaciones/update', CategoriaSalaOperacionesController.update);
+    router.put('/Categorias_Sala_Operaciones/activate', CategoriaSalaOperacionesController.activate);
+    router.put('/Categorias_Sala_Operaciones/deactivate', CategoriaSalaOperacionesController.deactivate);
+    router.get('/Categorias_Sala_Operaciones/get', CategoriaSalaOperacionesController.get);
+    router.get('/Categorias_Sala_Operaciones/get/:id', CategoriaSalaOperacionesController.getId);
+    router.get('/Categorias_Sala_Operaciones/getSearch', CategoriaSalaOperacionesController.getSearch);
 
     //pedidos
     router.get('/pedidos/list', pedidosController.list);
@@ -223,6 +256,7 @@ module.exports = (app) => {
 
     //medicamentos
     router.get('/medicamentos/list', medicamentosController.list);
+    router.get('/medicamentos/list2', medicamentosController.get);
     router.post('/medicamentos/create', medicamentosController.create);
     router.put('/medicamentos/update', medicamentosController.update);
     router.put('/medicamentos/activate', medicamentosController.activate);
@@ -297,12 +331,15 @@ module.exports = (app) => {
 
     //detalle_consumo_medicamentos
     router.post('/detalle_consumo_medicamentos/create', detalle_consumo_medicamentos.create);
+    router.get('/detalle_consumo_medicamentos/list/:id', detalle_consumo_medicamentos.get);
 
     //detalle_consumo_quirurgicos
     router.post('/detalle_consumo_quirugicos/create', detalle_consumo_quirugicos.create);
+    router.get('/detalle_consumo_quirugicos/list/:id', detalle_consumo_quirugicos.get);
     
     //detalle_consumo_comunes
     router.post('/detalle_consumo_comun/create', detalle_consumo_comunes.create);
+    router.get('/detalle_consumo_comun/list/:id', detalle_consumo_comunes.get);
 
     //CARPETA GERENCIA
     //asuetos

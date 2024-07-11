@@ -1,12 +1,53 @@
 'use strict'
 const Sequelize     = require('sequelize');
 const db = require("../../models");
-const Movimiento = db.detalle_consumo_comun;
+const Movimiento = db.detalle_consumo_comunes;
 const Comun = db.comunes;
 const Cuenta = db.cuentas;
 const Op = db.Sequelize.Op;
 
 module.exports = {
+    get(req, res) {
+        const id = req.params.id;
+        const getPagingData = (data, page, limit) => {
+            const { count: totalItems, rows: referido } = data;
+
+            const currentPage = page ? +page : 0;
+            const totalPages = Math.ceil(totalItems / limit);
+
+            return { totalItems, referido, totalPages, currentPage };
+        };
+
+
+        const getPagination = (page, size) => {
+            const limit = size ? +size : 2;
+            const offset = page ? page * limit : 0;
+
+            return { limit, offset };
+        };
+
+        const page=req.query.page-1;
+        const size=req.query.limit;
+        const criterio=req.query.criterio;
+        const order=req.query.order;
+
+
+        const { limit, offset } = getPagination(page, size);
+
+        var condition = { id_cuenta: { [Op.like]: `%${id}%` } };
+
+        Movimiento.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        .then(data => {
+
+        const response = getPagingData(data, page, limit);
+        res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
+        })
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
+    
     async create(req, res) {
         const restarHoras = (fecha, horas) => {
             let nuevaFecha = new Date(fecha); // Crear una nueva instancia de fecha
@@ -28,7 +69,7 @@ module.exports = {
             }
           }
           if (!cuentaSeleccionada) {
-            return res.status(404).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
+            return res.status(400).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
           }
           const id_cuenta = cuentaSeleccionada.dataValues.id
           const numero_cuenta = cuentaSeleccionada.dataValues.numero
@@ -42,26 +83,28 @@ module.exports = {
         let descripcion;
 
         if (form.movimiento === 'SALIDAQ') {
-            descripcion = 'Consumo de medicamentos por la cuenta ' + numero_cuenta + ' En el area de Quirofano'
+            descripcion = 'Consumo de insumo común por la cuenta ' + numero_cuenta + ' En el area de Quirofano'
         } else if (form.movimiento === 'SALIDAH') {
-            descripcion = 'Consumo de medicamentos por la cuenta ' + numero_cuenta + ' En el area de Hospitalizacion'
+            descripcion = 'Consumo de insumo común por la cuenta ' + numero_cuenta + ' En el area de Hospitalizacion'
         } else if (form.movimiento === 'SALIDAI'){
-            descripcion = 'Consumo de medicamentos por la cuenta ' + numero_cuenta + ' En el area de Intensivo'
+            descripcion = 'Consumo de insumo común por la cuenta ' + numero_cuenta + ' En el area de Intensivo'
         } else if (form.movimiento === 'SALIDAE'){
-            descripcion = 'Consumo de medicamentos por la cuenta ' + numero_cuenta + ' En el area de Emergencia'
+            descripcion = 'Consumo de insumo común por la cuenta ' + numero_cuenta + ' En el area de Emergencia'
         }
 
-        existencia_nueva = parseInt(form.comun.existencia_actual) - parseInt(form.cantidad)
-        Total = (parseFloat(form.cantidad) * parseFloat(form.comun.precio_venta))
+        existencia_nueva = parseInt(form.existencias_actuales) - parseInt(form.cantidad)
+        Total = (parseFloat(form.cantidad) * parseFloat(form.precio_venta))
         nuevoTotal = (parseFloat(totalCuenta) + parseFloat(Total))
         await cuentaSeleccionada.update({ total: nuevoTotal});
         const datos = {
-            id_comun: form.comun.id,
+            id_comun: form.id_medicine,
             descripcion: descripcion,
             cantidad: form.cantidad,
-            precio_venta: form.comun.precio_venta,
+            precio_venta: form.precio_venta,
             total: Total,
+            estado: form.state,
             id_cuenta: id_cuenta,
+            estado: 1,
             createdAt: restarHoras(new Date(), 6),
             updatedAt: restarHoras(new Date(), 6),
         };
@@ -69,12 +112,12 @@ module.exports = {
             existencia_actual: existencia_nueva
         },
         { where: { 
-            id: form.comun.id 
+            id: form.id_medicine
         }})
+        console.log('--------MOVIMIENTO---------------------------'+Movimiento)
 
-        Movimiento.create(datos)
+        await Movimiento.create(datos)
         .then(tipo => {
-            
             res.send(tipo);
         })
         .catch(error => {
