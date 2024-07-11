@@ -129,25 +129,6 @@ module.exports = {
 
         Expediente.create(datos)
         .then(expediente => {
-            const expediente_id = expediente.id
-            let datos_cuenta = {
-                numero: 1,
-                fecha_ingreso: today,
-                motivo: form.motivo,
-                descripcion: null,
-                otros: null,
-                total: 0.0,
-                id_expediente: expediente_id,
-                estado: 1
-            }
-            Cuenta.create(datos_cuenta)
-                .then(res=>{
-                    console.log(res)
-                })
-                .catch(err=>
-                    console.log(err)
-                )
-
             Habitaciones.update(
                 {
                     estado: 2,
@@ -220,7 +201,132 @@ module.exports = {
 
     update (req, res) {
         let form = req.body.form
-        Expediente.update(
+        const today = new Date();
+        if(form.expediente==='PENDIENTE DE REVISIÓN'){
+            Expediente.findAndCountAll({
+                where: {
+                    cui: {
+                        [Op.eq]: form.cui,
+                    },
+                    id: {
+                        [Op.notLike]: form.id
+                    }
+                }
+            })
+            .then(result => {
+                if(result.count >= 1){
+                    Expediente.update(
+                    { 
+                        nombres: form.nombre,
+                        apellidos: form.apellidos,
+                        primer_ingreso: today,
+                        casada: form.casada,
+                        nacimiento: form.nacimiento,
+                        cui: form.cui,
+                        nacionalidad: form.nacionalidad,
+                        telefono: form.telefono,
+                        direccion: form.direccion,
+                        genero: form.generos,
+                        nombre_encargado: form.nombre_encargado,
+                        contacto_encargado: form.contacto_encargado,
+                        cui_encargado: form.cui_encargado,
+                        parentesco_encargado: form.parentesco_encargado,
+                        estado: 1, 
+                        estado_civil: form.estado_civil,
+                        profesion: form.profesion,
+                        nombre_padre: form.nombre_padre,
+                        nombre_madre: form.nombre_madre,
+                        lugar_nacimiento: form.lugar_nacimiento,
+                        estado_civil_encargado: form.estado_civil_encargado,
+                        profesion_encargado: form.profesion_encargado,
+                        direccion_encargado: form.direccion_encargado,
+                        nombre_conyuge: form.nombre_conyuge,
+                        direccion_conyuge: form.direccion_conyuge,
+                        telefono_conyuge: form.telefono_conyuge
+                    },
+                    { where: { 
+                        id: result.rows[0].dataValues.id
+                    } }).then(()=>{
+                        Expediente.destroy({
+                            where: {
+                                id: form.id
+                            }
+                        }).then(res.send(form)).catch(error => console.log(error))
+                        
+                    }).catch(error => console.log(error))
+                }
+                else{
+                    Expediente.update(
+                    { 
+                        nombres: form.nombre,
+                        apellidos: form.apellidos,
+                        expediente: form.expediente,
+                        primer_ingreso: today,
+                        casada: form.casada,
+                        nacimiento: form.nacimiento,
+                        cui: form.cui,
+                        nacionalidad: form.nacionalidad,
+                        telefono: form.telefono,
+                        direccion: form.direccion,
+                        genero: form.generos,
+                        nombre_encargado: form.nombre_encargado,
+                        contacto_encargado: form.contacto_encargado,
+                        cui_encargado: form.cui_encargado,
+                        parentesco_encargado: form.parentesco_encargado,
+                        estado: 1, 
+                        estado_civil: form.estado_civil,
+                        profesion: form.profesion,
+                        nombre_padre: form.nombre_padre,
+                        nombre_madre: form.nombre_madre,
+                        lugar_nacimiento: form.lugar_nacimiento,
+                        estado_civil_encargado: form.estado_civil_encargado,
+                        profesion_encargado: form.profesion_encargado,
+                        direccion_encargado: form.direccion_encargado,
+                        nombre_conyuge: form.nombre_conyuge,
+                        direccion_conyuge: form.direccion_conyuge,
+                        telefono_conyuge: form.telefono_conyuge
+                    },
+                    { where: { 
+                        id: form.id 
+                    } }).then(()=>{
+                        const year = today.getFullYear();
+                        let resto
+                        var idFormateado = String(form.id).padStart(4, '0');
+                        resto = year + '-' + idFormateado
+                        Expediente.update(
+                            {
+                                expediente: resto
+                            },
+                            { where: { 
+                                id: form.id 
+                            }}
+                        ).then(()=>{
+                            let datos_cuenta = {
+                                numero: 1,
+                                fecha_ingreso: today,
+                                motivo: form.motivo,
+                                descripcion: null,
+                                otros: null,
+                                total: 0.0,
+                                id_expediente: form.id,
+                                estado: 1
+                            }
+                            Cuenta.create(datos_cuenta)
+                            .then((resultCuenta_create)=>{
+                                res.send(form)
+                            })
+                            .catch(err=>
+                                console.log(err)
+                            )
+
+                        }).catch(error => console.log(error))
+                    }).catch(error => console.log(error))
+                }
+            })
+            .catch(error => console.log(error))
+        }
+        else {
+            Expediente.update(
             { 
                 nombres: form.nombre,
                 apellidos: form.apellidos,
@@ -253,12 +359,13 @@ module.exports = {
             { where: { 
                 id: form.id 
             } }
-        )
-        .then(marca => res.status(200).send('El registro ha sido actualizado'))
-        .catch(error => {
-            console.log(error)
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
+            )
+            .then(marca => res.status(200).send('El registro ha sido actualizado'))
+            .catch(error => {
+                console.log(error)
+                return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+            });
+        }
     },
 
     activate (req, res) {
