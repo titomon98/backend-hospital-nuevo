@@ -23,6 +23,10 @@ module.exports = (sequelize, DataTypes) => {
     motivo: {
       type: DataTypes.STRING,
       allowNull: true
+    },
+    id_habitacionDestino : {
+      type: DataTypes.INTEGER,
+      allowNull: false
     }
   }, {
     sequelize,
