@@ -32,5 +32,5 @@ module.exports = (sequelize, DataTypes) => {
     sequelize,
     modelName: 'campo_examenes',
   });
-  return banco;
+  return campo_examenes;
 };
