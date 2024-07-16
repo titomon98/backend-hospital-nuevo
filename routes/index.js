@@ -80,6 +80,7 @@ const detalle_permisosController = require('../controllers/empleados/detalle_per
 const userController = require('../controllers/empleados/usuarioController');
 const userTypeController = require('../controllers/empleados/tipoUsuarioController');
 const serviciosController = require('../controllers/enfermeria/serviciosController');
+const encargadosController = require('../controllers/laboratorio/encargadosController');
 
 //RUTAS
 
@@ -428,6 +429,16 @@ module.exports = (app) => {
     router.get('/recetas/getId', recetaController.getId)
 
     //CARPETA DE EMPLEADOS
+    
+    //encargados
+    router.get('/encargados/list', encargadosController.list);
+    router.post('/encargados/create', encargadosController.create);
+    router.put('/encargados/update', encargadosController.update);
+    router.put('/encargados/activate', encargadosController.activate);
+    router.put('/encargados/deactivate', encargadosController.deactivate);
+    router.get('/encargados/getSearch', encargadosController.getSearch);
+    router.get('/encargados/get', encargadosController.get);
+
     //detalle_permisos
 
     //permisos
