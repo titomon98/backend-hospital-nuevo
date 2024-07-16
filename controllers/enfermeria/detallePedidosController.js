@@ -71,17 +71,17 @@ module.exports = {
             },
             include: [
                 {
-                model: Medicamento,
-                require: false
-              },
-              {
-                model: Comunes,
-                require: false
-              },
-              {
-                model: Quirurgico,
-                require: false
-              }
+                    model: Medicamento,
+                    require: false
+                },
+                {
+                    model: Comunes,
+                    require: false
+                },
+                {
+                    model: Quirurgico,
+                    require: false
+                }
             ],
         })
             .then(tipo => {
