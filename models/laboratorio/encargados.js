@@ -4,15 +4,27 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class banco extends Model {
+  class encargados extends Model {
     static associate(models) {
-      /* banco.hasMany(models.cuenta_bancarias, {
-        foreignKey: "id_banco",
-      }); */
+      encargados.belongsTo(models.tipos_encargados, {
+        foreignKey: "id_tipo_encargado"
+      })
     }
   };
-  banco.init({
-    nombre: {
+  encargados.init({
+    nombres: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    apellidos: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    contacto: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    usuario: {
       type: DataTypes.STRING,
       allowNull: false
     },
@@ -20,9 +32,13 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false
     },
+    id_tipo_encargado: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
   }, {
     sequelize,
-    modelName: 'asuetos',
+    modelName: 'encargados',
   });
-  return banco;
+  return encargados;
 };

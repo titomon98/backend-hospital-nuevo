@@ -2,34 +2,28 @@
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('cuentas', {
+    await queryInterface.createTable('encargados', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      numero: {
+      nombres: {
+          type: Sequelize.STRING,
+          allowNull: false
+      },
+      apellidos: {
         type: Sequelize.STRING,
         allowNull: false
       },
-      fecha_ingreso: {
-          type: Sequelize.DATEONLY,
-          allowNull: false
+      contacto: {
+        type: Sequelize.STRING,
+        allowNull: false
       },
-      motivo: {
-          type: Sequelize.STRING,
-          allowNull: false
-      },
-      descripcion: {
-          type: Sequelize.STRING,
-      },
-      otros: {
-          type: Sequelize.STRING,
-      },
-      total: {
-          type: Sequelize.DECIMAL(10,2),
-          allowNull: false
+      usuario: {
+        type: Sequelize.STRING,
+        allowNull: false
       },
       estado: {
         type: Sequelize.INTEGER,
@@ -43,17 +37,17 @@ module.exports = {
         allowNull: false,
         type: Sequelize.DATE
       },
-      id_expediente: {
+      id_tipo_encargado: {
         allowNull: false,
         type: Sequelize.INTEGER,
         references: {
-            model: 'expedientes',
+            model: 'tipos_encargados',
             key: 'id'
         }
       },
     });
   },
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable('cuentas');
+    await queryInterface.dropTable('encargados');
   }
 };
