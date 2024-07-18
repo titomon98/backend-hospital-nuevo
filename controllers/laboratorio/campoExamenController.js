@@ -1,19 +1,21 @@
 'use strict'
 const Sequelize     = require('sequelize');
 const db = require("../../models");
-const Contrato = db.contratos;
+const CampoExamenes = db.campo_examenes;
 const Op = db.Sequelize.Op;
 
 module.exports = {
     create(req, res) {
         let form = req.body.form
         const datos = {
-            contrato: form.contrato,
             nombre: form.nombre,
-            estado: 1
+            valor_minimo: form.valor_minimo,
+            valor_maximo: form.valor_maximo,
+            unidades: form.unidades,
+            id_examenes_almacenados: form.id_examenes_almacenados
         };
 
-        Contrato.create(datos)
+        CampoExamenes.create(datos)
         .then(tipo => {
             res.send(tipo);
         })
@@ -52,9 +54,9 @@ module.exports = {
 
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Op.or]: [{ contrato: { [Op.like]: `%${busqueda}%` } }] } : null ;
+        var condition = busqueda ? { [Op.or]: [{ nombre: { [Op.like]: `%${busqueda}%` } }] } : null ;
 
-        Contrato.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        CampoExamenes.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
         console.log('data: '+JSON.stringify(data))
