@@ -368,7 +368,22 @@ module.exports = {
             });
         }
     },
-
+    updateMedico (req, res) {
+        console.log(req.body.form)
+        Expediente.update(
+            { id_medico: req.body.form.assignedDoctor },
+            { where: { 
+                expediente: req.body.form.expediente 
+            } }
+        )
+        .then(marca => {
+            res.status(200).send('Se ha asignado al médico correctamente')
+        })
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
     activate (req, res) {
         Expediente.update(
             { estado: 1 },

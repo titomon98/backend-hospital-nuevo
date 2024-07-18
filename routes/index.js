@@ -138,6 +138,7 @@ module.exports = (app) => {
     router.post('/expedientes/createEnfermeria', expedientesController.createFromEnfermeria);
     router.put('/expedientes/update', expedientesController.update);
     router.put('/expedientes/changeState', expedientesController.changeState);
+    router.put('/expedientes/assignDoctor', expedientesController.updateMedico);
     router.put('/expedientes/activate', expedientesController.activate);
     router.put('/expedientes/deactivate', expedientesController.deactivate);
     router.get('/expedientes/getSearch', expedientesController.getSearch)
