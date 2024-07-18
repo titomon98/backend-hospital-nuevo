@@ -4,25 +4,13 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class examenes extends Model {
+  class examenesAlmacenados extends Model {
     static associate(models) {
 
     }
   };
-  examenes.init({
-    id_expediente: {
-      type: DataTypes.INTEGER,
-      allowNull: false
-    },
-    comision: {
-      type: DataTypes.INTEGER,
-      allowNull: false
-    },
-    total: {
-      type: DataTypes.DECIMAL(10,2),
-      allowNull: false
-    },
-    correo: {
+  examenesAlmacenados.init({
+    nombre: {
       type: DataTypes.STRING,
       allowNull: false
     },
@@ -60,7 +48,7 @@ module.exports = (sequelize, DataTypes) => {
     }
   }, {
     sequelize,
-    modelName: 'examenes',
+    modelName: 'examenesAlmacenados',
   });
-  return examenes;
+  return examenesAlmacenados;
 };
