@@ -64,6 +64,10 @@ const alimentacionMovimientosController = require('../controllers/inventario/ali
 const equiposController = require('../controllers/inventario/equiposController')
 const equiposMovimientosController = require('../controllers/inventario/equiposMovimientosController')
 
+//CARPETA DE LABORATORIO
+const examenesAlmacenadosController = require('../controllers/laboratorio/examenesAlmacenadosController.js')
+const campoExamenController = require('../controllers/laboratorio/campoExamenController.js')
+
 //CARPETA DE LIQUIDACIONES
 
 
@@ -392,6 +396,11 @@ module.exports = (app) => {
     router.get('/user/getSearch', userController.getSearch);
 
     //CARPETA DE LIQUIDACIONES
+
+    //CARPETA DE LABORATORIOS
+    router.get('/laboratoriosAlmacenados/list', examenesAlmacenadosController.list);
+    router.post('/campoLaboratorio/create', campoExamenController.create); 
+    router.get('/campoLaboratorio/getByExamen', campoExamenController.getByExamen); 
 
     //CARPETA DE MEDICOS
     //especialidades

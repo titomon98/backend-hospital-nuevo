@@ -125,8 +125,12 @@ module.exports = {
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
-    get (req, res) {
-        Contrato.findAll({attributes: ['id', 'contrato']})
+    getByExamen (req, res) {
+        CampoExamenes.findAll({
+            where:{
+                id_examenes_almacenados: req.query.id_examenes_almacenados
+            }
+        })
         .then(data => {
             res.send(data);
         })
