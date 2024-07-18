@@ -2,16 +2,20 @@
 const Sequelize     = require('sequelize');
 const db = require("../../models");
 const Encargado = db.encargados;
+const Tipos = db.tipos_encargados;
 const Op = db.Sequelize.Op;
 
 module.exports = {
     create(req, res) {
-        Encargado.findAll((enc) => enc.usuario === form.usuario).then((result)=>{
-            if(result.lenght > 0){
-                result.send('Usuario existente')
+        let form = req.body.form;
+        Encargado.findAll({
+            where: {
+                usuario: form.usuario
             }
-            else{
-                let form = req.body.form
+        }).then((result) => {
+            if (result.length > 0) {
+                res.send('Usuario existente');
+            } else {
                 const datos = {
                     contacto: form.contacto,
                     nombres: form.nombres,
@@ -22,16 +26,18 @@ module.exports = {
                 };
 
                 Encargado.create(datos)
-                .then(encargado => {
-                    res.send(encargado);
-                })
-                .catch(error => {
-                    console.log(error)
-                    return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-                });
+                    .then(encargado => {
+                        res.send(encargado);
+                    })
+                    .catch(error => {
+                        console.log(error);
+                        return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+                    });
             }
-        })
-                    
+        }).catch(error => {
+            console.log(error);
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });        
     },
 
  
@@ -64,7 +70,11 @@ module.exports = {
 
         var condition = busqueda ? { [Op.or]: [{ usuario: { [Op.like]: `%${busqueda}%` } }] } : null ;
 
-        Encargado.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        Encargado.findAndCountAll({ include: [
+                {
+                    model: Tipos
+                }
+            ], where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
         console.log('data: '+JSON.stringify(data))

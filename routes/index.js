@@ -81,6 +81,7 @@ const userController = require('../controllers/empleados/usuarioController');
 const userTypeController = require('../controllers/empleados/tipoUsuarioController');
 const serviciosController = require('../controllers/enfermeria/serviciosController');
 const encargadosController = require('../controllers/laboratorio/encargadosController');
+const tipoEncargadoController = require('../controllers/laboratorio/tipoEncargadoController.js');
 
 //RUTAS
 
@@ -438,6 +439,9 @@ module.exports = (app) => {
     router.put('/encargados/deactivate', encargadosController.deactivate);
     router.get('/encargados/getSearch', encargadosController.getSearch);
     router.get('/encargados/get', encargadosController.get);
+
+    //tipos de encargados
+    router.get('/tipos_encargados/get', tipoEncargadoController.get);
 
     //detalle_permisos
 
