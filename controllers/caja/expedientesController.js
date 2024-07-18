@@ -4,6 +4,7 @@ const db = require("../../models");
 const Expediente = db.expedientes;
 const Cuenta = db.cuentas;
 const Habitaciones = db.habitaciones;
+const Medicos = db.medicos
 const Logs = db.log_traslados;
 const DetalleCuentas = db.detalle_cuentas;
 const Op = db.Sequelize.Op;
@@ -176,7 +177,12 @@ module.exports = {
 
         var condition = busqueda ? { [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` }, estado: {[Sequelize.Op.gte]: 0} }] } : {estado: {[Sequelize.Op.gte]: 0} } ;
 
-        Expediente.findAndCountAll({ where: condition, order:[[`${criterio}`,`${order}`]],limit,offset})
+        Expediente.findAndCountAll({
+            include: [
+                {
+                    model: Medicos
+                }
+            ], where: condition, order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
         console.log('data: '+JSON.stringify(data))

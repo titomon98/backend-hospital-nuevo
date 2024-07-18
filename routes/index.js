@@ -64,6 +64,10 @@ const alimentacionMovimientosController = require('../controllers/inventario/ali
 const equiposController = require('../controllers/inventario/equiposController')
 const equiposMovimientosController = require('../controllers/inventario/equiposMovimientosController')
 
+//CARPETA DE LABORATORIO
+const examenesAlmacenadosController = require('../controllers/laboratorio/examenesAlmacenadosController.js')
+const campoExamenController = require('../controllers/laboratorio/campoExamenController.js')
+
 //CARPETA DE LIQUIDACIONES
 
 
@@ -80,6 +84,8 @@ const detalle_permisosController = require('../controllers/empleados/detalle_per
 const userController = require('../controllers/empleados/usuarioController');
 const userTypeController = require('../controllers/empleados/tipoUsuarioController');
 const serviciosController = require('../controllers/enfermeria/serviciosController');
+const encargadosController = require('../controllers/laboratorio/encargadosController');
+const tipoEncargadoController = require('../controllers/laboratorio/tipoEncargadoController.js');
 
 //RUTAS
 
@@ -395,6 +401,11 @@ module.exports = (app) => {
 
     //CARPETA DE LIQUIDACIONES
 
+    //CARPETA DE LABORATORIOS
+    router.get('/laboratoriosAlmacenados/list', examenesAlmacenadosController.list);
+    router.post('/campoLaboratorio/create', campoExamenController.create); 
+    router.get('/campoLaboratorio/getByExamen', campoExamenController.getByExamen); 
+
     //CARPETA DE MEDICOS
     //especialidades
     router.get('/especialidades/list', especialidadesController.list);
@@ -431,6 +442,19 @@ module.exports = (app) => {
     router.get('/recetas/getId', recetaController.getId)
 
     //CARPETA DE EMPLEADOS
+    
+    //encargados
+    router.get('/encargados/list', encargadosController.list);
+    router.post('/encargados/create', encargadosController.create);
+    router.put('/encargados/update', encargadosController.update);
+    router.put('/encargados/activate', encargadosController.activate);
+    router.put('/encargados/deactivate', encargadosController.deactivate);
+    router.get('/encargados/getSearch', encargadosController.getSearch);
+    router.get('/encargados/get', encargadosController.get);
+
+    //tipos de encargados
+    router.get('/tipos_encargados/get', tipoEncargadoController.get);
+
     //detalle_permisos
 
     //permisos

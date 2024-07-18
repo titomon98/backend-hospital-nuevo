@@ -1,43 +1,26 @@
 'use strict'
 const Sequelize     = require('sequelize');
 const db = require("../../models");
-const Encargado = db.encargados;
-const Tipos = db.tipos_encargados;
+const TipoEncargado = db.tipos_encargados;
 const Op = db.Sequelize.Op;
 
 module.exports = {
     create(req, res) {
-        let form = req.body.form;
-        Encargado.findAll({
-            where: {
-                usuario: form.usuario
-            }
-        }).then((result) => {
-            if (result.length > 0) {
-                res.send('Usuario existente');
-            } else {
-                const datos = {
-                    contacto: form.contacto,
-                    nombres: form.nombres,
-                    apellidos: form.apellidos,
-                    id_tipo_encargado: form.id_tipo_encargado,
-                    usuario: form.usuario,
-                    estado: 1
-                };
+        let form = req.body.form
+        const datos = {
+            tipo: form.tipo,
+            estado: 1
+        };
 
-                Encargado.create(datos)
-                    .then(encargado => {
-                        res.send(encargado);
-                    })
-                    .catch(error => {
-                        console.log(error);
-                        return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-                    });
-            }
-        }).catch(error => {
-            console.log(error);
+        TipoEncargado.create(datos)
+        .then(encargado => {
+            res.send(encargado);
+        })
+        .catch(error => {
+            console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });        
+        });
+                    
     },
 
  
@@ -68,13 +51,9 @@ module.exports = {
 
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Op.or]: [{ usuario: { [Op.like]: `%${busqueda}%` } }] } : null ;
+        var condition = busqueda ? { [Op.or]: [{ contrato: { [Op.like]: `%${busqueda}%` } }] } : null ;
 
-        Encargado.findAndCountAll({ include: [
-                {
-                    model: Tipos
-                }
-            ], where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        TipoEncargado.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
         console.log('data: '+JSON.stringify(data))
@@ -93,41 +72,31 @@ module.exports = {
     find (req, res) {
         const id = req.params.id;
 
-        return Encargado.findByPk(id)
+        return TipoEncargado.findByPk(id)
         .then(encargado => res.status(200).send(encargado))
         .catch(error => res.status(400).send(error))
     },
 
     update (req, res) {
-        Encargado.findAll((enc) => enc.usuario === form.usuario && enc.id != form.id).then((result)=>{
-            if(result.lenght > 0){
-                result.send('Usuario existente')
-            }
-            else{
-                let form = req.body.form
-                Encargado.update(
-                    { 
-                        contacto: form.contacto,
-                        nombre: form.nombre,
-                        apellidos: form.apellidos,
-                        id_tipo_encargado: form.id_tipo_encargado,
-                        usuario: form.usuario
-                    },
-                    { where: { 
-                        id: form.id 
-                    } }
-                )
-                .then(encargado => res.status(200).send('El registro ha sido actualizado'))
-                .catch(error => {
-                    console.log(error)
-                    return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-                });
-            }
-        })
+        let form = req.body.form
+        TipoEncargado.update(
+            { 
+                contrato: form.contrato,
+                nombre: form.nombre,
+            },
+            { where: { 
+                id: form.id 
+            } }
+        )
+        .then(encargado => res.status(200).send('El registro ha sido actualizado'))
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
     },
 
     activate (req, res) {
-        Encargado.update(
+        TipoEncargado.update(
             { estado: 1 },
             { where: { 
                 id: req.body.id 
@@ -141,7 +110,7 @@ module.exports = {
     },
 
     deactivate (req, res) {
-        Encargado.update(
+        TipoEncargado.update(
             { estado: 0 },
             { where: { 
                 id: req.body.id 
@@ -154,7 +123,10 @@ module.exports = {
         });
     },
     get (req, res) {
-        Encargado.findAll({attributes: ['id', 'nombres', 'apellidos', 'contacto', 'id_tipo_encargado', 'estado', 'usuario']})
+        var busqueda = req.query.search;
+        var condition = busqueda?{ [Op.or]:[ {nombre: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
+        TipoEncargado.findAll({attributes: ['id', 'tipo']}, {
+            where: condition})
         .then(data => {
             res.send(data);
         })
@@ -165,10 +137,11 @@ module.exports = {
     },
     getSearch (req, res) {
         var busqueda = req.query.search;
-        var condition = busqueda?{ [Op.or]:[ {usuario: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
-        Encargado.findAll({
+        var condition = busqueda?{ [Op.or]:[ {contrato: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
+        TipoEncargado.findAll({
             where: condition})
         .then(data => {
+            console.log(data)
             res.send(data);
         })
         .catch(error => {
