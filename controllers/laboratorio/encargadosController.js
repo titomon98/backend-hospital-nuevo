@@ -154,7 +154,10 @@ module.exports = {
         });
     },
     get (req, res) {
-        Encargado.findAll({attributes: ['id', 'nombres', 'apellidos', 'contacto', 'id_tipo_encargado', 'estado', 'usuario']})
+        Encargado.findAll({attributes: ['id', 'nombres', 'apellidos', 'contacto', 'id_tipo_encargado', 'estado', 'usuario'],
+                include: {
+                    model: Tipos
+                }})
         .then(data => {
             res.send(data);
         })
@@ -167,7 +170,10 @@ module.exports = {
         var busqueda = req.query.search;
         var condition = busqueda?{ [Op.or]:[ {usuario: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
         Encargado.findAll({
-            where: condition})
+            where: condition,
+                include: {
+                    model: Tipos
+                }})
         .then(data => {
             res.send(data);
         })
