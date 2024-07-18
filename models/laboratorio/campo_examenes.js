@@ -7,7 +7,7 @@ module.exports = (sequelize, DataTypes) => {
   class campo_examenes extends Model {
     static associate(models) {
       campo_examenes.belongsTo(models.examenes_almacenados, {
-        foreignKey: "id_campo_examenes",
+        foreignKey: "id_examenes_almacenados",
       }); 
     }
   };
