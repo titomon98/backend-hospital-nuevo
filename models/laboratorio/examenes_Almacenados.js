@@ -4,51 +4,31 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class examenesAlmacenados extends Model {
+  class examenes_almacenados extends Model {
     static associate(models) {
-
+        
     }
   };
-  examenesAlmacenados.init({
+  examenes_almacenados.init({
     nombre: {
       type: DataTypes.STRING,
       allowNull: false
     },
-    whatsapp: {
-      type: DataTypes.INTEGER,
+    precio_normal: {
+      type: DataTypes.DECIMAL,
       allowNull: false
     },
-    numero_muestra: {
-      type: DataTypes.INTEGER,
+    precio_sobrecargo: {
+      type: DataTypes.DECIMAL,
       allowNull: false
     },
-    referido: {
+    tipo_examen:{
       type: DataTypes.STRING,
-      allowNull: false
-    },
-    id_encargado: {
-      type: DataTypes.STRING,
-      allowNull: false
-    },
-    porPagar: {
-      type: DataTypes.INTEGER,
-      allowNull: false
-    },
-    pagado: {
-      type: DataTypes.INTEGER,
-      allowNull: false
-    },
-    createdAt: {
-      type: DataTypes.DATE,
-      allowNull: false
-    },
-    updatedAt: {
-      type: DataTypes.DATE,
       allowNull: false
     }
   }, {
     sequelize,
-    modelName: 'examenesAlmacenados',
+    modelName: 'examenes_almacenados',
   });
-  return examenesAlmacenados;
+  return examenes_almacenados;
 };
