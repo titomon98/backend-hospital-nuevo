@@ -6,7 +6,7 @@ const Op = db.Sequelize.Op;
 
 module.exports = {
     create(req, res) {
-        let form = req.body.form
+        let form = req.body
         const datos = {
             nombre: form.nombre,
             valor_minimo: form.valor_minimo,
@@ -81,11 +81,14 @@ module.exports = {
     },
 
     update (req, res) {
-        let form = req.body.form
-        Contrato.update(
+        console.log('Hola')
+        let form = req.body
+        CampoExamenes.update(
             { 
-                contrato: form.contrato,
                 nombre: form.nombre,
+                valor_minimo: form.valor_minimo,
+                valor_maximo: form.valor_maximo,
+                unidades: form.unidades,
             },
             { where: { 
                 id: form.id 

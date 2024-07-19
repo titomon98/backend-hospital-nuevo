@@ -399,6 +399,9 @@ module.exports = (app) => {
 
     //CARPETA DE LABORATORIOS
     router.get('/laboratoriosAlmacenados/list', examenesAlmacenadosController.list);
+    router.post('/laboratoriosAlmacenados/create', examenesAlmacenadosController.create);
+    router.put('/laboratoriosAlmacenados/update', examenesAlmacenadosController.update);
+    router.put('/campoLaboratorio/update', campoExamenController.update);
     router.post('/campoLaboratorio/create', campoExamenController.create); 
     router.get('/campoLaboratorio/getByExamen', campoExamenController.getByExamen); 
 
