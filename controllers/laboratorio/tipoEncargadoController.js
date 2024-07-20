@@ -51,7 +51,7 @@ module.exports = {
 
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Op.or]: [{ contrato: { [Op.like]: `%${busqueda}%` } }] } : null ;
+        var condition = busqueda ? { [Op.or]: [{ nombre: { [Op.like]: `%${busqueda}%` } }] } : null ;
 
         TipoEncargado.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
