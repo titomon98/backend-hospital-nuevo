@@ -338,14 +338,17 @@ module.exports = (app) => {
     //detalle_consumo_medicamentos
     router.post('/detalle_consumo_medicamentos/create', detalle_consumo_medicamentos.create);
     router.get('/detalle_consumo_medicamentos/list/:id', detalle_consumo_medicamentos.get);
+    router.get('/detalle_consumo_medicamentos/list', detalle_consumo_medicamentos.list);
 
     //detalle_consumo_quirurgicos
     router.post('/detalle_consumo_quirugicos/create', detalle_consumo_quirugicos.create);
     router.get('/detalle_consumo_quirugicos/list/:id', detalle_consumo_quirugicos.get);
-    
+    router.get('/detalle_consumo_quirugicos/list', detalle_consumo_quirugicos.list);
+
     //detalle_consumo_comunes
     router.post('/detalle_consumo_comun/create', detalle_consumo_comunes.create);
     router.get('/detalle_consumo_comun/list/:id', detalle_consumo_comunes.get);
+    router.get('/detalle_consumo_comun/list', detalle_consumo_comunes.list);
 
     //CARPETA GERENCIA
     //asuetos
@@ -400,6 +403,9 @@ module.exports = (app) => {
 
     //CARPETA DE LABORATORIOS
     router.get('/laboratoriosAlmacenados/list', examenesAlmacenadosController.list);
+    router.post('/laboratoriosAlmacenados/create', examenesAlmacenadosController.create);
+    router.put('/laboratoriosAlmacenados/update', examenesAlmacenadosController.update);
+    router.put('/campoLaboratorio/update', campoExamenController.update);
     router.post('/campoLaboratorio/create', campoExamenController.create); 
     router.get('/campoLaboratorio/getByExamen', campoExamenController.getByExamen); 
 

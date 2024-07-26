@@ -6,12 +6,12 @@ const Op = db.Sequelize.Op;
 
 module.exports = {
     create(req, res) {
-        let form = req.body.form
+        let form = req.body
         const datos = {
             nombre: form.nombre,
-            precio_normal: form.valor_minimo,
-            preico_sobrecargo: form.valor_maximo,
-            tipo_examen: form.unidades
+            precio_normal: form.precio_normal,
+            precio_sobrecargo: form.precio_sobrecargo,
+            tipo_examen: form.tipo_examen
         };
 
         Examenes.create(datos)
@@ -80,11 +80,13 @@ module.exports = {
     },
 
     update (req, res) {
-        let form = req.body.form
-        Contrato.update(
+        let form = req.body
+        Examenes.update(
             { 
-                contrato: form.contrato,
                 nombre: form.nombre,
+                precio_normal: form.precio_normal,
+                precio_sobrecargo: form.precio_sobrecargo,
+                tipo_examen: form.tipo_examen
             },
             { where: { 
                 id: form.id 
