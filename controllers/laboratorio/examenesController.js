@@ -34,6 +34,7 @@ module.exports = {
             pagado: form.pagado,
             por_pagar: form.por_pagar,
             id_examenes_almacenados: form.id_examenes_almacenados.id,
+            estado: 1,
             createdAt: restarHoras(new Date(), 6),
             updatedAt: restarHoras(new Date(), 6),
         };
@@ -116,7 +117,9 @@ module.exports = {
         const { limit, offset } = getPagination(Page, Size);
     
         try {
-            const whereClause = {};
+            const whereClause = {
+              estado: { [Op.in]: [1, 2] }
+            };
 
             if (FechaDesde && FechaHasta) {
                 whereClause.createdAt = {
@@ -131,7 +134,19 @@ module.exports = {
                     { model: ExamenAlmacenado, attributes: ['nombre'] },
                     { model: Encargado, attributes: ['nombres'] }
                 ],
-                attributes: ['id','expediente','cui', 'comision','total','correo', 'whatsapp','numero_muestra','referido','pagado','por_pagar','createdAt'],
+                attributes: [
+                  'id',
+                  'expediente',
+                  'cui', 
+                  'comision',
+                  'total',
+                  'correo', 
+                  'whatsapp',
+                  'numero_muestra',
+                  'referido',
+                  'pagado',
+                  'por_pagar',
+                  'createdAt'],
                 order: [[Criterio, Order]], // Ordenamos por createdAt DESC
                 limit,
                 offset,
@@ -169,5 +184,24 @@ module.exports = {
             console.log(error);
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         }
-    }
+      },
+    
+    async update(req, res) {
+      let form = req.query
+      console.log(form.id)
+      const examenSeleccionado = await Examenes.findOne({ 
+        where: { id: form.id } 
+      });
+      if (!examenSeleccionado) {
+        return res.status(300).json({ msg: 'No se encontró el examen a actualizar' });
+      }
+      await examenSeleccionado.update({estado: 3})
+      .then(tipo => {
+          res.send(tipo);
+      })
+      .catch(error => {
+          console.log(error)
+          return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+      });
+      }
 }
