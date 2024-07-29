@@ -141,19 +141,6 @@ module.exports = {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
-    },
-    getSearch (req, res) {
-        var busqueda = req.query.search;
-        var condition = busqueda?{ [Op.or]:[ {contrato: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
-        Contrato.findAll({
-            where: condition})
-        .then(data => {
-            res.send(data);
-        })
-        .catch(error => {
-            console.log(error)
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
     }
 };
 

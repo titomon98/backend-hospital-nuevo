@@ -4,19 +4,28 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class examenes extends Model {
+  class examenes_realizados extends Model {
     static associate(models) {
-
+      examenes_realizados.belongsTo(models.examenes_almacenados, {
+        foreignKey: "id_examenes_almacenados",
+      }); 
+      examenes_realizados.belongsTo(models.encargados, {
+        foreignKey: "id_encargado",
+      }); 
     }
   };
-  examenes.init({
-    id_expediente: {
-      type: DataTypes.INTEGER,
+  examenes_realizados.init({
+    expediente: {
+      type: DataTypes.STRING,
       allowNull: false
     },
-    comision: {
+    cui: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: true
+    },
+    comision: {
+      type: DataTypes.STRING,
+      allowNull: true
     },
     total: {
       type: DataTypes.DECIMAL(10,2),
@@ -27,7 +36,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     whatsapp: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING,
       allowNull: false
     },
     numero_muestra: {
@@ -36,17 +45,25 @@ module.exports = (sequelize, DataTypes) => {
     },
     referido: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: true
     },
     id_encargado: {
       type: DataTypes.STRING,
       allowNull: false
     },
-    porPagar: {
+    pagado: {
+      type: DataTypes.DECIMAL(10,2),
+      allowNull: false
+    },
+    por_pagar: {
+      type: DataTypes.DECIMAL(10,2),
+      allowNull: false
+    },
+    id_examenes_almacenados: {
       type: DataTypes.INTEGER,
       allowNull: false
     },
-    pagado: {
+    estado: {
       type: DataTypes.INTEGER,
       allowNull: false
     },
@@ -60,7 +77,7 @@ module.exports = (sequelize, DataTypes) => {
     }
   }, {
     sequelize,
-    modelName: 'examenes',
+    modelName: 'examenes_realizados',
   });
-  return examenes;
+  return examenes_realizados;
 };
