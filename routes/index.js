@@ -85,7 +85,13 @@ const userController = require('../controllers/empleados/usuarioController');
 const userTypeController = require('../controllers/empleados/tipoUsuarioController');
 const serviciosController = require('../controllers/enfermeria/serviciosController');
 const encargadosController = require('../controllers/laboratorio/encargadosController');
+const tipoEncargadoController = require('../controllers/laboratorio/tipoEncargadoController.js');
 
+
+// examenes realizados
+const examenesRealizados = require('../controllers/laboratorio/examenesController')
+// Detalle Examen Realizado
+const detalleExamenRealizado = require('../controllers/laboratorio/detalleExamenRealizadoController.js')
 //RUTAS
 
 module.exports = (app) => {
@@ -337,14 +343,17 @@ module.exports = (app) => {
     //detalle_consumo_medicamentos
     router.post('/detalle_consumo_medicamentos/create', detalle_consumo_medicamentos.create);
     router.get('/detalle_consumo_medicamentos/list/:id', detalle_consumo_medicamentos.get);
+    router.get('/detalle_consumo_medicamentos/list', detalle_consumo_medicamentos.list);
 
     //detalle_consumo_quirurgicos
     router.post('/detalle_consumo_quirugicos/create', detalle_consumo_quirugicos.create);
     router.get('/detalle_consumo_quirugicos/list/:id', detalle_consumo_quirugicos.get);
-    
+    router.get('/detalle_consumo_quirugicos/list', detalle_consumo_quirugicos.list);
+
     //detalle_consumo_comunes
     router.post('/detalle_consumo_comun/create', detalle_consumo_comunes.create);
     router.get('/detalle_consumo_comun/list/:id', detalle_consumo_comunes.get);
+    router.get('/detalle_consumo_comun/list', detalle_consumo_comunes.list);
 
     //CARPETA GERENCIA
     //asuetos
@@ -403,7 +412,18 @@ module.exports = (app) => {
     router.put('/laboratoriosAlmacenados/update', examenesAlmacenadosController.update);
     router.put('/campoLaboratorio/update', campoExamenController.update);
     router.post('/campoLaboratorio/create', campoExamenController.create); 
-    router.get('/campoLaboratorio/getByExamen', campoExamenController.getByExamen); 
+    router.get('/campoLaboratorio/getByExamen', campoExamenController.getByExamen);
+    
+    //examenes realizados
+    router.get('/Examenes_realizados/list', examenesRealizados.list);
+    router.post('/Examenes_realizados/create', examenesRealizados.create);
+    router.get('/encargadoExamen/getSearch', examenesRealizados.getsearchEncargado);
+    router.get('/examenesAlmacenados/getSearch', examenesRealizados.getsearchExaAlmacenados);
+
+    //Detalle Examen Realizado
+    router.get('/detalleExamenRealizado/list', detalleExamenRealizado.list);
+    router.post('/detalleExamenRealizado/create', detalleExamenRealizado.create);
+    router.get('/TipoExamenAlmacenado/getSearch', detalleExamenRealizado.getsearchTipo);
 
     //CARPETA DE MEDICOS
     //especialidades
@@ -450,6 +470,9 @@ module.exports = (app) => {
     router.put('/encargados/deactivate', encargadosController.deactivate);
     router.get('/encargados/getSearch', encargadosController.getSearch);
     router.get('/encargados/get', encargadosController.get);
+
+    //tipos de encargados
+    router.get('/tipos_encargados/get', tipoEncargadoController.get);
 
     //detalle_permisos
 

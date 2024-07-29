@@ -51,7 +51,7 @@ module.exports = {
 
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Op.or]: [{ contrato: { [Op.like]: `%${busqueda}%` } }] } : null ;
+        var condition = busqueda ? { [Op.or]: [{ nombre: { [Op.like]: `%${busqueda}%` } }] } : null ;
 
         TipoEncargado.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
@@ -123,7 +123,10 @@ module.exports = {
         });
     },
     get (req, res) {
-        TipoEncargado.findAll({attributes: ['id', 'contrato']})
+        var busqueda = req.query.search;
+        var condition = busqueda?{ [Op.or]:[ {nombre: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
+        TipoEncargado.findAll({attributes: ['id', 'tipo']}, {
+            where: condition})
         .then(data => {
             res.send(data);
         })
@@ -138,6 +141,7 @@ module.exports = {
         TipoEncargado.findAll({
             where: condition})
         .then(data => {
+            console.log(data)
             res.send(data);
         })
         .catch(error => {

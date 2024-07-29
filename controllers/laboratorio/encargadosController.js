@@ -2,16 +2,20 @@
 const Sequelize     = require('sequelize');
 const db = require("../../models");
 const Encargado = db.encargados;
+const Tipos = db.tipos_encargados;
 const Op = db.Sequelize.Op;
 
 module.exports = {
     create(req, res) {
-        Encargado.findAll((enc) => enc.usuario === form.usuario).then((result)=>{
-            if(result.lenght > 0){
-                result.send('Usuario existente')
+        let form = req.body.form;
+        Encargado.findAll({
+            where: {
+                usuario: form.usuario
             }
-            else{
-                let form = req.body.form
+        }).then((result) => {
+            if (result.length > 0) {
+                res.send('Usuario existente');
+            } else {
                 const datos = {
                     contacto: form.contacto,
                     nombres: form.nombres,
@@ -22,16 +26,18 @@ module.exports = {
                 };
 
                 Encargado.create(datos)
-                .then(encargado => {
-                    res.send(encargado);
-                })
-                .catch(error => {
-                    console.log(error)
-                    return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-                });
+                    .then(encargado => {
+                        res.send(encargado);
+                    })
+                    .catch(error => {
+                        console.log(error);
+                        return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+                    });
             }
-        })
-                    
+        }).catch(error => {
+            console.log(error);
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });        
     },
 
  
@@ -64,7 +70,11 @@ module.exports = {
 
         var condition = busqueda ? { [Op.or]: [{ usuario: { [Op.like]: `%${busqueda}%` } }] } : null ;
 
-        Encargado.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        Encargado.findAndCountAll({ include: [
+                {
+                    model: Tipos
+                }
+            ], where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
         console.log('data: '+JSON.stringify(data))
@@ -89,16 +99,24 @@ module.exports = {
     },
 
     update (req, res) {
-        Encargado.findAll((enc) => enc.usuario === form.usuario && enc.id != form.id).then((result)=>{
-            if(result.lenght > 0){
+        let form = req.body.form
+        Encargado.findAll({
+            where: {
+                usuario: form.usuario,
+                id: {
+                [Op.ne]: form.id,
+                },
+            },
+        }).then((result)=>{
+            if(result.lenght !== undefined){
                 result.send('Usuario existente')
             }
             else{
-                let form = req.body.form
+                console.log("RESULT--- ", result.lenght)
                 Encargado.update(
                     { 
                         contacto: form.contacto,
-                        nombre: form.nombre,
+                        nombres: form.nombres,
                         apellidos: form.apellidos,
                         id_tipo_encargado: form.id_tipo_encargado,
                         usuario: form.usuario
@@ -114,6 +132,10 @@ module.exports = {
                 });
             }
         })
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
     },
 
     activate (req, res) {
@@ -144,7 +166,10 @@ module.exports = {
         });
     },
     get (req, res) {
-        Encargado.findAll({attributes: ['id', 'nombres', 'apellidos', 'contacto', 'id_tipo_encargado', 'estado', 'usuario']})
+        Encargado.findAll({attributes: ['id', 'nombres', 'apellidos', 'contacto', 'id_tipo_encargado', 'estado', 'usuario'],
+                include: {
+                    model: Tipos
+                }})
         .then(data => {
             res.send(data);
         })
@@ -157,7 +182,10 @@ module.exports = {
         var busqueda = req.query.search;
         var condition = busqueda?{ [Op.or]:[ {usuario: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
         Encargado.findAll({
-            where: condition})
+            where: condition,
+                include: {
+                    model: Tipos
+                }})
         .then(data => {
             res.send(data);
         })
