@@ -99,16 +99,24 @@ module.exports = {
     },
 
     update (req, res) {
-        Encargado.findAll((enc) => enc.usuario === form.usuario && enc.id != form.id).then((result)=>{
-            if(result.lenght > 0){
+        let form = req.body.form
+        Encargado.findAll({
+            where: {
+                usuario: form.usuario,
+                id: {
+                [Op.ne]: form.id,
+                },
+            },
+        }).then((result)=>{
+            if(result.lenght !== undefined){
                 result.send('Usuario existente')
             }
             else{
-                let form = req.body.form
+                console.log("RESULT--- ", result.lenght)
                 Encargado.update(
                     { 
                         contacto: form.contacto,
-                        nombre: form.nombre,
+                        nombres: form.nombres,
                         apellidos: form.apellidos,
                         id_tipo_encargado: form.id_tipo_encargado,
                         usuario: form.usuario
@@ -124,6 +132,10 @@ module.exports = {
                 });
             }
         })
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
     },
 
     activate (req, res) {
