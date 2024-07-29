@@ -184,8 +184,7 @@ module.exports = {
     
                 response.referido = dataResponse;
             } else {
-                // Manejar el caso en que response.referido es undefined
-                response.referido = []; // O enviar una respuesta adecuada al frontend
+                response.referido = [];
             }
             res.send({total:response.totalItems,last_page:response.totalPages, current_page: Page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
         } catch (error) {
