@@ -17,16 +17,20 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     total: {
-        type: DataTypes.DECIMAL(10,2),
-        allowNull: false
+      type: DataTypes.DECIMAL(10,2),
+      allowNull: false
+    },
+    costo: {
+      type: DataTypes.DECIMAL(10,2),
+      allowNull: false
     },
     id_examen:{
-        type: DataTypes.INTEGER,
-        allowNull: true
+      type: DataTypes.INTEGER,
+      allowNull: true
     },
     id_lab_cuenta: {
-        type: DataTypes.INTEGER,
-        allowNull: false
+      type: DataTypes.INTEGER,
+      allowNull: false
     },
   }, {
     sequelize,
