@@ -67,6 +67,11 @@ const equiposMovimientosController = require('../controllers/inventario/equiposM
 //CARPETA DE LABORATORIO
 const examenesAlmacenadosController = require('../controllers/laboratorio/examenesAlmacenadosController.js')
 const campoExamenController = require('../controllers/laboratorio/campoExamenController.js')
+const labCuentasController = require('../controllers/laboratorio/labCuentasController')
+const labDetalleCuentasController = require('../controllers/laboratorio/labDetalleCuentasController')
+/* const labDetallePagoCuentasController = require('../controllers/laboratorio/labCuentasController')
+
+ */
 
 //CARPETA DE LIQUIDACIONES
 
@@ -475,6 +480,22 @@ module.exports = (app) => {
 
     //tipos de encargados
     router.get('/tipos_encargados/get', tipoEncargadoController.get);
+
+    // CARPETA DE CUENTAS DE LABORATORIO
+    //cuentas
+    router.get('/lab_cuentas/list', labCuentasController.list);
+    router.get('/lab_cuentas/debtList', labCuentasController.listNoPay);
+    router.get('/lab_cuentas/get', labCuentasController.get);
+    router.get('/lab_cuentas/getByExp', labCuentasController.getByExp);
+    router.get('/lab_cuentas/pay', labCuentasController.onPay);
+    router.post('/lab_cuentas/create', labCuentasController.create);
+    router.put('/lab_cuentas/update', labCuentasController.update);
+    router.put('/lab_cuentas/activate', labCuentasController.activate);
+    router.put('/lab_cuentas/deactivate', labCuentasController.deactivate);
+    router.get('/lab_cuentas/getSearch', labCuentasController.getSearch);
+    
+    //dealle cuentas
+    router.get('/detalle/getByAccount', labDetalleCuentasController.getByAccount);
 
     //detalle_permisos
 

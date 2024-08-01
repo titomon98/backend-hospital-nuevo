@@ -1,7 +1,7 @@
 'use strict'
 const Sequelize     = require('sequelize');
 const db = require("../../models");
-const CampoExamenes = db.campo_examenes;
+const DetalleCuentas = db.lab_detalle_cuentas;
 const Op = db.Sequelize.Op;
 
 module.exports = {
@@ -15,7 +15,7 @@ module.exports = {
             id_examenes_almacenados: form.id_examenes_almacenados
         };
 
-        CampoExamenes.create(datos)
+        DetalleCuentas.create(datos)
         .then(tipo => {
             res.send(tipo);
         })
@@ -56,7 +56,7 @@ module.exports = {
 
         var condition = busqueda ? { [Op.or]: [{ nombre: { [Op.like]: `%${busqueda}%` } }] } : null ;
 
-        CampoExamenes.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        DetalleCuentas.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
         console.log('data: '+JSON.stringify(data))
@@ -83,7 +83,7 @@ module.exports = {
     update (req, res) {
         console.log('Hola')
         let form = req.body
-        CampoExamenes.update(
+        DetalleCuentas.update(
             { 
                 nombre: form.nombre,
                 valor_minimo: form.valor_minimo,
@@ -128,10 +128,10 @@ module.exports = {
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
-    getByExamen (req, res) {
-        CampoExamenes.findAll({
+    getByAccount (req, res) {
+        DetalleCuentas.findAll({
             where:{
-                id_examenes_almacenados: req.query.id_examenes_almacenados
+                id_lab_cuenta: req.query.id_lab_cuenta
             }
         })
         .then(data => {
