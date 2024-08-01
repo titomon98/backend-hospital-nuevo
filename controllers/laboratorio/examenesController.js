@@ -12,18 +12,24 @@ module.exports = {
 
     async create(req, res) {
 
+      /* ESTADOS DE EXAMEN
+      En progreso = 1
+      Con resultados = 2
+      Anulado = 3
+      */
+
         const restarHoras = (fecha, horas) => {
             let nuevaFecha = new Date(fecha); // Crear una nueva instancia de fecha
             nuevaFecha.setHours(nuevaFecha.getHours() - horas);
             return nuevaFecha;
           };
 
-          console.log(req.body.form)
+          console.log(req.body)
           let form = req.body.form
 
         const datos = {
             expediente: form.nombre,
-            cui: form.cui,
+            cui: parseInt(form.cui),
             comision: form.comision,
             total: form.total,
             correo: form.correo,
@@ -185,8 +191,93 @@ module.exports = {
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         }
       },
+
+      async listCui(req, res) {
+        const getPagingData = (data, page, limit) => {
+            const { count: totalItems, rows: referido } = data;
+            const currentPage = page ? +page : 0;
+            const totalPages = Math.ceil(totalItems / limit);
+            return { totalItems, referido, totalPages, currentPage };
+        };
+        const getPagination = (page, size) => {
+            const limit = size ? +size : 2;
+            const offset = page ? page * limit : 0;
+            return { limit, offset };
+        };
+        
+        const { page = 1, size = 5, criterio = 'createdAt', order = 'DESC' , fechaDesde, fechaHasta} = req.query;
+        const Page=req.query.page-1;
+        const Size=req.query.limit;
+        const Criterio = req.query.criterio;
+        const Order = req.query.order;
+        const { limit, offset } = getPagination(Page, Size);
     
-    async update(req, res) {
+        try {
+          const whereClause = {
+            estado: { [Op.in]: [1, 2] } 
+          };
+          if (req.query.cui) {
+            whereClause.cui = req.query.cui; 
+          }
+
+            const data = await Examenes.findAndCountAll({
+                include: [
+                    { model: ExamenAlmacenado, attributes: ['nombre'] },
+                    { model: Encargado, attributes: ['nombres'] }
+                ],
+                attributes: [
+                  'id',
+                  'expediente',
+                  'cui', 
+                  'comision',
+                  'total',
+                  'correo', 
+                  'whatsapp',
+                  'numero_muestra',
+                  'referido',
+                  'pagado',
+                  'por_pagar',
+                  'createdAt'],
+                order: [[Criterio, Order]], // Ordenamos por createdAt DESC
+                limit,
+                offset,
+                where: whereClause 
+            }); 
+    
+            const response = getPagingData(data, Page, limit);
+    
+            if (response.referido) {
+                const dataResponse = response.referido.map(item => ({
+                    id: item.id,
+                    nombre : item.expediente,
+                    cui : item.cui,
+                    comision : item.comision,
+                    total : item.total,
+                    correo : item.correo,
+                    whatsapp : item.whatsapp,
+                    numero_muestra : item.numero_muestra,
+                    referido : item.referido,
+                    nombre_encargago: item.encargado.nombres,
+                    pagado : item.pagado,
+                    por_pagar : item.por_pagar,
+                    nombre_examen: item.examenes_almacenado.nombre,
+                    fecha_hora: item.createdAt,
+                }));
+                console.log(dataResponse)
+    
+                response.referido = dataResponse;
+            } else {
+                // Manejar el caso en que response.referido es undefined
+                response.referido = ['NO SE ENCONTRARON DATOS']; // O enviar una respuesta adecuada al frontend
+            }
+            res.send({total:response.totalItems,last_page:response.totalPages, current_page: Page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
+        } catch (error) {
+            console.log(error);
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        }
+      },
+    
+      async update(req, res) {
       let form = req.query
       console.log(form.id)
       const examenSeleccionado = await Examenes.findOne({ 
