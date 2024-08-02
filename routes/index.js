@@ -96,7 +96,8 @@ const tipoEncargadoController = require('../controllers/laboratorio/tipoEncargad
 // examenes realizados
 const examenesRealizados = require('../controllers/laboratorio/examenesController')
 // Detalle Examen Realizado
-const detalleExamenRealizado = require('../controllers/laboratorio/detalleExamenRealizadoController.js')
+const detalleExamenRealizado = require('../controllers/laboratorio/detalleExamenRealizadoController.js');
+const labPagoSegurosController = require('../controllers/caja/labPagoSegurosController.js');
 //RUTAS
 
 module.exports = (app) => {
@@ -492,6 +493,16 @@ module.exports = (app) => {
     router.put('/lab_cuentas/deactivate', labCuentasController.deactivate);
     router.get('/lab_cuentas/getSearch', labCuentasController.getSearch);
     
+    //Seguros laboratorios
+    //router.post('/seguros/create', labPagoSegurosController.create);
+    //router.get('/seguros/list', labPagoSegurosController.list);
+    router.get('/lab_seguros/debtList', labPagoSegurosController.listAssuranceNoPay);
+    //router.put('/seguros/deactivate', labPagoSegurosController.deactivate);
+    //router.put('/seguros/paid', labPagoSegurosController.paid);
+    //router.put('/seguros/debt', labPagoSegurosController.debt);
+    //router.get('/seguros/getByExp', labPagoSegurosController.getAssuranceByExp);
+
+
     //dealle cuentas
     router.get('/detalle/getByAccount', labDetalleCuentasController.getByAccount);
 
