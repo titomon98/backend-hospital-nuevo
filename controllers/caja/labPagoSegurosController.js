@@ -2,9 +2,9 @@
 const Sequelize     = require('sequelize');
 const db = require("../../models");
 const Expediente = db.expedientes;
-const Cuenta = db.cuentas;
+const Cuenta = db.lab_cuentas;
 const pagoSeguros= db.lab_pago_seguros;
-const detalle_pago_cuenta= db.detalle_pago_cuentas;
+const detalle_pago_cuenta= db.lab_detalle_pago_cuentas;
 const Op = db.Sequelize.Op;
 
 module.exports={

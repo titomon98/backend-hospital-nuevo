@@ -6,7 +6,7 @@ const Expediente = db.expedientes;
 const detallePagoCuentas = db.lab_detalle_pago_cuentas;
 const detalleCuentas = db.lab_detalle_cuentas;
 const Seguro = db.seguros;
-const PagoSeguro = db.pago_seguros;
+const PagoSeguro = db.lab_pago_seguros;
 const Op = db.Sequelize.Op;
 
 module.exports = {
