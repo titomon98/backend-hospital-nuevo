@@ -47,7 +47,6 @@ module.exports = {
 
  
     list(req, res) {
-        console.log('SALUDO REAL, SALUDO REAL. ¡AQUÍ ESTÁ SU REINITA!')
         const getPagingData = (data, page, limit) => {
             const { count: totalItems, rows: referido } = data;
 
@@ -72,8 +71,8 @@ module.exports = {
         const order=req.query.order;
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Op.or]: [{ '$Expediente.expediente$': { [Op.like]: `%${busqueda}%` } }] } : null ;
-        console.log(busqueda)
+        var condition = busqueda ? { [Op.or]: [{ '$Expediente.expediente$': { [Op.like]: `%${busqueda}%` } }, {'estado':{[Op.like]: 0}}] } : null ;
+
         Cuenta.findAndCountAll({ 
             include: [
                 {
