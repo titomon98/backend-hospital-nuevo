@@ -6,7 +6,7 @@ const Expediente = db.expedientes;
 const detallePagoCuentas = db.lab_detalle_pago_cuentas;
 const detalleCuentas = db.lab_detalle_cuentas;
 const Seguro = db.seguros;
-const PagoSeguro = db.pago_seguros;
+const PagoSeguro = db.lab_pago_seguros;
 const Op = db.Sequelize.Op;
 
 module.exports = {
@@ -96,6 +96,7 @@ module.exports = {
     },
 
     listNoPay(req, res) {
+        console.log('SALUDO REAL, SALUDO REAL. ¡AQUÍ ESTÁ SU REINITA!')
         const getPagingData = (data, page, limit) => {
             const { count: totalItems, rows: referido } = data;
 
@@ -120,7 +121,7 @@ module.exports = {
         const order=req.query.order;
         const { limit, offset } = getPagination(page, size);
 
-        var condition = {estado:1, '$Expediente.solvencia$': 1, [Op.or]:[{'$Expediente.estado$': 0},{'$Expediente.estado$': 6},{'$Expediente.estado$': 7},{'$Expediente.estado$': 8},{'$Expediente.estado$': 9}]}
+        var condition = busqueda ? {estado:1, [Op.or]: [{ '$Expediente.expediente$': { [Op.like]: `%${busqueda}%` }}] } : {estado:1} ;
         console.log(busqueda)
         Cuenta.findAndCountAll({ 
             include: [
@@ -198,6 +199,7 @@ module.exports = {
 
     deactivate (req, res) {
         if (req.body.tipo === 'finiquito'){
+          console.log(req.body.id)
             console.log("HOLA")
             Cuenta.update(
                 { 
@@ -227,7 +229,7 @@ module.exports = {
                         transferencia: req.body.transferencia,
                         total: req.body.total,
                         tipo: req.body.tipo,
-                        id_cuenta: req.body.id
+                        id_lab_cuenta: req.body.id
                     })
                 .then(detalle_cuenta =>{
                     console.log(detalle_cuenta)
@@ -253,7 +255,7 @@ module.exports = {
     
                         PagoSeguro.create(
                             {
-                                id_detalle_pago_cuenta: detalle_cuenta.id,
+                                id_lab_detalle_pago_cuenta: detalle_cuenta.id,
                                 monto: req.body.seguro,
                                 id_seguro: req.body.id_seguro,
                                 total: req.body.seguro,
@@ -305,7 +307,7 @@ module.exports = {
                         transferencia: req.body.transferencia,
                         total: req.body.total,
                         tipo: req.body.tipo,
-                        id_cuenta: req.body.id
+                        id_lab_cuenta: req.body.id
                     })
                 .then(detalle_cuenta =>res.status(200).send('El registro ha sido desactivado'))
                 .catch(error=>{
