@@ -34,7 +34,16 @@ module.exports = {
         const { limit, offset } = getPagination(page, size);
         var condition = { id_cuenta: { [Op.like]: `%${id}%` } };
 
-        Movimiento.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        Movimiento.findAndCountAll({ 
+            include:{
+                model: Medicamento,
+                require: true
+            },
+            where: condition,
+            order:[[`${criterio}`,`${order}`]],
+            limit,
+            offset
+        })
         .then(data => {
 
         const response = getPagingData(data, page, limit);
