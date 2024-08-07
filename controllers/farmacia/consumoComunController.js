@@ -37,7 +37,16 @@ module.exports = {
 
         var condition = { id_cuenta: { [Op.like]: `%${id}%` } };
 
-        Movimiento.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        Movimiento.findAndCountAll({ 
+            include:{
+                model: Comun,
+                require: true
+            },
+            where: condition,
+            order:[[`${criterio}`,`${order}`]],
+            limit,
+            offset
+        })
         .then(data => {
 
         const response = getPagingData(data, page, limit);
