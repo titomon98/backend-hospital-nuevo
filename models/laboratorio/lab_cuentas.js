@@ -17,8 +17,8 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     total: {
-        type: DataTypes.DECIMAL(10,2),
-        allowNull: false
+      type: DataTypes.DECIMAL(10,2),
+      allowNull: false
     },
     estado: {
       type: DataTypes.INTEGER,
@@ -32,9 +32,13 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DECIMAL,
       defaultValue: 0
     },
+    fecha_corte: {
+      type: DataTypes.DATE,
+      defaultValue: null
+    },
     id_expediente: {
-        type: DataTypes.INTEGER,
-        allowNull: false
+      type: DataTypes.INTEGER,
+      allowNull: false
     },
   }, {
     sequelize,

@@ -44,7 +44,6 @@ module.exports = {
         });
                     
     },
-
  
     list(req, res) {
         const getPagingData = (data, page, limit) => {
@@ -81,12 +80,19 @@ module.exports = {
             ],
             where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
+            data.rows = data.rows.map(cuenta => {
+                const cuentaJSON = cuenta.toJSON();
+                const [a, m, d] = cuentaJSON.fecha_corte.split('-')
+                return {
+                    ...cuentaJSON,
+                    fecha_corte: d + '-' + m + '-' + a
+                };
+            });
+            console.log('data: '+JSON.stringify(data))
+            const response = getPagingData(data, page, limit);
 
-        console.log('data: '+JSON.stringify(data))
-        const response = getPagingData(data, page, limit);
-
-        console.log('response: '+JSON.stringify(response))
-        res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
+            console.log('response: '+JSON.stringify(response))
+            res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
         })
         .catch(error => {
             console.log(error)
