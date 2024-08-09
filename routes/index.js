@@ -158,6 +158,7 @@ module.exports = (app) => {
     router.put('/expedientes/activate', expedientesController.activate);
     router.put('/expedientes/deactivate', expedientesController.deactivate);
     router.get('/expedientes/getSearch', expedientesController.getSearch)
+    router.get('/expedientes/getSearcExamenes', expedientesController.getSearchExamenes)
     router.get('/expedientes/getAll', expedientesController.get);
     router.get('/expedientes/listQuirofano', expedientesController.listQuirofano);
     router.get('/expedientes/listEmergencia', expedientesController.listEmergencia);
@@ -421,9 +422,11 @@ module.exports = (app) => {
     
     //examenes realizados
     router.get('/Examenes_realizados/list', examenesRealizados.list);
+    router.get('/Examenes_realizados/list/cui', examenesRealizados.listCui);
     router.post('/Examenes_realizados/create', examenesRealizados.create);
     router.get('/encargadoExamen/getSearch', examenesRealizados.getsearchEncargado);
     router.get('/examenesAlmacenados/getSearch', examenesRealizados.getsearchExaAlmacenados);
+    router.put('/Examenes_realizados/update', examenesRealizados.update);
 
     //Detalle Examen Realizado
     router.get('/detalleExamenRealizado/list', detalleExamenRealizado.list);
