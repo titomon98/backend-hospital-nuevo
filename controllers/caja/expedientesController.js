@@ -15,7 +15,7 @@ module.exports = {
         const today = new Date();
         let status = 0
         if (form.selectedOption == 'hospi') {
-            status = 1
+            status = 11
         } else if (form.selectedOption == 'emergencia') {
             status = 5
         } else if (form.selectedOption == 'quirofano') {
@@ -96,6 +96,29 @@ module.exports = {
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
                     
+    },
+
+    asignarHabitacion(req, res){
+        let form = req.body.form
+        Expediente.update(
+        { 
+            estado: 1,
+            fecha_ingreso_reciente: form.fecha,
+            hora_ingreso_reciente: form.hora,
+        },
+        { where: { 
+            id: form.id
+        } }).then(expediente => {
+            Habitaciones.update(
+                {
+                    estado: 2,
+                },
+                { where: { 
+                    id: form.habitacion.id
+                }}
+            )
+            res.send(expediente);
+        }).catch(error => console.log(error))
     },
 
     createFromEnfermeria(req, res) {

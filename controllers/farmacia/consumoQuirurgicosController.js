@@ -37,11 +37,19 @@ module.exports = {
 
         var condition = { id_cuenta: { [Op.like]: `%${id}%` } };
 
-        Movimiento.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        Movimiento.findAndCountAll({ 
+            include:{
+                model: Quirurgico,
+                require: true
+            },
+            where: condition,
+            order:[[`${criterio}`,`${order}`]],
+            limit,
+            offset
+        })
         .then(data => {
-
-        const response = getPagingData(data, page, limit);
-        res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
+            const response = getPagingData(data, page, limit);
+            res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
         })
         .catch(error => {
             console.log(error)

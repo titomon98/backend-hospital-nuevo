@@ -36,6 +36,7 @@ module.exports = {
             id_examenes_almacenados: form.id_examenes_almacenados.id,
             createdAt: restarHoras(new Date(), 6),
             updatedAt: restarHoras(new Date(), 6),
+            estado: 1
         };
         Examenes.create(datos)
         .then(tipo => {

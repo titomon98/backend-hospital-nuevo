@@ -6,7 +6,7 @@ const Expediente = db.expedientes;
 const detallePagoCuentas = db.lab_detalle_pago_cuentas;
 const detalleCuentas = db.lab_detalle_cuentas;
 const Seguro = db.seguros;
-const PagoSeguro = db.pago_seguros;
+const PagoSeguro = db.lab_pago_seguros;
 const Op = db.Sequelize.Op;
 
 module.exports = {
@@ -47,6 +47,54 @@ module.exports = {
 
  
     list(req, res) {
+        const getPagingData = (data, page, limit) => {
+            const { count: totalItems, rows: referido } = data;
+
+            const currentPage = page ? +page : 0;
+            const totalPages = Math.ceil(totalItems / limit);
+
+            return { totalItems, referido, totalPages, currentPage };
+        };
+
+
+        const getPagination = (page, size) => {
+            const limit = size ? +size : 2;
+            const offset = page ? page * limit : 0;
+
+            return { limit, offset };
+        };
+
+        const busqueda=req.query.search;
+        const page=req.query.page-1;
+        const size=req.query.limit;
+        const criterio=req.query.criterio;
+        const order=req.query.order;
+        const { limit, offset } = getPagination(page, size);
+
+        var condition = busqueda ? { [Op.or]: [{ '$Expediente.expediente$': { [Op.like]: `%${busqueda}%` } }, {'estado':{[Op.like]: 0}}] } : null ;
+
+        Cuenta.findAndCountAll({ 
+            include: [
+                {
+                    model: Expediente,
+                }
+            ],
+            where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        .then(data => {
+
+        console.log('data: '+JSON.stringify(data))
+        const response = getPagingData(data, page, limit);
+
+        console.log('response: '+JSON.stringify(response))
+        res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
+        })
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
+
+    listNoPay(req, res) {
         console.log('SALUDO REAL, SALUDO REAL. ¡AQUÍ ESTÁ SU REINITA!')
         const getPagingData = (data, page, limit) => {
             const { count: totalItems, rows: referido } = data;
@@ -72,55 +120,7 @@ module.exports = {
         const order=req.query.order;
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Op.or]: [{ '$Expediente.expediente$': { [Op.like]: `%${busqueda}%` } }] } : null ;
-        console.log(busqueda)
-        Cuenta.findAndCountAll({ 
-            include: [
-                {
-                    model: Expediente,
-                }
-            ],
-            where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
-        .then(data => {
-
-        console.log('data: '+JSON.stringify(data))
-        const response = getPagingData(data, page, limit);
-
-        console.log('response: '+JSON.stringify(response))
-        res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
-        })
-        .catch(error => {
-            console.log(error)
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
-    },
-
-    listNoPay(req, res) {
-        const getPagingData = (data, page, limit) => {
-            const { count: totalItems, rows: referido } = data;
-
-            const currentPage = page ? +page : 0;
-            const totalPages = Math.ceil(totalItems / limit);
-
-            return { totalItems, referido, totalPages, currentPage };
-        };
-
-
-        const getPagination = (page, size) => {
-            const limit = size ? +size : 2;
-            const offset = page ? page * limit : 0;
-
-            return { limit, offset };
-        };
-
-        const busqueda=req.query.search;
-        const page=req.query.page-1;
-        const size=req.query.limit;
-        const criterio=req.query.criterio;
-        const order=req.query.order;
-        const { limit, offset } = getPagination(page, size);
-
-        var condition = {estado:1, '$Expediente.solvencia$': 1, [Op.or]:[{'$Expediente.estado$': 0},{'$Expediente.estado$': 6},{'$Expediente.estado$': 7},{'$Expediente.estado$': 8},{'$Expediente.estado$': 9}]}
+        var condition = busqueda ? {estado:1, [Op.or]: [{ '$Expediente.expediente$': { [Op.like]: `%${busqueda}%` }}] } : {estado:1} ;
         console.log(busqueda)
         Cuenta.findAndCountAll({ 
             include: [
@@ -198,6 +198,7 @@ module.exports = {
 
     deactivate (req, res) {
         if (req.body.tipo === 'finiquito'){
+          console.log(req.body.id)
             console.log("HOLA")
             Cuenta.update(
                 { 
@@ -227,7 +228,7 @@ module.exports = {
                         transferencia: req.body.transferencia,
                         total: req.body.total,
                         tipo: req.body.tipo,
-                        id_cuenta: req.body.id
+                        id_lab_cuenta: req.body.id
                     })
                 .then(detalle_cuenta =>{
                     console.log(detalle_cuenta)
@@ -253,7 +254,7 @@ module.exports = {
     
                         PagoSeguro.create(
                             {
-                                id_detalle_pago_cuenta: detalle_cuenta.id,
+                                id_lab_detalle_pago_cuenta: detalle_cuenta.id,
                                 monto: req.body.seguro,
                                 id_seguro: req.body.id_seguro,
                                 total: req.body.seguro,
@@ -305,7 +306,7 @@ module.exports = {
                         transferencia: req.body.transferencia,
                         total: req.body.total,
                         tipo: req.body.tipo,
-                        id_cuenta: req.body.id
+                        id_lab_cuenta: req.body.id
                     })
                 .then(detalle_cuenta =>res.status(200).send('El registro ha sido desactivado'))
                 .catch(error=>{
