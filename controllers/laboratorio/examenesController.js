@@ -43,6 +43,7 @@ module.exports = {
             estado: 1,
             createdAt: restarHoras(new Date(), 6),
             updatedAt: restarHoras(new Date(), 6),
+            estado: 1
         };
         Examenes.create(datos)
         .then(tipo => {
