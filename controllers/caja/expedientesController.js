@@ -633,6 +633,24 @@ module.exports = {
         });
     },
 
+    getSearchExamenes(req, res) {
+        const busqueda = req.query.search;
+        const condition = busqueda ? { 
+          nombres: { [Op.like]: `%${busqueda}%` } 
+        } : null;
+      
+        Expediente.findAll({
+          where: condition
+        })
+        .then(data => {
+          res.send(data);
+        })
+        .catch(error => {
+          console.error(error);
+          return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+      },      
+
     listQuirofano (req, res) {
         const getPagingData = (data, page, limit) => {
             const { count: totalItems, rows: referido } = data;
