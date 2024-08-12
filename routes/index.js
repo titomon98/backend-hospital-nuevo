@@ -510,6 +510,7 @@ module.exports = (app) => {
 
     //dealle cuentas
     router.get('/detalle/getByAccount', labDetalleCuentasController.getByAccount);
+    router.get('/detalle/listCortesPerDate', labDetalleCuentasController.listCortesPerDate);
 
     //detalle_permisos
 
