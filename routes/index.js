@@ -180,6 +180,7 @@ module.exports = (app) => {
     router.put('/habitaciones/available', habitacionesController.available);
     router.get('/habitaciones/getSearch', habitacionesController.getSearch);
     router.get('/habitaciones/get', habitacionesController.get);
+    router.get('/habitaciones/getAll', habitacionesController.getAll);
 
     //servicios
     router.get('/servicios/list', serviciosController.list);
