@@ -24,13 +24,6 @@ module.exports = {
 
         Cuenta.create(datos)
         .then(tipo => {
-            /* Expediente.update({
-                solvente:1,
-            },{
-                where:{
-                    id:form.id_expediente
-                }
-            }) */
             return tipo.update({ numero: tipo.id });
         })
         .then(updatedTipo => {
