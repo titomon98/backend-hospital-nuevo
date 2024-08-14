@@ -70,8 +70,8 @@ module.exports = {
             }
             Cuenta.create(datos_cuenta)
                 .then(res=>{
-                    console.log(res)
-                })
+                    res.update({ numero: res.id });
+                }) 
                 .catch(err=>
                     console.log(err)
                 )
@@ -100,6 +100,8 @@ module.exports = {
 
     asignarHabitacion(req, res){
         let form = req.body.form
+        console.log(form)
+        console.log(req.body)
         Expediente.update(
         { 
             estado: 1,
@@ -109,12 +111,13 @@ module.exports = {
         { where: { 
             id: form.id
         } }).then(expediente => {
+            console.log('HABITACION ', form.habitacion)
             Habitaciones.update(
                 {
                     estado: 2,
                 },
                 { where: { 
-                    id: form.habitacion.id
+                    id: form.habitacion
                 }}
             )
             res.send(expediente);
@@ -343,6 +346,7 @@ module.exports = {
                             }
                             Cuenta.create(datos_cuenta)
                             .then((resultCuenta_create)=>{
+                                resultCuenta_create.update({ numero: resultCuenta_create.id });
                                 res.send(form)
                             })
                             .catch(err=>
@@ -632,6 +636,24 @@ module.exports = {
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
+
+    getSearchExamenes(req, res) {
+        const busqueda = req.query.search;
+        const condition = busqueda ? { 
+          nombres: { [Op.like]: `%${busqueda}%` } 
+        } : null;
+      
+        Expediente.findAll({
+          where: condition
+        })
+        .then(data => {
+          res.send(data);
+        })
+        .catch(error => {
+          console.error(error);
+          return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+      },      
 
     listQuirofano (req, res) {
         const getPagingData = (data, page, limit) => {
