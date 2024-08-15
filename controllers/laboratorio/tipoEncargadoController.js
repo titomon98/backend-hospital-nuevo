@@ -1,23 +1,20 @@
 'use strict'
 const Sequelize     = require('sequelize');
 const db = require("../../models");
-const CampoExamenes = db.campo_examenes;
+const TipoEncargado = db.tipos_encargados;
 const Op = db.Sequelize.Op;
 
 module.exports = {
     create(req, res) {
-        let form = req.body
+        let form = req.body.form
         const datos = {
-            nombre: form.nombre,
-            valor_minimo: form.valor_minimo,
-            valor_maximo: form.valor_maximo,
-            unidades: form.unidades,
-            id_examenes_almacenados: form.id_examenes_almacenados
+            tipo: form.tipo,
+            estado: 1
         };
 
-        CampoExamenes.create(datos)
-        .then(tipo => {
-            res.send(tipo);
+        TipoEncargado.create(datos)
+        .then(encargado => {
+            res.send(encargado);
         })
         .catch(error => {
             console.log(error)
@@ -56,7 +53,7 @@ module.exports = {
 
         var condition = busqueda ? { [Op.or]: [{ nombre: { [Op.like]: `%${busqueda}%` } }] } : null ;
 
-        CampoExamenes.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        TipoEncargado.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
         console.log('data: '+JSON.stringify(data))
@@ -75,26 +72,23 @@ module.exports = {
     find (req, res) {
         const id = req.params.id;
 
-        return Contrato.findByPk(id)
-        .then(marca => res.status(200).send(marca))
+        return TipoEncargado.findByPk(id)
+        .then(encargado => res.status(200).send(encargado))
         .catch(error => res.status(400).send(error))
     },
 
     update (req, res) {
-        console.log('Hola')
-        let form = req.body
-        CampoExamenes.update(
+        let form = req.body.form
+        TipoEncargado.update(
             { 
+                contrato: form.contrato,
                 nombre: form.nombre,
-                valor_minimo: form.valor_minimo,
-                valor_maximo: form.valor_maximo,
-                unidades: form.unidades,
             },
             { where: { 
                 id: form.id 
             } }
         )
-        .then(marca => res.status(200).send('El registro ha sido actualizado'))
+        .then(encargado => res.status(200).send('El registro ha sido actualizado'))
         .catch(error => {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
@@ -102,13 +96,13 @@ module.exports = {
     },
 
     activate (req, res) {
-        Contrato.update(
+        TipoEncargado.update(
             { estado: 1 },
             { where: { 
                 id: req.body.id 
             } }
         )
-        .then(marca => res.status(200).send('El registro ha sido activado'))
+        .then(encargado => res.status(200).send('El registro ha sido activado'))
         .catch(error => {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
@@ -116,25 +110,38 @@ module.exports = {
     },
 
     deactivate (req, res) {
-        Contrato.update(
+        TipoEncargado.update(
             { estado: 0 },
             { where: { 
                 id: req.body.id 
             } }
         )
-        .then(marca =>res.status(200).send('El registro ha sido desactivado'))
+        .then(encargado =>res.status(200).send('El registro ha sido desactivado'))
         .catch(error => {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
-    getByExamen (req, res) {
-        CampoExamenes.findAll({
-            where:{
-                id_examenes_almacenados: req.query.id_examenes_almacenados
-            }
-        })
+    get (req, res) {
+        var busqueda = req.query.search;
+        var condition = busqueda?{ [Op.or]:[ {nombre: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
+        TipoEncargado.findAll({attributes: ['id', 'tipo']}, {
+            where: condition})
         .then(data => {
+            res.send(data);
+        })
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
+    getSearch (req, res) {
+        var busqueda = req.query.search;
+        var condition = busqueda?{ [Op.or]:[ {contrato: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
+        TipoEncargado.findAll({
+            where: condition})
+        .then(data => {
+            console.log(data)
             res.send(data);
         })
         .catch(error => {

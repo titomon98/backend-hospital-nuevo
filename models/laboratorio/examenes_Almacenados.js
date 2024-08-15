@@ -4,33 +4,31 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class campo_examenes extends Model {
+  class examenes_almacenados extends Model {
     static associate(models) {
-      campo_examenes.belongsTo(models.examenes_almacenados, {
-        foreignKey: "id_examenes_almacenados",
-      }); 
+        
     }
   };
-  campo_examenes.init({
+  examenes_almacenados.init({
     nombre: {
       type: DataTypes.STRING,
       allowNull: false
     },
-    valor_minimo: {
+    precio_normal: {
       type: DataTypes.DECIMAL,
       allowNull: false
     },
-    valor_maximo: {
+    precio_sobrecargo: {
       type: DataTypes.DECIMAL,
       allowNull: false
     },
-    unidades:{
+    tipo_examen:{
       type: DataTypes.STRING,
       allowNull: false
     }
   }, {
     sequelize,
-    modelName: 'campo_examenes',
+    modelName: 'examenes_almacenados',
   });
-  return campo_examenes;
+  return examenes_almacenados;
 };

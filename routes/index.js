@@ -64,6 +64,15 @@ const alimentacionMovimientosController = require('../controllers/inventario/ali
 const equiposController = require('../controllers/inventario/equiposController')
 const equiposMovimientosController = require('../controllers/inventario/equiposMovimientosController')
 
+//CARPETA DE LABORATORIO
+const examenesAlmacenadosController = require('../controllers/laboratorio/examenesAlmacenadosController.js')
+const campoExamenController = require('../controllers/laboratorio/campoExamenController.js')
+const labCuentasController = require('../controllers/laboratorio/labCuentasController')
+const labDetalleCuentasController = require('../controllers/laboratorio/labDetalleCuentasController')
+/* const labDetallePagoCuentasController = require('../controllers/laboratorio/labCuentasController')
+
+ */
+
 //CARPETA DE LIQUIDACIONES
 
 
@@ -80,7 +89,15 @@ const detalle_permisosController = require('../controllers/empleados/detalle_per
 const userController = require('../controllers/empleados/usuarioController');
 const userTypeController = require('../controllers/empleados/tipoUsuarioController');
 const serviciosController = require('../controllers/enfermeria/serviciosController');
+const encargadosController = require('../controllers/laboratorio/encargadosController');
+const tipoEncargadoController = require('../controllers/laboratorio/tipoEncargadoController.js');
 
+
+// examenes realizados
+const examenesRealizados = require('../controllers/laboratorio/examenesController')
+// Detalle Examen Realizado
+const detalleExamenRealizado = require('../controllers/laboratorio/detalleExamenRealizadoController.js');
+const labPagoSegurosController = require('../controllers/caja/labPagoSegurosController.js');
 //RUTAS
 
 module.exports = (app) => {
@@ -139,9 +156,11 @@ module.exports = (app) => {
     router.put('/expedientes/update', expedientesController.update);
     router.put('/expedientes/changeState', expedientesController.changeState);
     router.put('/expedientes/assignDoctor', expedientesController.updateMedico);
+    router.put('/expedientes/assignRoom', expedientesController.asignarHabitacion);
     router.put('/expedientes/activate', expedientesController.activate);
     router.put('/expedientes/deactivate', expedientesController.deactivate);
     router.get('/expedientes/getSearch', expedientesController.getSearch)
+    router.get('/expedientes/getSearcExamenes', expedientesController.getSearchExamenes)
     router.get('/expedientes/getAll', expedientesController.get);
     router.get('/expedientes/listQuirofano', expedientesController.listQuirofano);
     router.get('/expedientes/listEmergencia', expedientesController.listEmergencia);
@@ -161,6 +180,7 @@ module.exports = (app) => {
     router.put('/habitaciones/available', habitacionesController.available);
     router.get('/habitaciones/getSearch', habitacionesController.getSearch);
     router.get('/habitaciones/get', habitacionesController.get);
+    router.get('/habitaciones/getAll', habitacionesController.getAll);
 
     //servicios
     router.get('/servicios/list', serviciosController.list);
@@ -332,14 +352,17 @@ module.exports = (app) => {
     //detalle_consumo_medicamentos
     router.post('/detalle_consumo_medicamentos/create', detalle_consumo_medicamentos.create);
     router.get('/detalle_consumo_medicamentos/list/:id', detalle_consumo_medicamentos.get);
+    router.get('/detalle_consumo_medicamentos/list', detalle_consumo_medicamentos.list);
 
     //detalle_consumo_quirurgicos
     router.post('/detalle_consumo_quirugicos/create', detalle_consumo_quirugicos.create);
     router.get('/detalle_consumo_quirugicos/list/:id', detalle_consumo_quirugicos.get);
-    
+    router.get('/detalle_consumo_quirugicos/list', detalle_consumo_quirugicos.list);
+
     //detalle_consumo_comunes
     router.post('/detalle_consumo_comun/create', detalle_consumo_comunes.create);
     router.get('/detalle_consumo_comun/list/:id', detalle_consumo_comunes.get);
+    router.get('/detalle_consumo_comun/list', detalle_consumo_comunes.list);
 
     //CARPETA GERENCIA
     //asuetos
@@ -392,6 +415,27 @@ module.exports = (app) => {
 
     //CARPETA DE LIQUIDACIONES
 
+    //CARPETA DE LABORATORIOS
+    router.get('/laboratoriosAlmacenados/list', examenesAlmacenadosController.list);
+    router.post('/laboratoriosAlmacenados/create', examenesAlmacenadosController.create);
+    router.put('/laboratoriosAlmacenados/update', examenesAlmacenadosController.update);
+    router.put('/campoLaboratorio/update', campoExamenController.update);
+    router.post('/campoLaboratorio/create', campoExamenController.create); 
+    router.get('/campoLaboratorio/getByExamen', campoExamenController.getByExamen);
+    
+    //examenes realizados
+    router.get('/Examenes_realizados/list', examenesRealizados.list);
+    router.get('/Examenes_realizados/list/cui', examenesRealizados.listCui);
+    router.post('/Examenes_realizados/create', examenesRealizados.create);
+    router.get('/encargadoExamen/getSearch', examenesRealizados.getsearchEncargado);
+    router.get('/examenesAlmacenados/getSearch', examenesRealizados.getsearchExaAlmacenados);
+    router.put('/Examenes_realizados/update', examenesRealizados.update);
+
+    //Detalle Examen Realizado
+    router.get('/detalleExamenRealizado/list', detalleExamenRealizado.list);
+    router.post('/detalleExamenRealizado/create', detalleExamenRealizado.create);
+    router.get('/TipoExamenAlmacenado/getSearch', detalleExamenRealizado.getsearchTipo);
+
     //CARPETA DE MEDICOS
     //especialidades
     router.get('/especialidades/list', especialidadesController.list);
@@ -428,6 +472,46 @@ module.exports = (app) => {
     router.get('/recetas/getId', recetaController.getId)
 
     //CARPETA DE EMPLEADOS
+    
+    //encargados
+    router.get('/encargados/list', encargadosController.list);
+    router.post('/encargados/create', encargadosController.create);
+    router.put('/encargados/update', encargadosController.update);
+    router.put('/encargados/activate', encargadosController.activate);
+    router.put('/encargados/deactivate', encargadosController.deactivate);
+    router.get('/encargados/getSearch', encargadosController.getSearch);
+    router.get('/encargados/get', encargadosController.get);
+
+    //tipos de encargados
+    router.get('/tipos_encargados/get', tipoEncargadoController.get);
+
+    // CARPETA DE CUENTAS DE LABORATORIO
+    //cuentas
+    router.get('/lab_cuentas/list', labCuentasController.list);
+    router.get('/lab_cuentas/debtList', labCuentasController.listNoPay);
+    router.get('/lab_cuentas/get', labCuentasController.get);
+    router.get('/lab_cuentas/getByExp', labCuentasController.getByExp);
+    router.get('/lab_cuentas/pay', labCuentasController.onPay);
+    router.post('/lab_cuentas/create', labCuentasController.create);
+    router.put('/lab_cuentas/update', labCuentasController.update);
+    router.put('/lab_cuentas/activate', labCuentasController.activate);
+    router.put('/lab_cuentas/deactivate', labCuentasController.deactivate);
+    router.get('/lab_cuentas/getSearch', labCuentasController.getSearch);
+    
+    //Seguros laboratorios
+    //router.post('/seguros/create', labPagoSegurosController.create);
+    //router.get('/seguros/list', labPagoSegurosController.list);
+    router.get('/lab_seguros/debtList', labPagoSegurosController.listAssuranceNoPay);
+    //router.put('/seguros/deactivate', labPagoSegurosController.deactivate);
+    //router.put('/seguros/paid', labPagoSegurosController.paid);
+    //router.put('/seguros/debt', labPagoSegurosController.debt);
+    //router.get('/seguros/getByExp', labPagoSegurosController.getAssuranceByExp);
+
+
+    //dealle cuentas
+    router.get('/detalle/getByAccount', labDetalleCuentasController.getByAccount);
+    router.get('/detalle/listCortesPerDate', labDetalleCuentasController.listCortesPerDate);
+
     //detalle_permisos
 
     //permisos

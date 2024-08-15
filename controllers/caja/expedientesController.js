@@ -4,6 +4,7 @@ const db = require("../../models");
 const Expediente = db.expedientes;
 const Cuenta = db.cuentas;
 const Habitaciones = db.habitaciones;
+const Medicos = db.medicos
 const Logs = db.log_traslados;
 const DetalleCuentas = db.detalle_cuentas;
 const Op = db.Sequelize.Op;
@@ -14,7 +15,7 @@ module.exports = {
         const today = new Date();
         let status = 0
         if (form.selectedOption == 'hospi') {
-            status = 1
+            status = 11
         } else if (form.selectedOption == 'emergencia') {
             status = 5
         } else if (form.selectedOption == 'quirofano') {
@@ -69,8 +70,8 @@ module.exports = {
             }
             Cuenta.create(datos_cuenta)
                 .then(res=>{
-                    console.log(res)
-                })
+                    res.update({ numero: res.id });
+                }) 
                 .catch(err=>
                     console.log(err)
                 )
@@ -95,6 +96,32 @@ module.exports = {
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
                     
+    },
+
+    asignarHabitacion(req, res){
+        let form = req.body.form
+        console.log(form)
+        console.log(req.body)
+        Expediente.update(
+        { 
+            estado: 1,
+            fecha_ingreso_reciente: form.fecha,
+            hora_ingreso_reciente: form.hora,
+        },
+        { where: { 
+            id: form.id
+        } }).then(expediente => {
+            console.log('HABITACION ', form.habitacion)
+            Habitaciones.update(
+                {
+                    estado: 2,
+                },
+                { where: { 
+                    id: form.habitacion
+                }}
+            )
+            res.send(expediente);
+        }).catch(error => console.log(error))
     },
 
     createFromEnfermeria(req, res) {
@@ -176,7 +203,12 @@ module.exports = {
 
         var condition = busqueda ? { [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` }, estado: {[Sequelize.Op.gte]: 0} }] } : {estado: {[Sequelize.Op.gte]: 0} } ;
 
-        Expediente.findAndCountAll({ where: condition, order:[[`${criterio}`,`${order}`]],limit,offset})
+        Expediente.findAndCountAll({
+            include: [
+                {
+                    model: Medicos
+                }
+            ], where: condition, order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
         console.log('data: '+JSON.stringify(data))
@@ -314,6 +346,7 @@ module.exports = {
                             }
                             Cuenta.create(datos_cuenta)
                             .then((resultCuenta_create)=>{
+                                resultCuenta_create.update({ numero: resultCuenta_create.id });
                                 res.send(form)
                             })
                             .catch(err=>
@@ -603,6 +636,24 @@ module.exports = {
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
+
+    getSearchExamenes(req, res) {
+        const busqueda = req.query.search;
+        const condition = busqueda ? { 
+          nombres: { [Op.like]: `%${busqueda}%` } 
+        } : null;
+      
+        Expediente.findAll({
+          where: condition
+        })
+        .then(data => {
+          res.send(data);
+        })
+        .catch(error => {
+          console.error(error);
+          return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+      },      
 
     listQuirofano (req, res) {
         const getPagingData = (data, page, limit) => {

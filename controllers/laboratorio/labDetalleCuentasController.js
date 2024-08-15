@@ -1,7 +1,9 @@
 'use strict'
 const Sequelize     = require('sequelize');
 const db = require("../../models");
-const CampoExamenes = db.campo_examenes;
+const DetalleCuentas = db.lab_detalle_cuentas;
+const Cuenta = db.lab_cuentas;
+const Expediente = db.expedientes;
 const Op = db.Sequelize.Op;
 
 module.exports = {
@@ -15,7 +17,7 @@ module.exports = {
             id_examenes_almacenados: form.id_examenes_almacenados
         };
 
-        CampoExamenes.create(datos)
+        DetalleCuentas.create(datos)
         .then(tipo => {
             res.send(tipo);
         })
@@ -56,7 +58,7 @@ module.exports = {
 
         var condition = busqueda ? { [Op.or]: [{ nombre: { [Op.like]: `%${busqueda}%` } }] } : null ;
 
-        CampoExamenes.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        DetalleCuentas.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
         console.log('data: '+JSON.stringify(data))
@@ -71,6 +73,48 @@ module.exports = {
         });
     },
 
+    listCortesPerDate(req, res) {
+        const getPagingData = (data, page, limit) => {
+            const { count: totalItems, rows: referido } = data;
+
+            const currentPage = page ? +page : 0;
+            const totalPages = Math.ceil(totalItems / limit);
+
+            return { totalItems, referido, totalPages, currentPage };
+        };
+
+        const getPagination = (page, size) => {
+            const limit = size ? +size : 2;
+            const offset = page ? page * limit : 0;
+
+            return { limit, offset };
+        };
+
+        console.log("DATE-----------------------------------", req.query.fecha_corte.split(' ')[0])
+        var condition = { 
+            [Op.and]: [
+                { estado: { [Op.like]: 0 } },
+                Sequelize.where(Sequelize.fn('DATE', Sequelize.col('fecha_corte')), req.query.fecha_corte.split(' ')[0])
+            ]
+        };
+
+
+        Cuenta.findAndCountAll({ 
+            include: [
+                {
+                    model: Expediente,
+                }
+            ],
+            where: condition})
+        .then(data => {
+            console.log('------------ data: '+JSON.stringify(data.rows))
+            res.send(data.rows);
+        })
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
 
     find (req, res) {
         const id = req.params.id;
@@ -83,7 +127,7 @@ module.exports = {
     update (req, res) {
         console.log('Hola')
         let form = req.body
-        CampoExamenes.update(
+        DetalleCuentas.update(
             { 
                 nombre: form.nombre,
                 valor_minimo: form.valor_minimo,
@@ -128,10 +172,10 @@ module.exports = {
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
-    getByExamen (req, res) {
-        CampoExamenes.findAll({
+    getByAccount (req, res) {
+        DetalleCuentas.findAll({
             where:{
-                id_examenes_almacenados: req.query.id_examenes_almacenados
+                id_lab_cuenta: req.query.id_lab_cuenta
             }
         })
         .then(data => {

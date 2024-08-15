@@ -1,150 +1,299 @@
 'use strict'
 const Sequelize     = require('sequelize');
 const db = require("../../models");
-const Contrato = db.contratos;
+const Examenes = db.examenes_realizados;
+const ExamenAlmacenado = db.examenes_almacenados;
+const Encargado = db.encargados;
+const Expediente = db.expedientes;
 const Op = db.Sequelize.Op;
+const moment = require('moment');
 
 module.exports = {
-    create(req, res) {
-        let form = req.body.form
+
+    async create(req, res) {
+
+      /* ESTADOS DE EXAMEN
+      En progreso = 1
+      Con resultados = 2
+      Anulado = 3
+      */
+
+        const restarHoras = (fecha, horas) => {
+            let nuevaFecha = new Date(fecha); // Crear una nueva instancia de fecha
+            nuevaFecha.setHours(nuevaFecha.getHours() - horas);
+            return nuevaFecha;
+          };
+
+          console.log(req.body)
+          let form = req.body.form
+
         const datos = {
-            contrato: form.contrato,
-            nombre: form.nombre,
+            expediente: form.nombre,
+            cui: parseInt(form.cui),
+            comision: form.comision,
+            total: form.total,
+            correo: form.correo,
+            whatsapp: form.whatsapp,
+            numero_muestra: form.numero_muestra,
+            referido: form.referido,
+            id_encargado: form.id_encargado.id,
+            pagado: form.pagado,
+            por_pagar: form.por_pagar,
+            id_examenes_almacenados: form.id_examenes_almacenados.id,
+            estado: 1,
+            createdAt: restarHoras(new Date(), 6),
+            updatedAt: restarHoras(new Date(), 6),
             estado: 1
         };
-
-        Contrato.create(datos)
+        Examenes.create(datos)
         .then(tipo => {
+            
             res.send(tipo);
         })
         .catch(error => {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
-                    
+        });           
     },
 
- 
-    list(req, res) {
+    async getsearchExaAlmacenados(req, res) {
+        const busqueda = req.query.search;
+        const condition = busqueda ? { 
+          nombre: { [Op.like]: `%${busqueda}%` }  // Cambio a Op.like y nombres (plural)
+        } : null;
+      
+        try {
+          const data = await ExamenAlmacenado.findAll({ where: condition });
+          res.send(data);
+        } catch (error) {
+          console.error(error);
+          res.status(500).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        }
+      },
+      
+      async getsearchEncargado(req, res) {
+        const busqueda = req.query.search;
+        const condition = busqueda ? { 
+          nombres: { [Op.like]: `%${busqueda}%` }  // Cambio a Op.like y nombres (plural)
+        } : null;
+      
+        try {
+          const data = await Encargado.findAll({ where: condition });
+          res.send(data);
+        } catch (error) {
+          console.error(error);
+          res.status(500).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        }
+      },
+      
+      async getsearchExpediente(req, res) {
+        const busqueda = req.query.search;
+        const condition = busqueda ? { 
+          nombre: { [Op.like]: `%${busqueda}%` }  // Cambio a Op.like y nombres (plural)
+        } : null;
+      
+        try {
+          const data = await Expediente.findAll({ where: condition });
+          res.send(data);
+        } catch (error) {
+          console.error(error);
+          res.status(500).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        }
+      },
+
+      async list(req, res) {
         const getPagingData = (data, page, limit) => {
             const { count: totalItems, rows: referido } = data;
-
             const currentPage = page ? +page : 0;
             const totalPages = Math.ceil(totalItems / limit);
-
             return { totalItems, referido, totalPages, currentPage };
         };
-
-
         const getPagination = (page, size) => {
             const limit = size ? +size : 2;
             const offset = page ? page * limit : 0;
-
             return { limit, offset };
         };
+        
+        const { page = 1, size = 5, criterio = 'createdAt', order = 'DESC' , fechaDesde, fechaHasta} = req.query;
+        const Page=req.query.page-1;
+        const Size=req.query.limit;
+        const Criterio = req.query.criterio;
+        const Order = req.query.order;
+        const FechaDesde = req.query.fechaDesde;
+        const FechaHasta = req.query.fechaHasta; 
+        const { limit, offset } = getPagination(Page, Size);
+    
+        try {
+            const whereClause = {
+              estado: { [Op.in]: [1, 2] }
+            };
 
-        const busqueda=req.query.search;
-        const page=req.query.page-1;
-        const size=req.query.limit;
-        const criterio=req.query.criterio;
-        const order=req.query.order;
-
-
-        const { limit, offset } = getPagination(page, size);
-
-        var condition = busqueda ? { [Op.or]: [{ contrato: { [Op.like]: `%${busqueda}%` } }] } : null ;
-
-        Contrato.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
-        .then(data => {
-
-        console.log('data: '+JSON.stringify(data))
-        const response = getPagingData(data, page, limit);
-
-        console.log('response: '+JSON.stringify(response))
-        res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
-        })
-        .catch(error => {
-            console.log(error)
+            if (FechaDesde && FechaHasta) {
+                whereClause.createdAt = {
+                    [Op.between]: [
+                        moment(FechaDesde).startOf('day').toDate(), 
+                        moment(FechaHasta).endOf('day').toDate()
+                    ]
+                };
+            }
+            const data = await Examenes.findAndCountAll({
+                include: [
+                    { model: ExamenAlmacenado, attributes: ['nombre'] },
+                    { model: Encargado, attributes: ['nombres'] }
+                ],
+                attributes: [
+                  'id',
+                  'expediente',
+                  'cui', 
+                  'comision',
+                  'total',
+                  'correo', 
+                  'whatsapp',
+                  'numero_muestra',
+                  'referido',
+                  'pagado',
+                  'por_pagar',
+                  'createdAt'],
+                order: [[Criterio, Order]], // Ordenamos por createdAt DESC
+                limit,
+                offset,
+                where: whereClause 
+            }); 
+    
+            const response = getPagingData(data, Page, limit);
+    
+            if (response.referido) {
+                const dataResponse = response.referido.map(item => ({
+                    id: item.id,
+                    nombre : item.expediente,
+                    cui : item.cui,
+                    comision : item.comision,
+                    total : item.total,
+                    correo : item.correo,
+                    whatsapp : item.whatsapp,
+                    numero_muestra : item.numero_muestra,
+                    referido : item.referido,
+                    nombre_encargago: item.encargado.nombres,
+                    pagado : item.pagado,
+                    por_pagar : item.por_pagar,
+                    nombre_examen: item.examenes_almacenado.nombre,
+                    fecha_hora: item.createdAt,
+                }));
+                console.log(dataResponse)
+    
+                response.referido = dataResponse;
+            } else {
+                // Manejar el caso en que response.referido es undefined
+                response.referido = []; // O enviar una respuesta adecuada al frontend
+            }
+            res.send({total:response.totalItems,last_page:response.totalPages, current_page: Page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
+        } catch (error) {
+            console.log(error);
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
-    },
+        }
+      },
 
+      async listCui(req, res) {
+        const getPagingData = (data, page, limit) => {
+            const { count: totalItems, rows: referido } = data;
+            const currentPage = page ? +page : 0;
+            const totalPages = Math.ceil(totalItems / limit);
+            return { totalItems, referido, totalPages, currentPage };
+        };
+        const getPagination = (page, size) => {
+            const limit = size ? +size : 2;
+            const offset = page ? page * limit : 0;
+            return { limit, offset };
+        };
+        
+        const { page = 1, size = 5, criterio = 'createdAt', order = 'DESC' , fechaDesde, fechaHasta} = req.query;
+        const Page=req.query.page-1;
+        const Size=req.query.limit;
+        const Criterio = req.query.criterio;
+        const Order = req.query.order;
+        const { limit, offset } = getPagination(Page, Size);
+    
+        try {
+          const whereClause = {
+            estado: { [Op.in]: [1, 2] } 
+          };
+          if (req.query.cui) {
+            whereClause.cui = req.query.cui; 
+          }
 
-    find (req, res) {
-        const id = req.params.id;
-
-        return Contrato.findByPk(id)
-        .then(marca => res.status(200).send(marca))
-        .catch(error => res.status(400).send(error))
-    },
-
-    update (req, res) {
-        let form = req.body.form
-        Contrato.update(
-            { 
-                contrato: form.contrato,
-                nombre: form.nombre,
-            },
-            { where: { 
-                id: form.id 
-            } }
-        )
-        .then(marca => res.status(200).send('El registro ha sido actualizado'))
-        .catch(error => {
-            console.log(error)
+            const data = await Examenes.findAndCountAll({
+                include: [
+                    { model: ExamenAlmacenado, attributes: ['nombre'] },
+                    { model: Encargado, attributes: ['nombres'] }
+                ],
+                attributes: [
+                  'id',
+                  'expediente',
+                  'cui', 
+                  'comision',
+                  'total',
+                  'correo', 
+                  'whatsapp',
+                  'numero_muestra',
+                  'referido',
+                  'pagado',
+                  'por_pagar',
+                  'createdAt'],
+                order: [[Criterio, Order]], // Ordenamos por createdAt DESC
+                limit,
+                offset,
+                where: whereClause 
+            }); 
+    
+            const response = getPagingData(data, Page, limit);
+    
+            if (response.referido) {
+                const dataResponse = response.referido.map(item => ({
+                    id: item.id,
+                    nombre : item.expediente,
+                    cui : item.cui,
+                    comision : item.comision,
+                    total : item.total,
+                    correo : item.correo,
+                    whatsapp : item.whatsapp,
+                    numero_muestra : item.numero_muestra,
+                    referido : item.referido,
+                    nombre_encargago: item.encargado.nombres,
+                    pagado : item.pagado,
+                    por_pagar : item.por_pagar,
+                    nombre_examen: item.examenes_almacenado.nombre,
+                    fecha_hora: item.createdAt,
+                }));
+                console.log(dataResponse)
+    
+                response.referido = dataResponse;
+            } else {
+                // Manejar el caso en que response.referido es undefined
+                response.referido = ['NO SE ENCONTRARON DATOS']; // O enviar una respuesta adecuada al frontend
+            }
+            res.send({total:response.totalItems,last_page:response.totalPages, current_page: Page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
+        } catch (error) {
+            console.log(error);
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
-    },
-
-    activate (req, res) {
-        Contrato.update(
-            { estado: 1 },
-            { where: { 
-                id: req.body.id 
-            } }
-        )
-        .then(marca => res.status(200).send('El registro ha sido activado'))
-        .catch(error => {
-            console.log(error)
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
-    },
-
-    deactivate (req, res) {
-        Contrato.update(
-            { estado: 0 },
-            { where: { 
-                id: req.body.id 
-            } }
-        )
-        .then(marca =>res.status(200).send('El registro ha sido desactivado'))
-        .catch(error => {
-            console.log(error)
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
-    },
-    get (req, res) {
-        Contrato.findAll({attributes: ['id', 'contrato']})
-        .then(data => {
-            res.send(data);
-        })
-        .catch(error => {
-            console.log(error)
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
-    },
-    getSearch (req, res) {
-        var busqueda = req.query.search;
-        var condition = busqueda?{ [Op.or]:[ {contrato: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
-        Contrato.findAll({
-            where: condition})
-        .then(data => {
-            res.send(data);
-        })
-        .catch(error => {
-            console.log(error)
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
-    }
-};
-
+        }
+      },
+    
+      async update(req, res) {
+      let form = req.query
+      console.log(form.id)
+      const examenSeleccionado = await Examenes.findOne({ 
+        where: { id: form.id } 
+      });
+      if (!examenSeleccionado) {
+        return res.status(300).json({ msg: 'No se encontró el examen a actualizar' });
+      }
+      await examenSeleccionado.update({estado: 3})
+      .then(tipo => {
+          res.send(tipo);
+      })
+      .catch(error => {
+          console.log(error)
+          return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+      });
+      }
+}

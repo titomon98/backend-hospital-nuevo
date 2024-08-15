@@ -5,6 +5,7 @@ const Movimiento = db.detalle_consumo_comunes;
 const Comun = db.comunes;
 const Cuenta = db.cuentas;
 const Op = db.Sequelize.Op;
+const moment = require('moment');
 
 module.exports = {
     get(req, res) {
@@ -36,7 +37,16 @@ module.exports = {
 
         var condition = { id_cuenta: { [Op.like]: `%${id}%` } };
 
-        Movimiento.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        Movimiento.findAndCountAll({ 
+            include:{
+                model: Comun,
+                require: true
+            },
+            where: condition,
+            order:[[`${criterio}`,`${order}`]],
+            limit,
+            offset
+        })
         .then(data => {
 
         const response = getPagingData(data, page, limit);
@@ -125,5 +135,72 @@ module.exports = {
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
                     
-    }
+    },
+
+    async list(req, res) {
+        const getPagingData = (data, page, limit) => {
+            const { count: totalItems, rows: referido } = data;
+            const currentPage = page ? +page : 0;
+            const totalPages = Math.ceil(totalItems / limit);
+            return { totalItems, referido, totalPages, currentPage };
+        };
+        const getPagination = (page, size) => {
+            const limit = size ? +size : 2;
+            const offset = page ? page * limit : 0;
+            return { limit, offset };
+        };
+        
+        const { page = 1, size = 5, criterio = 'createdAt', order = 'DESC' , fechaDesde, fechaHasta} = req.query;
+        const Page=req.query.page-1;
+        const Size=req.query.limit;
+        const Criterio = req.query.criterio;
+        const Order = req.query.order;
+        const FechaDesde = req.query.fechaDesde;
+        const FechaHasta = req.query.fechaHasta; 
+        const { limit, offset } = getPagination(Page, Size);
+    
+        try {
+            const whereClause = {};
+
+            if (FechaDesde && FechaHasta) {
+                whereClause.createdAt = {
+                    [Op.between]: [
+                        moment(FechaDesde).startOf('day').toDate(), 
+                        moment(FechaHasta).endOf('day').toDate()
+                    ]
+                };
+            }
+            const data = await Movimiento.findAndCountAll({
+                include: [
+                    { model: Cuenta, attributes: ['numero'] },
+                    { model: Comun, attributes: ['nombre'] }
+                ],
+                attributes: ['cantidad', 'createdAt'],
+                order: [[Criterio, Order]], // Ordenamos por createdAt DESC
+                limit,
+                offset,
+                where: whereClause 
+            }); 
+    
+            const response = getPagingData(data, Page, limit);
+    
+            if (response.referido) {
+                const dataResponse = response.referido.map(item => ({
+                    numero_cuenta: item.cuenta.numero,
+                    nombre_material: item.comune.nombre,
+                    cantidad: item.cantidad,
+                    fecha_consumo: item.createdAt,
+                }));
+    
+                response.referido = dataResponse;
+            } else {
+                // Manejar el caso en que response.referido es undefined
+                response.referido = []; // O enviar una respuesta adecuada al frontend
+            }
+            res.send({total:response.totalItems,last_page:response.totalPages, current_page: Page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
+        } catch (error) {
+            console.log(error);
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        }
+    }    
 }

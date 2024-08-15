@@ -1,27 +1,43 @@
 'use strict'
 const Sequelize     = require('sequelize');
 const db = require("../../models");
-const Contrato = db.contratos;
+const Encargado = db.encargados;
+const Tipos = db.tipos_encargados;
 const Op = db.Sequelize.Op;
 
 module.exports = {
     create(req, res) {
-        let form = req.body.form
-        const datos = {
-            contrato: form.contrato,
-            nombre: form.nombre,
-            estado: 1
-        };
+        let form = req.body.form;
+        Encargado.findAll({
+            where: {
+                usuario: form.usuario
+            }
+        }).then((result) => {
+            if (result.length > 0) {
+                res.send('Usuario existente');
+            } else {
+                const datos = {
+                    contacto: form.contacto,
+                    nombres: form.nombres,
+                    apellidos: form.apellidos,
+                    id_tipo_encargado: form.id_tipo_encargado,
+                    usuario: form.usuario,
+                    estado: 1
+                };
 
-        Contrato.create(datos)
-        .then(tipo => {
-            res.send(tipo);
-        })
-        .catch(error => {
-            console.log(error)
+                Encargado.create(datos)
+                    .then(encargado => {
+                        res.send(encargado);
+                    })
+                    .catch(error => {
+                        console.log(error);
+                        return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+                    });
+            }
+        }).catch(error => {
+            console.log(error);
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
-                    
+        });        
     },
 
  
@@ -52,9 +68,13 @@ module.exports = {
 
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Op.or]: [{ contrato: { [Op.like]: `%${busqueda}%` } }] } : null ;
+        var condition = busqueda ? { [Op.or]: [{ usuario: { [Op.like]: `%${busqueda}%` } }] } : null ;
 
-        Contrato.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        Encargado.findAndCountAll({ include: [
+                {
+                    model: Tipos
+                }
+            ], where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
         console.log('data: '+JSON.stringify(data))
@@ -73,23 +93,45 @@ module.exports = {
     find (req, res) {
         const id = req.params.id;
 
-        return Contrato.findByPk(id)
-        .then(marca => res.status(200).send(marca))
+        return Encargado.findByPk(id)
+        .then(encargado => res.status(200).send(encargado))
         .catch(error => res.status(400).send(error))
     },
 
     update (req, res) {
         let form = req.body.form
-        Contrato.update(
-            { 
-                contrato: form.contrato,
-                nombre: form.nombre,
+        Encargado.findAll({
+            where: {
+                usuario: form.usuario,
+                id: {
+                [Op.ne]: form.id,
+                },
             },
-            { where: { 
-                id: form.id 
-            } }
-        )
-        .then(marca => res.status(200).send('El registro ha sido actualizado'))
+        }).then((result)=>{
+            if(result.lenght !== undefined){
+                result.send('Usuario existente')
+            }
+            else{
+                console.log("RESULT--- ", result.lenght)
+                Encargado.update(
+                    { 
+                        contacto: form.contacto,
+                        nombres: form.nombres,
+                        apellidos: form.apellidos,
+                        id_tipo_encargado: form.id_tipo_encargado,
+                        usuario: form.usuario
+                    },
+                    { where: { 
+                        id: form.id 
+                    } }
+                )
+                .then(encargado => res.status(200).send('El registro ha sido actualizado'))
+                .catch(error => {
+                    console.log(error)
+                    return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+                });
+            }
+        })
         .catch(error => {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
@@ -97,13 +139,13 @@ module.exports = {
     },
 
     activate (req, res) {
-        Contrato.update(
+        Encargado.update(
             { estado: 1 },
             { where: { 
                 id: req.body.id 
             } }
         )
-        .then(marca => res.status(200).send('El registro ha sido activado'))
+        .then(encargado => res.status(200).send('El registro ha sido activado'))
         .catch(error => {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
@@ -111,20 +153,23 @@ module.exports = {
     },
 
     deactivate (req, res) {
-        Contrato.update(
+        Encargado.update(
             { estado: 0 },
             { where: { 
                 id: req.body.id 
             } }
         )
-        .then(marca =>res.status(200).send('El registro ha sido desactivado'))
+        .then(encargado =>res.status(200).send('El registro ha sido desactivado'))
         .catch(error => {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
     get (req, res) {
-        Contrato.findAll({attributes: ['id', 'contrato']})
+        Encargado.findAll({attributes: ['id', 'nombres', 'apellidos', 'contacto', 'id_tipo_encargado', 'estado', 'usuario'],
+                include: {
+                    model: Tipos
+                }})
         .then(data => {
             res.send(data);
         })
@@ -135,9 +180,12 @@ module.exports = {
     },
     getSearch (req, res) {
         var busqueda = req.query.search;
-        var condition = busqueda?{ [Op.or]:[ {contrato: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
-        Contrato.findAll({
-            where: condition})
+        var condition = busqueda?{ [Op.or]:[ {usuario: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
+        Encargado.findAll({
+            where: condition,
+                include: {
+                    model: Tipos
+                }})
         .then(data => {
             res.send(data);
         })

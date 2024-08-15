@@ -1,7 +1,7 @@
 'use strict'
 const Sequelize     = require('sequelize');
 const db = require("../../models");
-const CampoExamenes = db.campo_examenes;
+const Examenes = db.examenes_almacenados;
 const Op = db.Sequelize.Op;
 
 module.exports = {
@@ -9,13 +9,12 @@ module.exports = {
         let form = req.body
         const datos = {
             nombre: form.nombre,
-            valor_minimo: form.valor_minimo,
-            valor_maximo: form.valor_maximo,
-            unidades: form.unidades,
-            id_examenes_almacenados: form.id_examenes_almacenados
+            precio_normal: form.precio_normal,
+            precio_sobrecargo: form.precio_sobrecargo,
+            tipo_examen: form.tipo_examen
         };
 
-        CampoExamenes.create(datos)
+        Examenes.create(datos)
         .then(tipo => {
             res.send(tipo);
         })
@@ -56,7 +55,7 @@ module.exports = {
 
         var condition = busqueda ? { [Op.or]: [{ nombre: { [Op.like]: `%${busqueda}%` } }] } : null ;
 
-        CampoExamenes.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        Examenes.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
         console.log('data: '+JSON.stringify(data))
@@ -81,14 +80,13 @@ module.exports = {
     },
 
     update (req, res) {
-        console.log('Hola')
         let form = req.body
-        CampoExamenes.update(
+        Examenes.update(
             { 
                 nombre: form.nombre,
-                valor_minimo: form.valor_minimo,
-                valor_maximo: form.valor_maximo,
-                unidades: form.unidades,
+                precio_normal: form.precio_normal,
+                precio_sobrecargo: form.precio_sobrecargo,
+                tipo_examen: form.tipo_examen
             },
             { where: { 
                 id: form.id 
@@ -128,12 +126,21 @@ module.exports = {
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
-    getByExamen (req, res) {
-        CampoExamenes.findAll({
-            where:{
-                id_examenes_almacenados: req.query.id_examenes_almacenados
-            }
+    get (req, res) {
+        Contrato.findAll({attributes: ['id', 'contrato']})
+        .then(data => {
+            res.send(data);
         })
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
+    getSearch (req, res) {
+        var busqueda = req.query.search;
+        var condition = busqueda?{ [Op.or]:[ {contrato: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
+        Contrato.findAll({
+            where: condition})
         .then(data => {
             res.send(data);
         })
