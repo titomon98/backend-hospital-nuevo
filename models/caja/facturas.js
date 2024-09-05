@@ -4,29 +4,38 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class banco extends Model {
-    static associate(models) {
-      /* banco.hasMany(models.cuenta_bancarias, {
-        foreignKey: "id_banco",
-      }); */
+  class factura extends Model {
+    static associate(models) { 
     }
   };
-  banco.init({
-    contrato: {
+  factura.init({
+    numero: {
       type: DataTypes.STRING,
       allowNull: false
     },
-    nombre: {
+    total: {
       type: DataTypes.STRING,
       allowNull: false
     },
-    estado: {
+    nit: {
       type: DataTypes.INTEGER,
       allowNull: false
     },
+    id_cuenta_hospital: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    id_cuenta_laboratorio: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    imagen: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
   }, {
     sequelize,
-    modelName: 'contratos',
+    modelName: 'facturacion',
   });
-  return banco;
+  return factura;
 };
