@@ -15,8 +15,9 @@ module.exports = {
 
       /* ESTADOS DE EXAMEN
       En progreso = 1
-      Con resultados = 2
-      Anulado = 3
+      Pagado = 2
+      Con resultados = 3
+      Anulado = 4
       */
 
         const restarHoras = (fecha, horas) => {
@@ -32,85 +33,62 @@ module.exports = {
 
 
           if (form.NewExpediente == false) {
-          const datos = {
-              expediente: form.nombre,
-              cui: parseInt(form.cui),
-              comision: form.comision,
+            const examenesAlmacenados = await ExamenAlmacenado.findAll({
+              where: { id: form.id_examenes_almacenados },
+            });
+
+            const datosCuenta = {
+              numero: 1,
               total: form.total,
-              correo: form.correo,
-              whatsapp: form.whatsapp,
-              numero_muestra: form.numero_muestra,
-              referido: form.referido,
-              id_encargado: form.id_encargado.id,
-              pagado: form.pagado,
-              por_pagar: form.por_pagar,
-              id_examenes_almacenados: form.id_examenes_almacenados,
               estado: 1,
+              total_pagado: 0,
+              pendiente_de_pago: form.total,
+              id_expediente: form.id_expediente,
               createdAt: restarHoras(new Date(), 6),
-              updatedAt: restarHoras(new Date(), 6)
-          };
-          Examenes.create(datos)
-          .then(tipo => {
-              
-              res.send(tipo);
-          })
-          .catch(error => {
-              console.log(error)
-              return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-          });
-          
-          const datosCuenta = {
-            numero: 1,
-            total: form.total,
-            estado: 1,
-            total_pagado: 0,
-            pendiente_de_pago: form.total,
-            id_expediente: form.id_expediente,
-            createdAt: restarHoras(new Date(), 6),
-            updatedAt: restarHoras(new Date(), 6),
-            fecha_corte: null
-          }
-          Cuenta.create(datosCuenta)
-          .then(tipo => {
-            return tipo.update({ numero: tipo.id });
-        })
-        .then(updatedTipo => {
-            console.log(updatedTipo);
-            res.send(updatedTipo);
-        })
-        .catch(error => {
-            console.log(error)
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
+              updatedAt: restarHoras(new Date(), 6),
+              fecha_corte: null
+            }
+            Cuenta.create(datosCuenta)
+            .then(tipo => {
+              return tipo.update({ numero: tipo.id });
+            })
+            .then(updatedTipo => {
+                console.log(updatedTipo);
+                res.send(updatedTipo);
+            })
+
+          const cuentaCreada = await Cuenta.create(datosCuenta);
+          await cuentaCreada.update({ numero: cuentaCreada.id });
+
+            // Crear un examen realizado por cada examen almacenado
+            const examenesCreados = await Promise.all(
+              examenesAlmacenados.map(async (examenAlmacenado) => {
+                const datosExamen = {
+                  expediente: form.nombre,
+                  cui: parseInt(form.cui),
+                  comision: form.comision,
+                  total: examenAlmacenado.precio_normal,
+                  correo: form.correo,
+                  whatsapp: form.whatsapp,
+                  numero_muestra: form.numero_muestra,
+                  referido: form.referido,
+                  id_encargado: form.id_encargado?.id || null,
+                  pagado: 0,
+                  por_pagar: examenAlmacenado.precio_normal,
+                  id_examenes_almacenados: examenAlmacenado.id,
+                  estado: 1,
+                  id_cuenta: cuentaCreada.id,
+                  createdAt: restarHoras(new Date(), 6),
+                  updatedAt: restarHoras(new Date(), 6),
+                };
+                return Examenes.create(datosExamen);
+              })
+            );
+            console.log("Exámenes creados:", examenesCreados),
+            res.send(cuentaCreada)
         }
 
         if (form.NewExpediente == true) {
-          const datos = {
-              expediente: form.nombre + ' ' + form.apellido,
-              cui: parseInt(form.cui),
-              comision: form.comision,
-              total: form.total,
-              correo: form.correo,
-              whatsapp: form.whatsapp,
-              numero_muestra: form.numero_muestra,
-              referido: form.referido,
-              id_encargado: form.id_encargado.id,
-              pagado: form.pagado,
-              por_pagar: form.por_pagar,
-              id_examenes_almacenados: form.id_examenes_almacenados,
-              estado: 1,
-              createdAt: restarHoras(new Date(), 6),
-              updatedAt: restarHoras(new Date(), 6)
-          };
-          Examenes.create(datos)
-          .then(tipo => {
-              res.send(tipo);
-          })
-          .catch(error => {
-              console.log(error)
-              return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-          });
-
           const datos_expediente = {
             nombres: form.nombre,
             apellidos: form.apellido,
@@ -130,47 +108,65 @@ module.exports = {
           };
           Expediente.create(datos_expediente)
           .then(expediente => {
-              const expediente_id = expediente.id
-              let datos_cuenta = {
+            try {
+              // Crear el expediente
+              const expediente = Expediente.create(datos_expediente);
+        
+              // Actualizar el expediente con el formato de ID
+              const year = today.getFullYear();
+              var idFormateado = String(expediente.id).padStart(4, "0");
+              const nuevoExpediente = year + "-" + idFormateado;
+              expediente.update({ expediente: nuevoExpediente });
+        
+              // Obtener los exámenes almacenados
+              const examenesAlmacenados = ExamenAlmacenado.findAll({
+                where: { id: form.id_examenes_almacenados },
+              });
+        
+              // Crear la cuenta en lab_cuentas DENTRO DEL BLOQUE .then
+              const datosCuenta = {
                 numero: 1,
                 total: form.total,
                 estado: 1,
                 total_pagado: 0,
                 pendiente_de_pago: form.total,
-                id_expediente: expediente_id,
+                id_expediente: expediente.id, 
                 createdAt: restarHoras(new Date(), 6),
                 updatedAt: restarHoras(new Date(), 6),
-                fecha_corte: null
-              }
-              Cuenta.create(datos_cuenta)
-                  .then(tipo => {
-                    return tipo.update({ numero: tipo.id });
-                  })
-                  .then(updatedTipo => {
-                      console.log(updatedTipo);
-                      res.send(updatedTipo);
-                  })
-                  .catch(error => {
-                      console.log(error)
-                      return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-                  });
-  
-              //Actualizar expediente
-              const year = today.getFullYear();
-              let resto
-              var idFormateado = String(expediente_id).padStart(4, '0');
-              resto = year + '-' + idFormateado
-              Expediente.update(
-                  {
-                      expediente: resto
-                  },
-                  { where: { 
-                      id: expediente_id
-                  }}
-              )
-              res.send(expediente);
+                fecha_corte: null,
+              };
+        
+              const cuentaCreada =  Cuenta.create(datosCuenta);
+               cuentaCreada.update({ numero: cuentaCreada.id });
+        
+              // Crear un examen realizado por cada examen almacenado, ASIGNANDO EL ID DE LA CUENTA
+              const examenesCreados =  Promise.all(
+                examenesAlmacenados.map(async (examenAlmacenado) => {
+                  const datosExamen = {
+                    // ... (datos del examen)
+                    id_cuenta: cuentaCreada.id, 
+                  };
+        
+                  return Examenes.create(datosExamen);
+                })
+              );
+        
+              console.log("Exámenes creados:", examenesCreados);
+        
+              // Enviar una sola respuesta al cliente
+              res.send({
+                expediente,
+                cuenta: cuentaCreada,
+                examenes: examenesCreados,
+              });
+        
+            } catch (error) {
+              console.log(error);
+              return res
+                .status(400)
+                .json({ msg: "Ha ocurrido un error, por favor intente más tarde" });
+            }
           })
-          
         }
     },
 
@@ -187,9 +183,40 @@ module.exports = {
           console.error(error);
           res.status(500).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         }
-      },
+    },
+
+    async getsearchExaAlmacenadosBuscar(req, res) {
+      const busqueda = req.query.search;
+      const page = parseInt(req.query.page) || 1; 
+      const limit = parseInt(req.query.limit) || 10;
+    
+      const condition = busqueda ? { 
+        nombre: { [Op.like]: `%${busqueda}%` } 
+      } : null;
+    
+      try {
+        const { count, rows: data } = await ExamenAlmacenado.findAndCountAll({ 
+          where: condition,
+          limit: limit,
+          offset: (page - 1) * limit 
+        });
+    
+        res.json({
+          data: data,
+          currentPage: page,
+          total: count,
+          perPage: limit
+        }); 
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ 
+          msg: 'Ha ocurrido un error, por favor intente más tarde',
+          error: error.message 
+        });
+      }
+    },    
       
-      async getsearchEncargado(req, res) {
+    async getsearchEncargado(req, res) {
         const busqueda = req.query.search;
         const condition = busqueda ? { 
           nombres: { [Op.like]: `%${busqueda}%` }  // Cambio a Op.like y nombres (plural)
@@ -202,9 +229,9 @@ module.exports = {
           console.error(error);
           res.status(500).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         }
-      },
+    },
       
-      async getsearchExpediente(req, res) {
+    async getsearchExpediente(req, res) {
         const busqueda = req.query.search;
         const condition = busqueda ? { 
           nombre: { [Op.like]: `%${busqueda}%` }  // Cambio a Op.like y nombres (plural)
@@ -217,9 +244,9 @@ module.exports = {
           console.error(error);
           res.status(500).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         }
-      },
+    },
 
-      async list(req, res) {
+    async list(req, res) {
         const getPagingData = (data, page, limit) => {
             const { count: totalItems, rows: referido } = data;
             const currentPage = page ? +page : 0;
@@ -291,7 +318,7 @@ module.exports = {
                     whatsapp : item.whatsapp,
                     numero_muestra : item.numero_muestra,
                     referido : item.referido,
-                    nombre_encargago: item.encargado.nombres,
+                    nombre_encargago: item.encargado?.nombres || 'Sin Encargado',
                     pagado : item.pagado,
                     por_pagar : item.por_pagar,
                     nombre_examen: item.examenes_almacenado.nombre,
@@ -309,9 +336,9 @@ module.exports = {
             console.log(error);
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         }
-      },
+    },
 
-      async listCui(req, res) {
+    async listCui(req, res) {
         const getPagingData = (data, page, limit) => {
             const { count: totalItems, rows: referido } = data;
             const currentPage = page ? +page : 0;
@@ -394,9 +421,9 @@ module.exports = {
             console.log(error);
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         }
-      },
+    },
     
-      async update(req, res) {
+    async update(req, res) {
       let form = req.query
       console.log(form.id)
       const examenSeleccionado = await Examenes.findOne({ 
@@ -413,5 +440,5 @@ module.exports = {
           console.log(error)
           return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
       });
-      }
+    }
 }

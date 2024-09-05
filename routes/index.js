@@ -429,6 +429,7 @@ module.exports = (app) => {
     router.post('/Examenes_realizados/create', examenesRealizados.create);
     router.get('/encargadoExamen/getSearch', examenesRealizados.getsearchEncargado);
     router.get('/examenesAlmacenados/getSearch', examenesRealizados.getsearchExaAlmacenados);
+    router.get('/examenesAlmacenadosBuscar/getSearch', examenesRealizados.getsearchExaAlmacenadosBuscar);
     router.put('/Examenes_realizados/update', examenesRealizados.update);
 
     //Detalle Examen Realizado
