@@ -1,19 +1,21 @@
 'use strict'
 const Sequelize     = require('sequelize');
 const db = require("../../models");
-const Contrato = db.contratos;
+const Facturas = db.facturas;
 const Op = db.Sequelize.Op;
 
 module.exports = {
     create(req, res) {
         let form = req.body.form
         const datos = {
-            contrato: form.contrato,
-            nombre: form.nombre,
-            estado: 1
+            nit: form.nit,
+            id_cuenta_hospital: form.hospital,
+            id_cuenta_laboratoio: form.laboratorio,
+            total: form.total,
+            imagen: form.imagen
         };
 
-        Contrato.create(datos)
+        Facturas.create(datos)
         .then(tipo => {
             res.send(tipo);
         })
