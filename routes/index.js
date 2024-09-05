@@ -98,6 +98,7 @@ const examenesRealizados = require('../controllers/laboratorio/examenesControlle
 // Detalle Examen Realizado
 const detalleExamenRealizado = require('../controllers/laboratorio/detalleExamenRealizadoController.js');
 const labPagoSegurosController = require('../controllers/caja/labPagoSegurosController.js');
+const facturaController = require('../controllers/caja/facturaController.js');
 //RUTAS
 
 module.exports = (app) => {
@@ -124,6 +125,7 @@ module.exports = (app) => {
 
     //cuentas
     router.get('/cuentas/list', cuentasController.list);
+    router.get('/cuentas/payList', cuentasController.listPay);
     router.get('/cuentas/debtList', cuentasController.listNoPay);
     router.get('/cuentas/get', cuentasController.get);
     router.get('/cuentas/getByExp', cuentasController.getByExp);
@@ -133,6 +135,9 @@ module.exports = (app) => {
     router.put('/cuentas/activate', cuentasController.activate);
     router.put('/cuentas/deactivate', cuentasController.deactivate);
     router.get('/cuentas/getSearch', cuentasController.getSearch);
+    
+    //Facturas
+    router.get('/facturas/create', facturaController.create);
     
     //Seguros
     router.post('/seguros/create', segurosController.create);
