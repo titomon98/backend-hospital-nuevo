@@ -49,7 +49,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     id_encargado: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: true
     },
     pagado: {
       type: DataTypes.DECIMAL(10,2),
@@ -73,6 +73,10 @@ module.exports = (sequelize, DataTypes) => {
     },
     updatedAt: {
       type: DataTypes.DATE,
+      allowNull: false
+    },
+    id_cuenta: {
+      type: DataTypes.INTEGER,
       allowNull: false
     }
   }, {

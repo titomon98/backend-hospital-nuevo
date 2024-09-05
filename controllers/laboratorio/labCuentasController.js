@@ -8,6 +8,7 @@ const detalleCuentas = db.lab_detalle_cuentas;
 const Seguro = db.seguros;
 const PagoSeguro = db.lab_pago_seguros;
 const Op = db.Sequelize.Op;
+const examenes = db.examenes_realizados;
 
 module.exports = {
     create(req, res) {
@@ -335,6 +336,19 @@ module.exports = {
              },
             { where: { 
                 id: req.body.id 
+            } }
+        )
+        .then(cuenta =>res.status(200).send('La cuenta ha sido pagada'))
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+        examenes.update(
+            {
+                estado: 2, 
+             },
+            { where: { 
+                id_cuenta: req.body.id 
             } }
         )
         .then(cuenta =>res.status(200).send('La cuenta ha sido pagada'))
