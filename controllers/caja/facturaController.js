@@ -6,20 +6,28 @@ const Op = db.Sequelize.Op;
 
 module.exports = {
     create(req, res) {
-        let form = req.body.form
+        let form = req.body
+        let nuevaFecha = new Date(); // Crear una nueva instancia de fecha
+        nuevaFecha.setHours(nuevaFecha.getHours() - 6);
         const datos = {
-            nit: form.nit,
-            id_cuenta_hospital: form.hospital,
-            id_cuenta_laboratoio: form.laboratorio,
+            nit: form.nit, 
+            id_cuenta_hospital: 1,
+            id_cuenta_laboratorio: 2,
             total: form.total,
-            imagen: form.imagen
+            imagen: form.imagen,
+            estado: 1,
+            fecha: nuevaFecha,
+            id_usuario: form.id_usuario,
+            numero: form.numero, 
+            serie: form.serie
         };
-
         Facturas.create(datos)
         .then(tipo => {
+            console.log(tipo)
             res.send(tipo);
         })
         .catch(error => {
+            console.log("------------------------------------------------------ERROR------------------")
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
@@ -125,8 +133,12 @@ module.exports = {
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
-    get (req, res) {
-        Contrato.findAll({attributes: ['id', 'contrato']})
+    getHospi (req, res) {
+        Contrato.findAll({
+            where:{
+                id_cuenta_hospital: req.body.id_cuenta_hospital
+            }
+        })
         .then(data => {
             res.send(data);
         })
