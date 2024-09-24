@@ -21,21 +21,37 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false
     },
-    id_cuenta_hospital: {
+    estado: {
       type: DataTypes.INTEGER,
       allowNull: false
     },
+    id_cuenta_hospital: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
     id_cuenta_laboratorio: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: true
     },
     imagen: {
       type: DataTypes.STRING,
       allowNull: true
     },
+    total: {
+      type: DataTypes.DECIMAL (2,10)
+    },
+    fecha: {
+      type: DataTypes.DATE
+    },
+    id_usuario: {
+      type: DataTypes.INTEGER
+    },
+    serie: {
+      type: DataTypes.STRING
+    }
   }, {
     sequelize,
-    modelName: 'facturacion',
+    modelName: 'facturas',
   });
   return factura;
 };

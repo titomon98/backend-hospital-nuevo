@@ -137,7 +137,7 @@ module.exports = (app) => {
     router.get('/cuentas/getSearch', cuentasController.getSearch);
     
     //Facturas
-    router.get('/facturas/create', facturaController.create);
+    router.post('/facturas/create', facturaController.create);
     
     //Seguros
     router.post('/seguros/create', segurosController.create);
