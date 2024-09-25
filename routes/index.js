@@ -138,6 +138,7 @@ module.exports = (app) => {
     
     //Facturas
     router.post('/facturas/create', facturaController.create);
+    router.get('/facturas/getList', facturaController.getList);
     
     //Seguros
     router.post('/seguros/create', segurosController.create);
