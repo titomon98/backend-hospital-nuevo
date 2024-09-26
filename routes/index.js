@@ -98,6 +98,7 @@ const examenesRealizados = require('../controllers/laboratorio/examenesControlle
 // Detalle Examen Realizado
 const detalleExamenRealizado = require('../controllers/laboratorio/detalleExamenRealizadoController.js');
 const labPagoSegurosController = require('../controllers/caja/labPagoSegurosController.js');
+const facturaController = require('../controllers/caja/facturaController.js');
 //RUTAS
 
 module.exports = (app) => {
@@ -124,6 +125,7 @@ module.exports = (app) => {
 
     //cuentas
     router.get('/cuentas/list', cuentasController.list);
+    router.get('/cuentas/payList', cuentasController.listPay);
     router.get('/cuentas/debtList', cuentasController.listNoPay);
     router.get('/cuentas/get', cuentasController.get);
     router.get('/cuentas/getByExp', cuentasController.getByExp);
@@ -133,6 +135,11 @@ module.exports = (app) => {
     router.put('/cuentas/activate', cuentasController.activate);
     router.put('/cuentas/deactivate', cuentasController.deactivate);
     router.get('/cuentas/getSearch', cuentasController.getSearch);
+    
+    //Facturas
+    router.post('/facturas/create', facturaController.create);
+    router.post('/facturas/update', facturaController.update);
+    router.get('/facturas/getList', facturaController.getList);
     
     //Seguros
     router.post('/seguros/create', segurosController.create);
@@ -422,19 +429,24 @@ module.exports = (app) => {
     router.put('/campoLaboratorio/update', campoExamenController.update);
     router.post('/campoLaboratorio/create', campoExamenController.create); 
     router.get('/campoLaboratorio/getByExamen', campoExamenController.getByExamen);
+    router.get('/campoLaboratorio/getByExamenId', campoExamenController.getByExamenesId);
     
     //examenes realizados
     router.get('/Examenes_realizados/list', examenesRealizados.list);
+    router.get('/Examenes_realizados/list2', examenesRealizados.list2);
+    router.get('/Examenes_realizados/list3', examenesRealizados.list3);
     router.get('/Examenes_realizados/list/cui', examenesRealizados.listCui);
     router.post('/Examenes_realizados/create', examenesRealizados.create);
     router.get('/encargadoExamen/getSearch', examenesRealizados.getsearchEncargado);
     router.get('/examenesAlmacenados/getSearch', examenesRealizados.getsearchExaAlmacenados);
+    router.get('/examenesAlmacenadosBuscar/getSearch', examenesRealizados.getsearchExaAlmacenadosBuscar);
     router.put('/Examenes_realizados/update', examenesRealizados.update);
 
     //Detalle Examen Realizado
     router.get('/detalleExamenRealizado/list', detalleExamenRealizado.list);
     router.post('/detalleExamenRealizado/create', detalleExamenRealizado.create);
     router.get('/TipoExamenAlmacenado/getSearch', detalleExamenRealizado.getsearchTipo);
+    router.get('/detalleExamenRealizado/get', detalleExamenRealizado.get);
 
     //CARPETA DE MEDICOS
     //especialidades

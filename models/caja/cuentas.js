@@ -45,11 +45,24 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     total_pagado: {
-      type: DataTypes.DECIMAL,
+      type: DataTypes.DECIMAL(10,2),
       defaultValue: 0
     },
     pendiente_de_pago: {
-      type: DataTypes.DECIMAL,
+      type: DataTypes.DECIMAL(10,2),
+      defaultValue: 0
+    },
+    descuento: {
+      type: DataTypes.DECIMAL(10,2),
+      allowNull: false
+    },
+    solicitud_descuento: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    subtotal: {
+      type: DataTypes.DECIMAL(10,2),
+      allowNull: false,
       defaultValue: 0
     },
     id_expediente: {

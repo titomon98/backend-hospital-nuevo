@@ -10,38 +10,49 @@ const moment = require('moment');
 module.exports = {
 
     async create(req, res) {
-
         const restarHoras = (fecha, horas) => {
-            let nuevaFecha = new Date(fecha);
-            nuevaFecha.setHours(nuevaFecha.getHours() - horas);
-            return nuevaFecha;
-          };
-          console.log(req.body.form)
-          let form = req.body.form
-
-          const examenSeleccionado = await UpdateExamenRealizado.findOne({ 
-            where: { id: form.id } 
-          });
+          let nuevaFecha = new Date(fecha);
+          nuevaFecha.setHours(nuevaFecha.getHours() - horas);
+          return nuevaFecha;
+      }
+      const resultados = req.body.resultados
+      console.log(resultados)
+      if (!resultados || !resultados.length) {
+          return res.status(400).json({ msg: 'No se recibieron resultados para guardar.' })
+      }
+      try {
+          const idExamenRealizado = resultados[0].id;
+          const examenSeleccionado = await UpdateExamenRealizado.findOne({
+              where: { id: idExamenRealizado }
+          })
           if (!examenSeleccionado) {
-            return res.status(404).json({ msg: 'No se encontró el examen a actualizar' });
+              return res.status(400).json({ msg: 'No se encontró el examen a actualizar' })
           }
-        console.log(examenSeleccionado)
-        const datos = {
-            id_examen_realizado: form.id,
-            tipo: form.tipo.nombre,
-            resultados: form.resultado,
-            createdAt: restarHoras(new Date(), 6),
-            updatedAt: restarHoras(new Date(), 6),
-        };
-        Examenes.create(datos)
-        await examenSeleccionado.update({estado: 2})
-        .then(tipo => {
-            res.send(tipo);
-        })
-        .catch(error => {
-            console.log(error)
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });           
+          const promises = resultados.map((form) => {
+              const datos = {
+                  id_examen_realizado: form.id,
+                  id_campo: form.id_campo,
+                  id_tipo: form.id_tipo,
+                  resultado: form.resultado,
+                  createdAt: restarHoras(new Date(), 6),
+                  updatedAt: restarHoras(new Date(), 6)
+              };
+
+              return Examenes.create(datos)
+          })
+          await Promise.all(promises);
+          await examenSeleccionado.update({ estado: 2 });
+
+          await UpdateExamenRealizado.update(
+              { estado: 3 },
+              { where: { id: idExamenRealizado } }
+          );
+
+          res.status(200).json({ msg: 'Los resultados se han guardado y el examen ha sido actualizado.' });
+      } catch (error) {
+          console.error('Error al guardar los resultados o actualizar el examen:', error);
+          return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde.' });
+      }
     },
 
       async list(req, res) {
@@ -81,8 +92,6 @@ module.exports = {
                     tipo: item.tipo,
                     fecha_hora: item.createdAt
                 }));
-                console.log(dataResponse)
-    
                 response.referido = dataResponse;
             } else {
                 response.referido = []
@@ -114,5 +123,19 @@ module.exports = {
           console.error(error);
           res.status(500).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         }
+    },
+    async get(req, res) {
+        const id = req.query.id;
+        Examenes.findAll({
+          where: { id_examen_realizado: id },
+          attributes: ['tipo', 'resultados']
+        })
+        .then(data => {
+          res.send(data);
+        })
+        .catch(error => {
+          console.log(error);
+          return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
       },
 }
