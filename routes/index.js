@@ -427,6 +427,7 @@ module.exports = (app) => {
     router.put('/campoLaboratorio/update', campoExamenController.update);
     router.post('/campoLaboratorio/create', campoExamenController.create); 
     router.get('/campoLaboratorio/getByExamen', campoExamenController.getByExamen);
+    router.get('/campoLaboratorio/getByExamenId', campoExamenController.getByExamenesId);
     
     //examenes realizados
     router.get('/Examenes_realizados/list', examenesRealizados.list);
@@ -443,6 +444,7 @@ module.exports = (app) => {
     router.get('/detalleExamenRealizado/list', detalleExamenRealizado.list);
     router.post('/detalleExamenRealizado/create', detalleExamenRealizado.create);
     router.get('/TipoExamenAlmacenado/getSearch', detalleExamenRealizado.getsearchTipo);
+    router.get('/detalleExamenRealizado/get', detalleExamenRealizado.get);
 
     //CARPETA DE MEDICOS
     //especialidades

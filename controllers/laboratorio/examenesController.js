@@ -27,8 +27,6 @@ module.exports = {
           };
 
           const today = new Date();
-
-          console.log(req.body)
           let form = req.body.form
 
 
@@ -36,7 +34,7 @@ module.exports = {
             const examenesAlmacenados = await ExamenAlmacenado.findAll({
               where: { id: form.id_examenes_almacenados },
             });
-
+            
             const datosCuenta = {
               numero: 1,
               total: form.total,
@@ -53,7 +51,6 @@ module.exports = {
               return tipo.update({ numero: tipo.id });
             })
             .then(updatedTipo => {
-                console.log(updatedTipo);
                 res.send(updatedTipo);
             })
 
@@ -84,90 +81,80 @@ module.exports = {
                 return Examenes.create(datosExamen);
               })
             );
-            console.log("Exámenes creados:", examenesCreados),
             res.send(cuentaCreada)
         }
 
         if (form.NewExpediente == true) {
-          const datos_expediente = {
-            nombres: form.nombre,
-            apellidos: form.apellido,
-            expediente: 'INGRESO EN LABORATORIO',
-            primer_ingreso: restarHoras(new Date(), 6),
-            fecha_ingreso_reciente: restarHoras(new Date(), 6),
-            hora_ingreso_reciente: restarHoras(new Date(), 6),
-            nacimiento: '0001-01-01',
-            cui: 0,
-            telefono: form.whatsapp,
-            direccion: 'INGRESO EN LABORATORIO',
-            nombre_encargado: 'INGRESO EN LABORATORIO',
-            contacto_encargado: 'INGRESO EN LABORATORIO',
-            cui_encargado: 'INGRESO EN LABORATORIO',
-            direccion_encargado: 'INGRESO EN LABORATORIO',
-            estado: 11
-          };
-          Expediente.create(datos_expediente)
-          .then(expediente => {
-            try {
-              // Crear el expediente
-              const expediente = Expediente.create(datos_expediente);
-        
-              // Actualizar el expediente con el formato de ID
-              const year = today.getFullYear();
-              var idFormateado = String(expediente.id).padStart(4, "0");
-              const nuevoExpediente = year + "-" + idFormateado;
-              expediente.update({ expediente: nuevoExpediente });
-        
-              // Obtener los exámenes almacenados
-              const examenesAlmacenados = ExamenAlmacenado.findAll({
-                where: { id: form.id_examenes_almacenados },
-              });
-        
-              // Crear la cuenta en lab_cuentas DENTRO DEL BLOQUE .then
-              const datosCuenta = {
-                numero: 1,
-                total: form.total,
-                estado: 1,
-                total_pagado: 0,
-                pendiente_de_pago: form.total,
-                id_expediente: expediente.id, 
-                createdAt: restarHoras(new Date(), 6),
-                updatedAt: restarHoras(new Date(), 6),
-                fecha_corte: null,
-              };
-        
-              const cuentaCreada =  Cuenta.create(datosCuenta);
-               cuentaCreada.update({ numero: cuentaCreada.id });
-        
-              // Crear un examen realizado por cada examen almacenado, ASIGNANDO EL ID DE LA CUENTA
-              const examenesCreados =  Promise.all(
-                examenesAlmacenados.map(async (examenAlmacenado) => {
-                  const datosExamen = {
-                    // ... (datos del examen)
-                    id_cuenta: cuentaCreada.id, 
-                  };
-        
-                  return Examenes.create(datosExamen);
-                })
-              );
-        
-              console.log("Exámenes creados:", examenesCreados);
-        
-              // Enviar una sola respuesta al cliente
-              res.send({
-                expediente,
-                cuenta: cuentaCreada,
-                examenes: examenesCreados,
-              });
-        
-            } catch (error) {
-              console.log(error);
-              return res
-                .status(400)
-                .json({ msg: "Ha ocurrido un error, por favor intente más tarde" });
-            }
-          })
-        }
+            const examenesAlmacenados = await ExamenAlmacenado.findAll({
+              where: { id: form.id_examenes_almacenados },
+            });
+
+            const datos_expediente = {
+              nombres: form.nombre,
+              apellidos: form.apellido,
+              expediente: 'INGRESO EN LABORATORIO',
+              primer_ingreso: restarHoras(new Date(), 6),
+              fecha_ingreso_reciente: restarHoras(new Date(), 6),
+              hora_ingreso_reciente: restarHoras(new Date(), 6),
+              nacimiento: '0001-01-01',
+              cui: form.cui,
+              telefono: form.whatsapp,
+              direccion: 'INGRESO EN LABORATORIO',
+              nombre_encargado: 'INGRESO EN LABORATORIO',
+              contacto_encargado: 'INGRESO EN LABORATORIO',
+              cui_encargado: 'INGRESO EN LABORATORIO',
+              direccion_encargado: 'INGRESO EN LABORATORIO',
+              estado: 11
+            };
+            const expediente = await Expediente.create(datos_expediente);
+            const year = today.getFullYear();
+            var idFormateado = String(expediente.id).padStart(4, "0");
+            const nuevoExpediente = year + "-" + idFormateado;
+            await expediente.update({ expediente: nuevoExpediente });
+
+            const datosCuenta = {
+              numero: 1,
+              total: form.total,
+              estado: 1,
+              total_pagado: 0,
+              pendiente_de_pago: form.total,
+              id_expediente: expediente.id,
+              createdAt: restarHoras(new Date(), 6),
+              updatedAt: restarHoras(new Date(), 6),
+              fecha_corte: null,
+            };
+
+            
+          const cuentaCreada = await Cuenta.create(datosCuenta);
+          await cuentaCreada.update({ numero: cuentaCreada.id });
+
+            // Crear un examen realizado por cada examen almacenado
+            const examenesCreados = await Promise.all(
+              examenesAlmacenados.map(async (examenAlmacenado) => {
+                const datosExamen = {
+                  expediente: form.nombre + ' ' + form.apellido,
+                  cui: form.cui,
+                  comision: form.comision,
+                  total: examenAlmacenado.precio_normal,
+                  correo: form.correo,
+                  whatsapp: form.whatsapp,
+                  numero_muestra: form.numero_muestra,
+                  referido: form.referido,
+                  id_encargado: form.id_encargado?.id || null,
+                  pagado: 0,
+                  por_pagar: examenAlmacenado.precio_normal,
+                  id_examenes_almacenados: examenAlmacenado.id,
+                  estado: 1,
+                  id_cuenta: cuentaCreada.id,
+                  createdAt: restarHoras(new Date(), 6),
+                  updatedAt: restarHoras(new Date(), 6),
+                };
+                return Examenes.create(datosExamen);
+              })
+            );
+            res.send(cuentaCreada)
+
+        } 
     },
 
     async getsearchExaAlmacenados(req, res) {
@@ -298,6 +285,7 @@ module.exports = {
                   'referido',
                   'pagado',
                   'por_pagar',
+                  'id_examenes_almacenados',
                   'createdAt'],
                 order: [[Criterio, Order]], // Ordenamos por createdAt DESC
                 limit,
@@ -321,11 +309,10 @@ module.exports = {
                     nombre_encargago: item.encargado?.nombres || 'Sin Encargado',
                     pagado : item.pagado,
                     por_pagar : item.por_pagar,
+                    id_examenes_almacenados : item.id_examenes_almacenados,
                     nombre_examen: item.examenes_almacenado.nombre,
                     fecha_hora: item.createdAt,
                 }));
-                console.log(dataResponse)
-    
                 response.referido = dataResponse;
             } else {
                 // Manejar el caso en que response.referido es undefined
@@ -390,6 +377,7 @@ module.exports = {
                 'referido',
                 'pagado',
                 'por_pagar',
+                'id_examenes_almacenados',
                 'createdAt'],
               order: [[Criterio, Order]], // Ordenamos por createdAt DESC
               limit,
@@ -413,11 +401,10 @@ module.exports = {
                   nombre_encargago: item.encargado?.nombres || 'Sin Encargado',
                   pagado : item.pagado,
                   por_pagar : item.por_pagar,
+                  id_examenes_almacenados : item.id_examenes_almacenados,
                   nombre_examen: item.examenes_almacenado.nombre,
                   fecha_hora: item.createdAt,
               }));
-              console.log(dataResponse)
-  
               response.referido = dataResponse;
           } else {
               // Manejar el caso en que response.referido es undefined
@@ -482,6 +469,7 @@ module.exports = {
                 'referido',
                 'pagado',
                 'por_pagar',
+                'id_examenes_almacenados',
                 'createdAt'],
               order: [[Criterio, Order]], // Ordenamos por createdAt DESC
               limit,
@@ -505,11 +493,10 @@ module.exports = {
                   nombre_encargago: item.encargado?.nombres || 'Sin Encargado',
                   pagado : item.pagado,
                   por_pagar : item.por_pagar,
+                  id_examenes_almacenados : item.id_examenes_almacenados,
                   nombre_examen: item.examenes_almacenado.nombre,
                   fecha_hora: item.createdAt,
               }));
-              console.log(dataResponse)
-
               response.referido = dataResponse;
           } else {
               // Manejar el caso en que response.referido es undefined
@@ -593,8 +580,6 @@ module.exports = {
                     nombre_examen: item.examenes_almacenado.nombre,
                     fecha_hora: item.createdAt,
                 }));
-                console.log(dataResponse)
-    
                 response.referido = dataResponse;
             } else {
                 // Manejar el caso en que response.referido es undefined
@@ -609,7 +594,6 @@ module.exports = {
     
     async update(req, res) {
       let form = req.query
-      console.log(form.id)
       const examenSeleccionado = await Examenes.findOne({ 
         where: { id: form.id } 
       });

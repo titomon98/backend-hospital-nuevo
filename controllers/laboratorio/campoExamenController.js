@@ -141,6 +141,24 @@ module.exports = {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
-    }
+    },
+
+    getByExamenesId(req, res) {
+        const id_examenes_almacenados = req.query.id;
+    
+        return CampoExamenes.findAll({
+            where: {
+                id_examenes_almacenados: id_examenes_almacenados
+            },
+            attributes: ['id','nombre', 'valor_minimo', 'valor_maximo', 'unidades', 'id_examenes_almacenados']
+        })
+        .then(data => {
+            res.send(data);
+        })
+        .catch(error => {
+            console.log(error);
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
 };
 
