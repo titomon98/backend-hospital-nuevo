@@ -33,6 +33,31 @@ module.exports = {
         });
                     
     },
+    update(req, res) {
+        let form = req.body
+        const datos = {
+            nit: form.nit, 
+            imagen: form.imagen[0],
+            numero: form.numero, 
+            serie: form.serie,
+            referencia_factura: form.referencia_factura
+        };
+        Facturas.update(datos,
+            { where: { 
+                id_cuenta_hospital: form.id_cuenta_hospital,
+                id_cuenta_laboratorio: form.id_cuenta_laboratoio
+            } }
+        )
+        .then(tipo => {
+            res.send(tipo);
+        })
+        .catch(error => {
+            console.log("------------------------------------------------------ERROR------------------")
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+                    
+    },
 
     getList (req, res) {
         console.log(req.body)
