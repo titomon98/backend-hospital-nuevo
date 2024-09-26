@@ -16,11 +16,19 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false
     },
-    tipo: {
+    id_campo: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    id_tipo: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    resultado: {
       type: DataTypes.STRING,
       allowNull: true
     },
-    resultados: {
+    alarma: {
       type: DataTypes.STRING,
       allowNull: true
     },

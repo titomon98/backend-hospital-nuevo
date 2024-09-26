@@ -20,7 +20,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     cui: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING,
       allowNull: true
     },
     comision: {
