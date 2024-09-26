@@ -48,6 +48,9 @@ module.exports = (sequelize, DataTypes) => {
     },
     serie: {
       type: DataTypes.STRING
+    },
+    referencia_factura: {
+      type: DataTypes.STRING
     }
   }, {
     sequelize,
