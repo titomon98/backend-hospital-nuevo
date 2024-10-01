@@ -70,7 +70,8 @@ module.exports = {
         const order=req.query.order;
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Op.or]: [{ '$Expediente.expediente$': { [Op.like]: `%${busqueda}%` } }, {'estado':{[Op.like]: 0}}] } : null ;
+        //var condition = busqueda ? { [Op.or]: [{ '$expediente.nombres$': { [Op.like]: `%${busqueda}%` } }, {'expediente.apellidos':{[Op.like]: `%${busqueda}%`}}], 'estado':0 } : {'estado':0} ;
+        var condition = {'estado':0} ;
 
         Cuenta.findAndCountAll({ 
             include: [
@@ -100,8 +101,7 @@ module.exports = {
         });
     },
 
-    listNoPay(req, res) {
-        console.log('SALUDO REAL, SALUDO REAL. ¡AQUÍ ESTÁ SU REINITA!')
+    listPay(req, res) {
         const getPagingData = (data, page, limit) => {
             const { count: totalItems, rows: referido } = data;
 
@@ -126,7 +126,58 @@ module.exports = {
         const order=req.query.order;
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? {estado:1, [Op.or]: [{ '$Expediente.expediente$': { [Op.like]: `%${busqueda}%` }}] } : {estado:1} ;
+        var condition = busqueda?{ [Op.or]:[ {id: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:0}] } : {estado:0}
+        console.log(busqueda)
+        Cuenta.findAndCountAll({ 
+            include: [
+                {
+                    model: Expediente,
+                }
+            ],
+            where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        .then(data => {
+
+        console.log('data: '+JSON.stringify(data))
+        const response = getPagingData(data, page, limit);
+
+        console.log('response: '+JSON.stringify(response))
+        res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
+        })
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
+
+    listNoPay(req, res) {
+        console.log('No pagados')
+        const getPagingData = (data, page, limit) => {
+            const { count: totalItems, rows: referido } = data;
+
+            const currentPage = page ? +page : 0;
+            const totalPages = Math.ceil(totalItems / limit);
+
+            return { totalItems, referido, totalPages, currentPage };
+        };
+
+
+        const getPagination = (page, size) => {
+            const limit = size ? +size : 2;
+            const offset = page ? page * limit : 0;
+
+            return { limit, offset };
+        };
+
+        const busqueda=req.query.search;
+        const page=req.query.page-1;
+        const size=req.query.limit;
+        const criterio=req.query.criterio;
+        const order=req.query.order;
+        const { limit, offset } = getPagination(page, size);
+
+        /* var condition = busqueda ? {estado:1, [Op.or]: [{ '$Expediente.expediente$': { [Op.like]: `%${busqueda}%` }}] } : {estado:1} ;
+         */
+        var condition = {estado:1} ;
         console.log(busqueda)
         Cuenta.findAndCountAll({ 
             include: [
@@ -203,6 +254,8 @@ module.exports = {
     },
 
     deactivate (req, res) {
+        let nuevaFecha = new Date(); // Crear una nueva instancia de fecha
+        nuevaFecha.setHours(nuevaFecha.getHours() - 6);
         if (req.body.tipo === 'finiquito'){
           console.log(req.body.id)
             console.log("HOLA")
@@ -210,7 +263,8 @@ module.exports = {
                 { 
                     estado: 0,
                     total_pagado: req.body.total_pagado,
-                    pendiente_de_pago: req.body.pendiente_de_pago
+                    pendiente_de_pago: req.body.pendiente_de_pago,
+                    fecha_corte: nuevaFecha
                 },
                 { where: { 
                     id: req.body.id

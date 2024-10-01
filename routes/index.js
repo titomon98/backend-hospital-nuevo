@@ -496,6 +496,7 @@ module.exports = (app) => {
     //cuentas
     router.get('/lab_cuentas/list', labCuentasController.list);
     router.get('/lab_cuentas/debtList', labCuentasController.listNoPay);
+    router.get('/lab_cuentas/payList', labCuentasController.listPay);
     router.get('/lab_cuentas/get', labCuentasController.get);
     router.get('/lab_cuentas/getByExp', labCuentasController.getByExp);
     router.get('/lab_cuentas/pay', labCuentasController.onPay);
