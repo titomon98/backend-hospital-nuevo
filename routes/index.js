@@ -429,19 +429,24 @@ module.exports = (app) => {
     router.put('/campoLaboratorio/update', campoExamenController.update);
     router.post('/campoLaboratorio/create', campoExamenController.create); 
     router.get('/campoLaboratorio/getByExamen', campoExamenController.getByExamen);
+    router.get('/campoLaboratorio/getByExamenId', campoExamenController.getByExamenesId);
     
     //examenes realizados
     router.get('/Examenes_realizados/list', examenesRealizados.list);
+    router.get('/Examenes_realizados/list2', examenesRealizados.list2);
+    router.get('/Examenes_realizados/list3', examenesRealizados.list3);
     router.get('/Examenes_realizados/list/cui', examenesRealizados.listCui);
     router.post('/Examenes_realizados/create', examenesRealizados.create);
     router.get('/encargadoExamen/getSearch', examenesRealizados.getsearchEncargado);
     router.get('/examenesAlmacenados/getSearch', examenesRealizados.getsearchExaAlmacenados);
+    router.get('/examenesAlmacenadosBuscar/getSearch', examenesRealizados.getsearchExaAlmacenadosBuscar);
     router.put('/Examenes_realizados/update', examenesRealizados.update);
 
     //Detalle Examen Realizado
     router.get('/detalleExamenRealizado/list', detalleExamenRealizado.list);
     router.post('/detalleExamenRealizado/create', detalleExamenRealizado.create);
     router.get('/TipoExamenAlmacenado/getSearch', detalleExamenRealizado.getsearchTipo);
+    router.get('/detalleExamenRealizado/get', detalleExamenRealizado.get);
 
     //CARPETA DE MEDICOS
     //especialidades
