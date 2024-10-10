@@ -25,7 +25,13 @@ module.exports = (sequelize, DataTypes) => {
     tipo_examen:{
       type: DataTypes.STRING,
       allowNull: false
-    }
+    },
+    created_by: {
+      type: DataTypes.STRING,
+    },
+    updated_by: {
+      type: DataTypes.STRING,
+    },
   }, {
     sequelize,
     modelName: 'examenes_almacenados',

@@ -78,7 +78,13 @@ module.exports = (sequelize, DataTypes) => {
     id_cuenta: {
       type: DataTypes.INTEGER,
       allowNull: false
-    }
+    },
+    created_by: {
+      type: DataTypes.STRING,
+    },
+    updated_by: {
+      type: DataTypes.STRING,
+    },
   }, {
     sequelize,
     modelName: 'examenes_realizados',

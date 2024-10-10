@@ -29,7 +29,8 @@ module.exports = {
             movimiento: form.movimiento,
             id_comun: form.comun.id,
             descripcion: descripcion,
-            estado: 1
+            estado: 1,
+            created_by: req.body.user
         };
 
         Comun.update({ 
@@ -115,6 +116,7 @@ module.exports = {
                 precio_venta: form.precio_venta,
                 movimiento: form.movimiento,
                 id_comun: form.comun.id,
+                updated_by: req.body.user
             },
             { where: { 
                 id: form.id 

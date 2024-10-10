@@ -44,7 +44,8 @@ module.exports = {
               id_expediente: form.id_expediente,
               createdAt: restarHoras(new Date(), 6),
               updatedAt: restarHoras(new Date(), 6),
-              fecha_corte: null
+              fecha_corte: null,
+              created_by: req.body.user,
             }
             Cuenta.create(datosCuenta)
             .then(tipo => {
@@ -77,6 +78,7 @@ module.exports = {
                   id_cuenta: cuentaCreada.id,
                   createdAt: restarHoras(new Date(), 6),
                   updatedAt: restarHoras(new Date(), 6),
+                  created_by: req.body.user,
                 };
                 return Examenes.create(datosExamen);
               })
@@ -104,7 +106,8 @@ module.exports = {
               contacto_encargado: 'INGRESO EN LABORATORIO',
               cui_encargado: 'INGRESO EN LABORATORIO',
               direccion_encargado: 'INGRESO EN LABORATORIO',
-              estado: 11
+              estado: 11,
+              
             };
             const expediente = await Expediente.create(datos_expediente);
             const year = today.getFullYear();

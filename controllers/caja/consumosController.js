@@ -44,7 +44,8 @@ module.exports = {
             subtotal: subtotal,
             estado: 1,
             id_servicio: form.servicio.id,
-            id_cuenta: id_cuenta
+            id_cuenta: id_cuenta,
+            created_by: req.body.user
         };
 
         await cuentaSeleccionada.update({ total: nuevoTotal, pendiente_de_pago: pendientePago });
@@ -122,7 +123,8 @@ module.exports = {
                 subtotal: form.servicio.precio,
                 estado: 1,
                 id_servicio: form.servicio.id,
-                id_cuenta: form.id_cuenta
+                id_cuenta: form.id_cuenta,
+                updated_by: req.body.user,
             },
             { where: { 
                 id: form.id 

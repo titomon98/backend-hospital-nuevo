@@ -25,7 +25,8 @@ module.exports = {
             id_proveedor: form.proveedor.id,
             id_marca: form.marca.id,
             factura: form.factura,
-            estado: 1
+            estado: 1,
+            created_by: req.body.user
         };
 
         Comun.create(datos)
@@ -122,6 +123,7 @@ module.exports = {
                 id_presentacion: form.presentacion.id,
                 id_proveedor: form.proveedor.id,
                 id_marca: form.marca.id,
+                updated_by: req.body.user,
             },
             { where: { 
                 id: form.id 

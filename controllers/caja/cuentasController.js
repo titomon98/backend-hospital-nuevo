@@ -20,6 +20,7 @@ module.exports = {
             total: form.total,
             estado: 1,
             id_expediente: form.id_expediente,
+            created_by: req.body.user
         };
 
         Cuenta.create(datos)
@@ -209,6 +210,7 @@ module.exports = {
                 otros: form.otros,
                 total: form.total,
                 estado: form.estado,
+                updated_by: req.body.user
             },
             { where: { 
                 id: form.id 
