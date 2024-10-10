@@ -281,6 +281,29 @@ module.exports = {
                         res.status(200).send('El registro ha sido desactivado')
                     }
 
+                        examenes.findAll({
+                            where: {
+                                id_cuenta: req.body.id,
+                                estado: 1
+                            }
+                        })
+                        .then(examenes => {
+                            if (examenes.length > 0) {
+                                const updatePromises = examenes.map(examen => {
+                                    return examen.update({ estado: 2 });
+                                });
+                                return Promise.all(updatePromises)
+                                    .then(() => {
+                                        res.status(200).send('La cuenta ha sido pagada');
+                                    });
+                            } else {
+                                return res.status(400).json({ msg: 'No hay exámenes activos para actualizar' });
+                            }
+                        })
+                        .catch(error => {
+                            console.log(error);
+                            return res.status(400).json({ msg: 'Ha ocurrido un error al consultar los exámenes' });
+                        });
                 })
                 .catch(error=>{
                     console.log(error)
