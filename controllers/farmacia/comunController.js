@@ -82,7 +82,7 @@ module.exports = {
                     model: Proveedor
                 },
             ],
-            where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+            where: condition, order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
         console.log('data: '+JSON.stringify(data))

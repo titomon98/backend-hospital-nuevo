@@ -28,7 +28,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: false
     },
-    costo_estudio_de_sueño: {
+    costo_estudio_de_sueno: {
       type: DataTypes.STRING,
         allowNull: false
     },
