@@ -18,9 +18,9 @@ module.exports = {
       Con resultados = 3
       Anulado = 4
       */
-
+      
       console.log('DATOS PARA CREAR UN EXAMEN ------------------ ' + JSON.stringify(req.body.form, null, 2));
-
+      
       const restarHoras = (fecha, horas) => {
         let nuevaFecha = new Date(fecha);
         nuevaFecha.setHours(nuevaFecha.getHours() - horas);
@@ -50,7 +50,7 @@ module.exports = {
     
           const cuentaCreada = await Cuenta.create(datosCuenta);
           await cuentaCreada.update({ numero: cuentaCreada.id });
-    
+          
           // Crear un examen realizado por cada examen almacenado
           const examenesCreados = await Promise.all(
             examenesAlmacenados.map(async (examenAlmacenado) => {

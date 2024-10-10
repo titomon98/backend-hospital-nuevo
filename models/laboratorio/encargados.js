@@ -36,6 +36,12 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false
     },
+    created_by: {
+      type: DataTypes.STRING,
+    },
+    updated_by: {
+      type: DataTypes.STRING,
+    },
   }, {
     sequelize,
     modelName: 'encargados',

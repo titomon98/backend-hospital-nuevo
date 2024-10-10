@@ -14,7 +14,8 @@ module.exports = {
             gasto_unico: form.gasto_unico,
             fecha_adquisicion: form.fecha_adquisicion,
             existencia: form.existencia,
-            estado: 1
+            estado: 1,
+            created_by: req.body.user
         };
 
         Equipo.create(datos)
@@ -92,6 +93,7 @@ module.exports = {
                 gasto_unico: form.gasto_unico,
                 fecha_adquisicion: form.fecha_adquisicion,
                 existencia: form.existencia,
+                updated_by: req.body.user
             },
             { where: { 
                 id: form.id 

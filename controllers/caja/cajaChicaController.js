@@ -10,7 +10,8 @@ module.exports = {
         const datos = {
             contrato: form.contrato,
             nombre: form.nombre,
-            estado: 1
+            estado: 1,
+            created_by: req.body.user
         };
 
         Contrato.create(datos)
@@ -84,6 +85,7 @@ module.exports = {
             { 
                 contrato: form.contrato,
                 nombre: form.nombre,
+                updated_by: req.body.user
             },
             { where: { 
                 id: form.id 

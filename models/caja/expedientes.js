@@ -131,7 +131,13 @@ module.exports = (sequelize, DataTypes) => {
     id_medico: {
       type: DataTypes.INTEGER,
       allowNull: true
-    }
+    },
+    created_by: {
+      type: DataTypes.STRING,
+    },
+    updated_by: {
+      type: DataTypes.STRING,
+    },
   }, {
     sequelize,
     modelName: 'expedientes',

@@ -9,6 +9,7 @@ module.exports = {
         let form = req.body.form
         const datos = {
             nombre: form.nombre,
+            created_by: req.body.user,
             estado: 1
         };
 
@@ -80,7 +81,10 @@ module.exports = {
     update (req, res) {
         let form = req.body.form
         Habitaciones.update(
-            { nombre: form.nombre },
+            { 
+                nombre: form.nombre,
+                updated_by: req.body.user,
+            },
             { 
                 where: { 
                 id: form.id 

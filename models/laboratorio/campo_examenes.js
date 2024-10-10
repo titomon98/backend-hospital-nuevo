@@ -27,7 +27,13 @@ module.exports = (sequelize, DataTypes) => {
     unidades:{
       type: DataTypes.STRING,
       allowNull: false
-    }
+    },
+    created_by: {
+      type: DataTypes.STRING,
+    },
+    updated_by: {
+      type: DataTypes.STRING,
+    },
   }, {
     sequelize,
     modelName: 'campo_examenes',
