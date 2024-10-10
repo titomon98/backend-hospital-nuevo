@@ -111,7 +111,55 @@ module.exports = {
         const order=req.query.order;
         const { limit, offset } = getPagination(page, size);
 
-        var condition = {estado:1, '$Expediente.solvencia$': 1, [Op.or]:[{'$Expediente.estado$': 0},{'$Expediente.estado$': 6},{'$Expediente.estado$': 7},{'$Expediente.estado$': 8},{'$Expediente.estado$': 9}]}
+        var condition = {estado:1, '$Expediente.solvencia$': 0, [Op.or]:[{'$Expediente.estado$': 0},{'$Expediente.estado$': 6},{'$Expediente.estado$': 7},{'$Expediente.estado$': 8},{'$Expediente.estado$': 9}]}
+        console.log(busqueda)
+        Cuenta.findAndCountAll({ 
+            include: [
+                {
+                    model: Expediente,
+                }
+            ],
+            where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        .then(data => {
+
+        console.log('data: '+JSON.stringify(data))
+        const response = getPagingData(data, page, limit);
+
+        console.log('response: '+JSON.stringify(response))
+        res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
+        })
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
+
+    listNoPayDiscountRequest(req, res) {
+        const getPagingData = (data, page, limit) => {
+            const { count: totalItems, rows: referido } = data;
+
+            const currentPage = page ? +page : 0;
+            const totalPages = Math.ceil(totalItems / limit);
+
+            return { totalItems, referido, totalPages, currentPage };
+        };
+
+
+        const getPagination = (page, size) => {
+            const limit = size ? +size : 2;
+            const offset = page ? page * limit : 0;
+
+            return { limit, offset };
+        };
+
+        const busqueda=req.query.search;
+        const page=req.query.page-1;
+        const size=req.query.limit;
+        const criterio=req.query.criterio;
+        const order=req.query.order;
+        const { limit, offset } = getPagination(page, size);
+
+        var condition = {estado:1, solicitud_descuento:2,'$Expediente.solvencia$': 0, [Op.or]:[{'$Expediente.estado$': 0},{'$Expediente.estado$': 6},{'$Expediente.estado$': 7},{'$Expediente.estado$': 8},{'$Expediente.estado$': 9}]}
         console.log(busqueda)
         Cuenta.findAndCountAll({ 
             include: [
@@ -403,6 +451,65 @@ module.exports = {
             })
     },
 
+    DiscountRequest (req,res) {
+        console.log(req.body.form)
+        let form = req.body.form
+        if (form.solicitud_descuento === 0){
+            Cuenta.update(
+                {
+                    solicitud_descuento: 0,
+                    descuento: 0,
+                },
+                { where: { 
+                    id: form.id 
+                } }
+            )
+            .then(cuenta => res.status(200).send('El registro ha sido actualizado'))
+            .catch(error => {
+                console.log(error)
+                return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+            });
+        }
+        else if (form.solicitud_descuento === 2){
+            Cuenta.update(
+                {
+                    solicitud_descuento: 2,
+                    descuento: form.descuento,
+                },
+                { where: { 
+                    id: form.id 
+                } }
+            )
+            .then(cuenta => res.status(200).send('El registro ha sido actualizado'))
+            .catch(error => {
+                console.log(error)
+                return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+            });
+        }
+        else if (form.solicitud_descuento === 1) {
+            Cuenta.findByPk(form.id)
+                .then(cuenta => {
+                    const nuevoTotalPagado = parseFloat(cuenta.total_pagado) + parseFloat(cuenta.descuento);
+                    const nuevoPendienteDePago = parseFloat(cuenta.pendiente_de_pago) - parseFloat(cuenta.descuento);
+        
+                    return Cuenta.update({
+                        solicitud_descuento: 1,
+                        descuento: form.descuento,
+                        total_pagado: parseFloat(nuevoTotalPagado),
+                        pendiente_de_pago: parseFloat(nuevoPendienteDePago)
+                    }, {
+                        where: { id: form.id }
+                    });
+                })
+                .then(cuenta => res.status(200).send('El registro ha sido actualizado'))
+                .catch(error => {
+                    console.log(error);
+                    return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde'   
+                    });
+                });
+        }
+    },
+
     async getSearch(req, res) {
         const idExpediente = parseInt(req.query.search, 10)// Obtener el id_expediente de la consulta
         console.log("ID Expediente recibido:", idExpediente); 
@@ -433,5 +540,6 @@ module.exports = {
           return res.status(500).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         }
       }      
+
 };
 

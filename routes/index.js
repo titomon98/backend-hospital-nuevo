@@ -135,6 +135,8 @@ module.exports = (app) => {
     router.put('/cuentas/activate', cuentasController.activate);
     router.put('/cuentas/deactivate', cuentasController.deactivate);
     router.get('/cuentas/getSearch', cuentasController.getSearch);
+    router.post('/cuentas/requestDiscount', cuentasController.DiscountRequest);
+    router.get('/cuentas/listDiscount', cuentasController.listNoPayDiscountRequest);
     
     //Facturas
     router.post('/facturas/create', facturaController.create);
