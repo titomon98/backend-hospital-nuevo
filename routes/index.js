@@ -135,6 +135,8 @@ module.exports = (app) => {
     router.put('/cuentas/activate', cuentasController.activate);
     router.put('/cuentas/deactivate', cuentasController.deactivate);
     router.get('/cuentas/getSearch', cuentasController.getSearch);
+    router.post('/cuentas/requestDiscount', cuentasController.DiscountRequest);
+    router.get('/cuentas/listDiscount', cuentasController.listNoPayDiscountRequest);
     
     //Facturas
     router.post('/facturas/create', facturaController.create);
@@ -248,7 +250,7 @@ module.exports = (app) => {
     router.get('/casa_medica/getSearch', casaMedicaController.getSearch);
 
     //comun
-    router.get('/comun/list', comunController.get);
+    router.get('/comun/list', comunController.list);
     router.post('/comun/create', comunController.create);
     router.put('/comun/update', comunController.update);
     router.put('/comun/activate', comunController.activate);
@@ -340,7 +342,7 @@ module.exports = (app) => {
     router.get('/proveedor/getSearch', proveedorController.getSearch);
 
     //quirurgico
-    router.get('/quirurgico/list', quirurgicoController.get);
+    router.get('/quirurgico/list', quirurgicoController.list);
     router.post('/quirurgico/create', quirurgicoController.create);
     router.put('/quirurgico/update', quirurgicoController.update);
     router.put('/quirurgico/activate', quirurgicoController.activate);
@@ -501,6 +503,7 @@ module.exports = (app) => {
     //cuentas
     router.get('/lab_cuentas/list', labCuentasController.list);
     router.get('/lab_cuentas/debtList', labCuentasController.listNoPay);
+    router.get('/lab_cuentas/payList', labCuentasController.listPay);
     router.get('/lab_cuentas/get', labCuentasController.get);
     router.get('/lab_cuentas/getByExp', labCuentasController.getByExp);
     router.get('/lab_cuentas/pay', labCuentasController.onPay);

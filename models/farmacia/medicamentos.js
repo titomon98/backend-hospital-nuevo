@@ -87,6 +87,12 @@ module.exports = (sequelize, DataTypes) => {
     factura: {
       type: DataTypes.INTEGER,
     },
+    created_by: {
+      type: DataTypes.STRING,
+    },
+    updated_by: {
+      type: DataTypes.STRING,
+    },
   }, {
     sequelize,
     modelName: 'medicamentos',

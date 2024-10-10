@@ -11,7 +11,8 @@ module.exports = {
             nombre: form.nombre,
             precio_normal: form.precio_normal,
             precio_sobrecargo: form.precio_sobrecargo,
-            tipo_examen: form.tipo_examen
+            tipo_examen: form.tipo_examen,
+            created_by: req.body.user
         };
 
         Examenes.create(datos)
@@ -86,7 +87,8 @@ module.exports = {
                 nombre: form.nombre,
                 precio_normal: form.precio_normal,
                 precio_sobrecargo: form.precio_sobrecargo,
-                tipo_examen: form.tipo_examen
+                tipo_examen: form.tipo_examen,
+                updated_by: req.body.user
             },
             { where: { 
                 id: form.id 

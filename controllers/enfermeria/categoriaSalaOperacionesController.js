@@ -12,7 +12,8 @@ module.exports = {
             categoria: form.categoria,
             precio: form.precio,
             cobro_extra: form.cobro_extra,
-            estado: 1
+            estado: 1,
+            created_by: req.body.user
         };
 
         Categoria.create(datos)
@@ -87,7 +88,8 @@ module.exports = {
                 categoria: form.categoria,
                 precio: form.precio,
                 cobro_extra: form.cobro_extra,
-                estado: form.estado
+                estado: form.estado,
+                updated_by: req.body.user
             },
             { where: { 
                 id: form.id 

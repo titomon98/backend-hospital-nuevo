@@ -12,7 +12,8 @@ module.exports = {
             valor_minimo: form.valor_minimo,
             valor_maximo: form.valor_maximo,
             unidades: form.unidades,
-            id_examenes_almacenados: form.id_examenes_almacenados
+            id_examenes_almacenados: form.id_examenes_almacenados,
+            created_by: req.body.user
         };
 
         CampoExamenes.create(datos)
@@ -89,6 +90,7 @@ module.exports = {
                 valor_minimo: form.valor_minimo,
                 valor_maximo: form.valor_maximo,
                 unidades: form.unidades,
+                updated_by: req.body.user
             },
             { where: { 
                 id: form.id 
