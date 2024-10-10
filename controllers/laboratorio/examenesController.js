@@ -107,7 +107,7 @@ module.exports = {
               cui_encargado: 'INGRESO EN LABORATORIO',
               direccion_encargado: 'INGRESO EN LABORATORIO',
               estado: 11,
-              
+              created_by: req.body.user,
             };
             const expediente = await Expediente.create(datos_expediente);
             const year = today.getFullYear();
@@ -125,6 +125,7 @@ module.exports = {
               createdAt: restarHoras(new Date(), 6),
               updatedAt: restarHoras(new Date(), 6),
               fecha_corte: null,
+              created_by: req.body.user,
             };
 
             

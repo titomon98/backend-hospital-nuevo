@@ -22,6 +22,7 @@ module.exports = {
             total: form.total,
             estado: 1,
             id_expediente: form.id_expediente,
+            created_by: req.body.user,
         };
 
         Cuenta.create(datos)
@@ -228,6 +229,7 @@ module.exports = {
                 otros: form.otros,
                 total: form.total,
                 estado: form.estado,
+                updated_by: req.body.user,
             },
             { where: { 
                 id: form.id 
@@ -289,7 +291,8 @@ module.exports = {
                         transferencia: req.body.transferencia,
                         total: req.body.total,
                         tipo: req.body.tipo,
-                        id_lab_cuenta: req.body.id
+                        id_lab_cuenta: req.body.id,
+                        created_by: req.body.user,
                     })
                 .then(detalle_cuenta =>{
                     console.log(detalle_cuenta)
@@ -320,7 +323,7 @@ module.exports = {
                                 id_seguro: req.body.id_seguro,
                                 total: req.body.seguro,
                                 pagado: 0,
-                                por_pagar: req.body.seguro
+                                por_pagar: req.body.seguro,
                             })
                             .then((pagoseg)=>{
                                 res.status(200).send('El registro ha sido desactivado')
@@ -367,7 +370,8 @@ module.exports = {
                         transferencia: req.body.transferencia,
                         total: req.body.total,
                         tipo: req.body.tipo,
-                        id_lab_cuenta: req.body.id
+                        id_lab_cuenta: req.body.id,
+                        created_by: req.body.user,
                     })
                 .then(detalle_cuenta =>res.status(200).send('El registro ha sido desactivado'))
                 .catch(error=>{
