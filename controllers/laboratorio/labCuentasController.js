@@ -72,8 +72,8 @@ module.exports = {
         const order=req.query.order;
         const { limit, offset } = getPagination(page, size);
 
-        //var condition = busqueda ? { [Op.or]: [{ '$expediente.nombres$': { [Op.like]: `%${busqueda}%` } }, {'expediente.apellidos':{[Op.like]: `%${busqueda}%`}}], 'estado':0 } : {'estado':0} ;
-        var condition = {'estado':0} ;
+        var condition = busqueda ? { [Op.or]: [{ '$Expediente.nombres$': { [Op.like]: `%${busqueda}%` } }, {'$Expediente.apellidos$':{[Op.like]: `%${busqueda}%`}}], 'estado':0 } : {'estado':0} ;
+        //var condition = {'estado':0} ;
 
         Cuenta.findAndCountAll({ 
             include: [
