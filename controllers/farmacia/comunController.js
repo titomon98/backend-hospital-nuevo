@@ -25,7 +25,8 @@ module.exports = {
             id_proveedor: form.proveedor.id,
             id_marca: form.marca.id,
             factura: form.factura,
-            estado: 1
+            estado: 1,
+            created_by: req.body.user
         };
 
         Comun.create(datos)
@@ -81,7 +82,7 @@ module.exports = {
                     model: Proveedor
                 },
             ],
-            where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+            where: condition, order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
         console.log('data: '+JSON.stringify(data))
@@ -122,6 +123,7 @@ module.exports = {
                 id_presentacion: form.presentacion.id,
                 id_proveedor: form.proveedor.id,
                 id_marca: form.marca.id,
+                updated_by: req.body.user,
             },
             { where: { 
                 id: form.id 

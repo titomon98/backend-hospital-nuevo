@@ -52,7 +52,7 @@ module.exports = {
             direccion_conyuge: form.direccion_conyuge,
             telefono_conyuge: form.telefono_conyuge,
             fecha_ingreso_reciente: form.fecha,
-            hora_ingreso_reciente: form.hora,
+            created_by: req.body.user,
         };
 
         Expediente.create(datos)
@@ -66,7 +66,8 @@ module.exports = {
                 otros: null,
                 total: 0.0,
                 id_expediente: expediente_id,
-                estado: 1
+                estado: 1,
+                created_by: req.body.user,
             }
             Cuenta.create(datos_cuenta)
                 .then(res=>{
@@ -152,7 +153,8 @@ module.exports = {
             contacto_encargado: 'PENDIENTE',
             cui_encargado: 'PENDIENTE',
             direccion_encargado: 'PENDIENTE',
-            estado: 10
+            estado: 10,
+            created_by: req.body.user,
         };
 
         Expediente.create(datos)
@@ -275,7 +277,8 @@ module.exports = {
                         direccion_encargado: form.direccion_encargado,
                         nombre_conyuge: form.nombre_conyuge,
                         direccion_conyuge: form.direccion_conyuge,
-                        telefono_conyuge: form.telefono_conyuge
+                        telefono_conyuge: form.telefono_conyuge,
+                        updated_by: req.body.user,
                     },
                     { where: { 
                         id: result.rows[0].dataValues.id
@@ -317,7 +320,8 @@ module.exports = {
                         direccion_encargado: form.direccion_encargado,
                         nombre_conyuge: form.nombre_conyuge,
                         direccion_conyuge: form.direccion_conyuge,
-                        telefono_conyuge: form.telefono_conyuge
+                        telefono_conyuge: form.telefono_conyuge,
+                        updated_by: req.body.user,
                     },
                     { where: { 
                         id: form.id 
@@ -342,7 +346,8 @@ module.exports = {
                                 otros: null,
                                 total: 0.0,
                                 id_expediente: form.id,
-                                estado: 1
+                                estado: 1,
+                                created_by: req.body.user,
                             }
                             Cuenta.create(datos_cuenta)
                             .then((resultCuenta_create)=>{
@@ -457,6 +462,7 @@ module.exports = {
             id_habitacionDestino : parseInt(req.body.habitaciones),
             createdAt: restarHoras(new Date(), 6),
             updatedAt: restarHoras(new Date(), 6),
+            created_by: req.body.user,
         })
 
         const moment = require('moment');

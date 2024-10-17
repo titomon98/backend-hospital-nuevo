@@ -11,7 +11,8 @@ module.exports = {
         console.log(req.body)
         const datos = {
             telefono: form.telefono,
-            nombre: form.nombre
+            nombre: form.nombre,
+            created_by: req.body.user
         };
 
         Aseguradora.create(datos)

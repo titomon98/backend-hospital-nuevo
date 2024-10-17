@@ -9,7 +9,8 @@ module.exports = {
         let form = req.body.form
         const datos = {
             nombre: form.nombre,
-            estado: 1
+            estado: 1,
+            created_by: req.body.user,
         };
 
         Marca.create(datos)
@@ -80,7 +81,10 @@ module.exports = {
     update (req, res) {
         let form = req.body.form
         Marca.update(
-            { nombre: form.nombre },
+            { 
+                nombre: form.nombre,
+                updated_by: req.body.user,
+            },
             { where: { 
                 id: form.id 
             } }

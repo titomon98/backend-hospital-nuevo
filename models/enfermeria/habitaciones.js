@@ -28,7 +28,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: false
     },
-    costo_estudio_de_sueño: {
+    costo_estudio_de_sueno: {
       type: DataTypes.STRING,
         allowNull: false
     },
@@ -39,6 +39,12 @@ module.exports = (sequelize, DataTypes) => {
     ocupante: {
       type: DataTypes.INTEGER,
       allowNull: true
+    },
+    created_by: {
+      type: DataTypes.STRING,
+    },
+    updated_by: {
+      type: DataTypes.STRING,
     },
   }, {
     sequelize,

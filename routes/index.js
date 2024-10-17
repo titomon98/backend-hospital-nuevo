@@ -250,7 +250,7 @@ module.exports = (app) => {
     router.get('/casa_medica/getSearch', casaMedicaController.getSearch);
 
     //comun
-    router.get('/comun/list', comunController.get);
+    router.get('/comun/list', comunController.list);
     router.post('/comun/create', comunController.create);
     router.put('/comun/update', comunController.update);
     router.put('/comun/activate', comunController.activate);
@@ -342,7 +342,7 @@ module.exports = (app) => {
     router.get('/proveedor/getSearch', proveedorController.getSearch);
 
     //quirurgico
-    router.get('/quirurgico/list', quirurgicoController.get);
+    router.get('/quirurgico/list', quirurgicoController.list);
     router.post('/quirurgico/create', quirurgicoController.create);
     router.put('/quirurgico/update', quirurgicoController.update);
     router.put('/quirurgico/activate', quirurgicoController.activate);

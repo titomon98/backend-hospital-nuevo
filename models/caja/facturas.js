@@ -51,7 +51,13 @@ module.exports = (sequelize, DataTypes) => {
     },
     referencia_factura: {
       type: DataTypes.STRING
-    }
+    },
+    created_by: {
+      type: DataTypes.STRING,
+    },
+    updated_by: {
+      type: DataTypes.STRING,
+    },
   }, {
     sequelize,
     modelName: 'facturas',
