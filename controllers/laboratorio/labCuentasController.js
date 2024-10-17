@@ -150,6 +150,65 @@ module.exports = {
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
+    
+    DiscountRequest (req,res) {
+        console.log(req.body.form)
+        let form = req.body.form
+        if (form.solicitud_descuento === 0){
+            Cuenta.update(
+                {
+                    solicitud_descuento: 0,
+                    descuento: 0,
+                },
+                { where: { 
+                    id: form.id 
+                } }
+            )
+            .then(cuenta => res.status(200).send('El registro ha sido actualizado'))
+            .catch(error => {
+                console.log(error)
+                return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+            });
+        }
+        else if (form.solicitud_descuento === 2){
+            Cuenta.update(
+                {
+                    solicitud_descuento: 2,
+                    descuento: form.descuento,
+                },
+                { where: { 
+                    id: form.id 
+                } }
+            )
+            .then(cuenta => res.status(200).send('El registro ha sido actualizado'))
+            .catch(error => {
+                console.log(error)
+                return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+            });
+        }
+        else if (form.solicitud_descuento === 1) {
+            Cuenta.findByPk(form.id)
+                .then(cuenta => {
+                    const nuevoTotalPagado = parseFloat(cuenta.total_pagado) + parseFloat(cuenta.descuento);
+                    const nuevoPendienteDePago = parseFloat(cuenta.pendiente_de_pago) - parseFloat(cuenta.descuento);
+        
+                    return Cuenta.update({
+                        solicitud_descuento: 1,
+                        descuento: form.descuento,
+                        total_pagado: parseFloat(nuevoTotalPagado),
+                        pendiente_de_pago: parseFloat(nuevoPendienteDePago)
+                    }, {
+                        where: { id: form.id }
+                    });
+                })
+                .then(cuenta => res.status(200).send('El registro ha sido actualizado'))
+                .catch(error => {
+                    console.log(error);
+                    return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde'   
+                    });
+                });
+        }
+    },
 
     listNoPay(req, res) {
         console.log('No pagados')
