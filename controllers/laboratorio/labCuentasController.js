@@ -400,7 +400,7 @@ module.exports = {
                         examenes.findAll({
                             where: {
                                 id_cuenta: req.body.id,
-                                estado: 2
+                                estado: 1
                             }
                         })
                         .then(examenes => {
