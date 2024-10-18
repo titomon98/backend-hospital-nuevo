@@ -124,7 +124,7 @@ module.exports = {
             where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
-        console.log('data: '+JSON.stringify(data.rows[0].expediente))
+        console.log('data: '+JSON.stringify(data.rows[0].expediente.estado))
         const response = getPagingData(data, page, limit);
 
         console.log('response: '+JSON.stringify(response))
