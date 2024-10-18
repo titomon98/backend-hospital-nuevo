@@ -114,7 +114,7 @@ module.exports = {
 
         var condition = {estado:1, '$Expediente.solvencia$': 0, [Op.or]:[{'$Expediente.estado$': 0},{'$Expediente.estado$': 6},{'$Expediente.estado$': 7},{'$Expediente.estado$': 8},{'$Expediente.estado$': 9}]}
         //var condition = {estado:1} ;
-        console.log(busqueda)
+        console.log(condition)
         Cuenta.findAndCountAll({ 
             include: [
                 {
