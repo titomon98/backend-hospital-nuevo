@@ -203,16 +203,26 @@ module.exports = {
                     tipo: 'Semi-privada'
                 }
             })
-            .then(tipo => res.status(200).send(tipo))
-            .catch(error => res.status(400).send(error))
+            .then(tipo => {
+                res.status(200).send(tipo);
+            })
+            .catch(error =>  {
+                console.error('Error al obtener habitaciones:', error);
+                res.status(402).send(error);
+            })
         }
         return Habitaciones.findAll({
             where: {
                 estado: 1
             }
         })
-        .then(tipo => res.status(200).send(tipo))
-        .catch(error => res.status(400).send(error))
+        .then(tipo => {
+            res.status(200).send(tipo);
+        })
+        .catch(error =>  {
+            console.error('Error al obtener habitaciones:', error);
+            res.status(402).send(error);
+        })
     },
 
     getAll (req, res) {

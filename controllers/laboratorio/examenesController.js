@@ -26,6 +26,7 @@ module.exports = {
       };
     
       const today = new Date();
+      console.log(req.body.form)
       let form = req.body.form;
 
       try {
@@ -605,88 +606,57 @@ module.exports = {
       }
     },
 
-    async listCui(req, res) {
-        const getPagingData = (data, page, limit) => {
-            const { count: totalItems, rows: referido } = data;
-            const currentPage = page ? +page : 0;
-            const totalPages = Math.ceil(totalItems / limit);
-            return { totalItems, referido, totalPages, currentPage };
-        };
-        const getPagination = (page, size) => {
-            const limit = size ? +size : 2;
-            const offset = page ? page * limit : 0;
-            return { limit, offset };
-        };
-        
-        const { page = 1, size = 5, criterio = 'createdAt', order = 'DESC' , fechaDesde, fechaHasta} = req.query;
-        const Page=req.query.page-1;
-        const Size=req.query.limit;
-        const Criterio = req.query.criterio;
-        const Order = req.query.order;
-        const { limit, offset } = getPagination(Page, Size);
-    
-        try {
+    async  listCui(req, res) {
+      try {
           const whereClause = {
-            estado: { [Op.in]: [1, 2] } 
+              estado: { [Op.in]: [1, 2] }
           };
           if (req.query.cui) {
-            whereClause.cui = req.query.cui; 
+              whereClause.cui = req.query.cui;
           }
-
-            const data = await Examenes.findAndCountAll({
-                include: [
-                    { model: ExamenAlmacenado, attributes: ['nombre'] },
-                    { model: Encargado, attributes: ['nombres'] }
-                ],
-                attributes: [
+  
+          const data = await Examenes.findAll({
+              include: [
+                  { model: ExamenAlmacenado, attributes: ['nombre'] },
+                  { model: Encargado, attributes: ['nombres'] }
+              ],
+              attributes: [
                   'id',
                   'expediente',
-                  'cui', 
+                  'cui',
                   'comision',
                   'total',
-                  'correo', 
+                  'correo',
                   'whatsapp',
                   'numero_muestra',
                   'referido',
                   'pagado',
                   'por_pagar',
-                  'createdAt'],
-                order: [[Criterio, Order]], // Ordenamos por createdAt DESC
-                limit,
-                offset,
-                where: whereClause 
-            }); 
-    
-            const response = getPagingData(data, Page, limit);
-    
-            if (response.referido) {
-                const dataResponse = response.referido.map(item => ({
-                    id: item.id,
-                    nombre : item.expediente,
-                    cui : item.cui,
-                    comision : item.comision,
-                    total : item.total,
-                    correo : item.correo,
-                    whatsapp : item.whatsapp,
-                    numero_muestra : item.numero_muestra,
-                    referido : item.referido,
-                    nombre_encargago: item.encargado?.nombres || 'Sin Encargado',
-                    pagado : item.pagado,
-                    por_pagar : item.por_pagar,
-                    nombre_examen: item.examenes_almacenado.nombre,
-                    fecha_hora: item.createdAt,
-                }));
-                response.referido = dataResponse;
-            } else {
-                // Manejar el caso en que response.referido es undefined
-                response.referido = ['NO SE ENCONTRARON DATOS']; // O enviar una respuesta adecuada al frontend
-            }
-            res.send({total:response.totalItems,last_page:response.totalPages, current_page: Page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
-        } catch (error) {
-            console.log(error);
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        }
-    },
+                  'createdAt'
+              ],
+              where: whereClause
+          });
+
+          const dataResponse = data.map(item => ({
+              id: item.id,
+              nombre: item.expediente,
+              cui: item.cui,
+              total: item.total,
+              whatsapp: item.whatsapp,
+              numero_muestra: item.numero_muestra,
+              nombre_encargago: item.encargado?.nombres || 'Sin Encargado',
+              pagado: item.pagado,
+              por_pagar: item.por_pagar,
+              nombre_examen: item.examenes_almacenado?.nombre || 'Sin Examen',
+              fecha_hora: item.createdAt,
+          }));
+  
+          res.send(dataResponse);
+      } catch (error) {
+          console.log(error);
+          return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+      }
+  },  
     
     async update(req, res) {
       let form = req.query

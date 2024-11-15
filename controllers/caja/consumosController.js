@@ -7,60 +7,57 @@ const Cuenta = db.cuentas;
 const Op = db.Sequelize.Op;
 
 module.exports = {
+
     async create(req, res) {
-        let form = req.body.form
+        try {
+            let form = req.body.form;
+    
+            const cuentas = await Cuenta.findAll({
+                where: {
+                    id_expediente: form.id
+                },
+                order: [['createdAt', 'DESC']]
+            });
+    
+            let cuentaSeleccionada = null;
+            for (const cuenta of cuentas) {
+                if (cuenta.dataValues.estado === 1) {
+                    cuentaSeleccionada = cuenta;
+                    break;
+                }
+            }
+    
+            if (!cuentaSeleccionada) {
+                return res.status(400).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
+            }
+    
+            const id_cuenta = cuentaSeleccionada.dataValues.id;
+            let totalCuenta = cuentaSeleccionada.dataValues.total || 0;
+            let subtotal = (parseFloat(form.cantidad) * parseFloat(form.servicio.precio));
+            let nuevoTotal = (parseFloat(totalCuenta) + parseFloat(subtotal)) || 0;
+            let pendientePago = (parseFloat(nuevoTotal) - parseFloat(cuentaSeleccionada.dataValues.total_pagado)) || 0;
+    
+            const datos = {
+                cantidad: form.cantidad,
+                descripcion: form.descripcion,
+                subtotal: subtotal,
+                estado: 1,
+                id_servicio: form.servicio.id,
+                id_cuenta: id_cuenta,
+                created_by: req.body.user
+            };
 
-        const cuentas = await Cuenta.findAll({
-            where: {
-                id_expediente: form.id
-            },
-            order: [['createdAt', 'DESC']]
-        })
-        let cuentaSeleccionada = null;
-        for (const cuenta of cuentas) {
-          if (cuenta.dataValues.estado == 1) {
-            cuentaSeleccionada = cuenta;
-            break;
-          }
+            await cuentaSeleccionada.update({ total: parseFloat(nuevoTotal), pendiente_de_pago: parseFloat(pendientePago) });
+    
+            // Crea el nuevo consumo
+            const nuevoConsumo = await Consumo.create(datos);
+            res.send(nuevoConsumo);
+        } catch (error) {
+            console.error('Error al procesar la solicitud:', error);
+            return res.status(500).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         }
+    },    
 
-        if (!cuentaSeleccionada) {
-            return res.status(400).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
-          }
-        const id_cuenta = cuentaSeleccionada.dataValues.id
-
-        let totalCuenta = cuentaSeleccionada.dataValues.total || 0; 
-
-        let subtotal = (parseFloat(form.cantidad) * parseFloat(form.servicio.precio))
-
-        let nuevoTotal = (parseFloat(totalCuenta) + parseFloat(subtotal))
-        console.log(nuevoTotal)
-        
-        let pendientePago = (parseFloat(nuevoTotal) - parseFloat(cuentaSeleccionada.dataValues.total_pagado))
-
-        const datos = {
-            cantidad: form.cantidad,
-            descripcion: form.descripcion,
-            subtotal: subtotal,
-            estado: 1,
-            id_servicio: form.servicio.id,
-            id_cuenta: id_cuenta,
-            created_by: req.body.user
-        };
-
-        await cuentaSeleccionada.update({ total: nuevoTotal, pendiente_de_pago: pendientePago });
-        await Consumo.create(datos)
-        .then(tipo => {
-            res.send(tipo);
-        })
-        .catch(error => {
-            console.log(error)
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
-                    
-    },
-
- 
     list(req, res) {
         const getPagingData = (data, page, limit) => {
             const { count: totalItems, rows: referido } = data;
