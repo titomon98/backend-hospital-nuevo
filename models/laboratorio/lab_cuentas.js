@@ -42,11 +42,9 @@ module.exports = (sequelize, DataTypes) => {
     },
     descuento: {
       type: DataTypes.DECIMAL(10,2),
-      allowNull: false
     },
     solicitud_descuento: {
       type: DataTypes.INTEGER,
-      allowNull: false
     },
     created_by: {
       type: DataTypes.STRING,
