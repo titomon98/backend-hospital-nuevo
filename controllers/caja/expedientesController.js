@@ -15,7 +15,7 @@ module.exports = {
         const today = new Date();
         let status = 0
         if (form.selectedOption == 'hospi') {
-            status = 11
+            status = 1
         } else if (form.selectedOption == 'emergencia') {
             status = 5
         } else if (form.selectedOption == 'quirofano') {
@@ -68,6 +68,8 @@ module.exports = {
                 id_expediente: expediente_id,
                 estado: 1,
                 created_by: req.body.user,
+                descuento: 0.0,
+                solicitud_descuento: 3
             }
             Cuenta.create(datos_cuenta)
                 .then(res=>{
@@ -159,6 +161,27 @@ module.exports = {
 
         Expediente.create(datos)
         .then(expediente => {
+            const expediente_id = expediente.id
+            let datos_cuenta = {
+                numero: 1,
+                fecha_ingreso: today,
+                motivo: 'PENDIENTE',
+                descripcion: null,
+                otros: null,
+                total: 0.0,
+                id_expediente: expediente_id,
+                estado: 1,
+                created_by: req.body.user,
+                descuento: 0.0,
+                solicitud_descuento: 3
+            }
+            Cuenta.create(datos_cuenta)
+                .then(res=>{
+                    res.update({ numero: res.id });
+                }) 
+                .catch(err=>
+                    console.log(err)
+                )
             Habitaciones.update(
                 {
                     estado: 2,
@@ -549,7 +572,7 @@ module.exports = {
           });
         }
         
-        Cuenta.findAll({
+        /* Cuenta.findAll({
             where: { 
                 id_expediente:req.body.id,
                 pendiente_de_pago: { [Sequelize.Op.gt]: 0 }
@@ -571,7 +594,7 @@ module.exports = {
                     )
             }}
 
-            )
+            ) */
 
         if (typeof req.body.nombre_encargado === 'undefined'){
             Expediente.update(
