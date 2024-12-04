@@ -121,7 +121,9 @@ module.exports = (app) => {
     router.put('/consumos/activate', consumosController.activate);
     router.put('/consumos/deactivate', consumosController.deactivate);
     router.get('/consumos/getSearch', consumosController.getSearch);
-    router.get('/consumos/getId', consumosController.getId)
+    router.get('/consumos/getId', consumosController.getId);
+    router.get('/consumos/getById/:id',consumosController.obtenerConsumosPorIdCuenta);
+    router.get('/consumos/historial/:id',consumosController.historialCuenta);
 
     //cuentas
     router.get('/cuentas/list', cuentasController.list);
