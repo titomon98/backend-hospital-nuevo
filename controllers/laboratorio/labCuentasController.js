@@ -23,6 +23,8 @@ module.exports = {
             estado: 1,
             id_expediente: form.id_expediente,
             created_by: req.body.user,
+            descuento: 0.0,
+            solicitud_descuento: 3
         };
 
         Cuenta.create(datos)
