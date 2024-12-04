@@ -111,8 +111,15 @@ module.exports = {
         const criterio=req.query.criterio;
         const order=req.query.order;
         const { limit, offset } = getPagination(page, size);
-
-        var condition = {estado:1, '$Expediente.solvencia$': 0, [Op.or]:[{'$Expediente.estado$': 0},{'$Expediente.estado$': 6},{'$Expediente.estado$': 7},{'$Expediente.estado$': 8},{'$Expediente.estado$': 9}]}
+        //var condition = {estado:1, '$Expediente.solvencia$': 0, [Op.or]:[{'$Expediente.estado$': 0},{'$Expediente.estado$': 6},{'$Expediente.estado$': 7},{'$Expediente.estado$': 8},{'$Expediente.estado$': 9}]}
+        var condition = {estado:1, '$Expediente.solvencia$': 0}
+        /* var condition = {
+            [Op.and]: [
+                { estado: 1 },
+                { '$Expediente.solvencia$': 1 },
+                { '$Expediente.estado$': 7 }
+            ]
+        }; */
         console.log(busqueda)
         Cuenta.findAndCountAll({ 
             include: [
@@ -123,7 +130,7 @@ module.exports = {
             where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
-        console.log('data: '+JSON.stringify(data))
+        console.log('data: '+JSON.stringify(data.rows[0].expediente.estado))
         const response = getPagingData(data, page, limit);
 
         console.log('response: '+JSON.stringify(response))

@@ -515,6 +515,7 @@ module.exports = (app) => {
     router.put('/lab_cuentas/deactivate', labCuentasController.deactivate);
     router.get('/lab_cuentas/getSearch', labCuentasController.getSearch);
     router.post('/lab_cuentas/requestDiscount', labCuentasController.DiscountRequest);
+    router.get('/lab_cuentas/listDiscount', labCuentasController.listNoPayDiscountRequest);
     
     //Seguros laboratorios
     //router.post('/seguros/create', labPagoSegurosController.create);
