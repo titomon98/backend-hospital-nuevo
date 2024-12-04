@@ -46,7 +46,11 @@ module.exports = {
                 id_expediente: form.id_expediente,
                 createdAt: restarHoras(new Date(), 6),
                 updatedAt: restarHoras(new Date(), 6),
-                fecha_corte: null
+                fecha_corte: null,
+                created_by: req.body.user,
+                descuento: 0,
+                solicitud_descuento: 3,
+                subtotal: 0
               };
         
               const cuentaCreada = await Cuenta.create(datosCuenta);
@@ -117,6 +121,10 @@ module.exports = {
                 createdAt: restarHoras(new Date(), 6),
                 updatedAt: restarHoras(new Date(), 6),
                 fecha_corte: null,
+                created_by: req.body.user,
+                descuento: 0,
+                solicitud_descuento: 3,
+                subtotal: 0
               };
         
               const cuentaCreada = await Cuenta.create(datosCuenta);
@@ -159,7 +167,7 @@ module.exports = {
               const examenesAlmacenados = await ExamenAlmacenado.findAll({
                 where: { id: form.id_examenes_almacenados },
               });
-              
+
               // Crear un examen realizado por cada examen almacenado
               const examenesCreados = await Promise.all(
                 examenesAlmacenados.map(async (examenAlmacenado) => {
@@ -213,7 +221,7 @@ module.exports = {
               var idFormateado = String(expediente.id).padStart(4, "0");
               const nuevoExpediente = year + "-" + idFormateado;
               await expediente.update({ expediente: nuevoExpediente });
-
+              
               // Crear un examen realizado por cada examen almacenado
               const examenesCreados = await Promise.all(
                 examenesAlmacenados.map(async (examenAlmacenado) => {
