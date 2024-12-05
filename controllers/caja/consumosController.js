@@ -324,7 +324,7 @@ module.exports = {
                 where: { id_cuenta: id_cuenta },
                 include: [{
                     model: Servicio,
-                    attributes: ['descripcion']
+                    attributes: ['descripcion', 'precio']
                 }],
                 attributes: ['id', 'cantidad', 'descripcion', 'subtotal', 'estado', 'createdAt', 'updatedAt']
             });
@@ -430,14 +430,13 @@ module.exports = {
 
             for (const cuenta of cuentas) {
                 const id_cuenta = cuenta.dataValues.id;
-                const id_cuenta_lab = cuenta_lab.dataValues.id
     
                 // CONSUMO SERVICIOS
                 const consumos = await Consumo.findAll({
                     where: { id_cuenta: id_cuenta },
                     include: [{
                         model: Servicio,
-                        attributes: ['descripcion']
+                        attributes: ['descripcion', 'precio']
                     }],
                     attributes: ['id', 'cantidad', 'descripcion', 'subtotal', 'estado', 'createdAt', 'updatedAt']
                 });
@@ -471,17 +470,7 @@ module.exports = {
                     }],
                     attributes: ['id', 'descripcion', 'cantidad', 'precio_venta', 'total', 'estado', 'createdAt', 'updatedAt']
                 });
-    
-                // EXAMENES
-                const examenes = await Examenes.findAll({
-                    where: { id_cuenta: id_cuenta_lab},
-                    include: [{
-                        model: ExamenAlmacenado,
-                        attributes: ['nombre']
-                    }],
-                    attributes: ['id', 'expediente', 'cui', 'comision', 'total', 'correo', 'whatsapp', 'numero_muestra', 'referido', 'id_encargado', 'pagado', 'por_pagar', 'estado', 'createdAt', 'updatedAt']
-                });
-    
+
                 // SERVICIO SALA OPERACIONES
                 const sala_operaciones = await SalaOperaciones.findAll({
                     where: { id_cuenta: id_cuenta },
@@ -496,8 +485,26 @@ module.exports = {
                 historial['Consumo Comun'].push(...consumosComunes);
                 historial['Consumo Medicamentos'].push(...consumosMedicamentos);
                 historial['Consumo Quirurgicos'].push(...consumosQuirurgicos);
-                historial.Examenes.push(...examenes);
                 historial.ServicioSalaOperaciones.push(...sala_operaciones);
+            }
+
+            for (const cuenta of cuenta_lab) {
+
+                const id_cuenta_lab = cuenta.dataValues.id
+            
+                    
+                // EXAMENES
+                const examenes = await Examenes.findAll({
+                    where: { id_cuenta: id_cuenta_lab},
+                    include: [{
+                        model: ExamenAlmacenado,
+                        attributes: ['nombre']
+                    }],
+                    attributes: ['id', 'expediente', 'cui', 'comision', 'total', 'correo', 'whatsapp', 'numero_muestra', 'referido', 'id_encargado', 'pagado', 'por_pagar', 'estado', 'createdAt', 'updatedAt']
+                });
+
+                historial.Examenes.push(...examenes);
+
             }
 
             return res.status(200).json(historial);
