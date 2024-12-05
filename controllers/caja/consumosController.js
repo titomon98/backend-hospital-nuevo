@@ -4,6 +4,23 @@ const db = require("../../models");
 const Consumo = db.consumos;
 const Servicio = db.servicios;
 const Cuenta = db.cuentas;
+
+const Movimiento = db.detalle_consumo_comunes;
+const Comun = db.comunes;
+
+const Movimiento2 = db.detalle_consumo_medicamentos;
+const Medicamento = db.medicamentos;
+
+const Movimiento3 = db.detalle_consumo_quirugicos;
+const Quirurgico = db.quirurgicos;
+
+const Examenes = db.examenes_realizados;
+const ExamenAlmacenado = db.examenes_almacenados;
+const Cuenta_Lab = db.lab_cuentas;
+
+const SalaOperaciones = db.servicio_sala_operaciones;
+const Categoria = db.categoria_sala_operaciones;
+
 const Op = db.Sequelize.Op;
 
 module.exports = {
@@ -101,7 +118,6 @@ module.exports = {
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
-
 
     find (req, res) {
         const id = req.params.id;
@@ -211,8 +227,6 @@ module.exports = {
             return res.status(400).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
           }
         const id_cuenta = cuentaSeleccionada.dataValues.id
-        console.log(id)
-        console.log(id_cuenta)
 
         const getPagingData = (data, page, limit) => {
             const { count: totalItems, rows: referido } = data;
@@ -262,5 +276,244 @@ module.exports = {
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
+
+    async  obtenerConsumosPorIdCuenta(req, res) {
+        const id = req.params.id;
+
+        try {
+            const cuentas = await Cuenta.findAll({
+                where: { id_expediente: id },
+                order: [['createdAt', 'DESC']]
+            });
+    
+            let cuentaSeleccionada = null;
+            for (const cuenta of cuentas) {
+                if (cuenta.dataValues.estado === 1) {
+                    cuentaSeleccionada = cuenta;
+                    break;
+                }
+            }
+    
+            if (!cuentaSeleccionada) {
+                return res.status(400).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
+            }
+    
+            const id_cuenta = cuentaSeleccionada.dataValues.id;
+
+            const cuenta_lab = await Cuenta_Lab.findAll({
+                where: { id_expediente: id },
+                order: [['createdAt', 'DESC']]
+            });
+    
+            let cuenta_lab_Seleccionada = null;
+            for (const cuenta of cuenta_lab) {
+                if (cuenta.dataValues.estado === 1) {
+                    cuenta_lab_Seleccionada = cuenta;
+                    break;
+                }
+            }
+    
+            if (!cuenta_lab_Seleccionada) {
+                return res.status(400).json({ msg: 'No se encontró ninguna cuenta activa de laboratorio para este expediente' });
+            }
+    
+            const id_cuenta_lab = cuenta_lab_Seleccionada.dataValues.id;
+
+            //CONSUMO SERVICIOS
+            const consumos = await Consumo.findAll({
+                where: { id_cuenta: id_cuenta },
+                include: [{
+                    model: Servicio,
+                    attributes: ['descripcion', 'precio']
+                }],
+                attributes: ['id', 'cantidad', 'descripcion', 'subtotal', 'estado', 'createdAt', 'updatedAt']
+            });
+
+            //CONSUMO MATERIAL COMUNES
+            const consumosComunes = await Movimiento.findAll({
+                where: { id_cuenta: id_cuenta },
+                include: [{
+                    model: Comun, 
+                    attributes: ['nombre']
+                }],
+                attributes: ['id', 'descripcion', 'cantidad', 'precio_venta', 'total', 'estado', 'createdAt', 'updatedAt']
+            });
+
+            //CONSUMO DE MEDICAMENTOS
+            const consumosMedicamentos = await Movimiento2.findAll({
+                where: { id_cuenta: id_cuenta },
+                include: [{
+                    model: Medicamento, 
+                    attributes: ['nombre']
+                }],
+                attributes: ['id', 'descripcion', 'cantidad', 'precio_venta', 'total', 'estado', 'createdAt', 'updatedAt']
+            });
+
+            //CONSUMO DE MATERIAL QUIRURGICO
+            const consumosQuirurgicos = await Movimiento3.findAll({
+                where: { id_cuenta: id_cuenta },
+                include: [{
+                    model: Quirurgico, 
+                    attributes: ['nombre']
+                }],
+                attributes: ['id', 'descripcion', 'cantidad', 'precio_venta', 'total', 'estado', 'createdAt', 'updatedAt']
+            });
+
+            //EXAMENES
+            const examenes = await Examenes.findAll({
+                where: { id_cuenta: id_cuenta_lab },
+                include: [{
+                    model: ExamenAlmacenado,
+                    attributes: ['nombre']
+                }],
+                attributes: ['id', 'expediente', 'cui', 'comision', 'total', 'correo', 'whatsapp', 'numero_muestra', 'referido', 'id_encargado', 'pagado', 'por_pagar', 'estado', 'createdAt', 'updatedAt']
+            });
+
+            //SERVICIO SALA OPERACIONES
+            const sala_operaciones = await SalaOperaciones.findAll({
+                where: { id_cuenta: id_cuenta },
+                include: [{
+                    model: Categoria,
+                    attributes: ['categoria']
+                }],
+                attributes: ['id', 'descripcion', 'horas', 'total', 'id_cuenta', 'createdAt', 'updatedAt', 'id_categoria']
+            });
+    
+            // AGRUPANDO OBJETOS PARA GENERAR EL REPORTE
+            const reporte = {
+                Consumo: consumos,
+                'Consumo Comun': consumosComunes,
+                'Consumo Medicamentos': consumosMedicamentos,
+                'Consumo Quirurgicos': consumosQuirurgicos,
+                Examenes: examenes,
+                ServicioSalaOperaciones: sala_operaciones
+            };
+    
+            return res.status(200).json(reporte);
+    
+        } catch (error) {
+            console.error('Error al obtener los datos:', error);
+            return res.status(500).json({ msg: 'Error al obtener los datos', error: error.message });
+        }
+    },
+
+    async historialCuenta(req, res) {
+        const id = req.params.id;
+    
+        try {
+            const cuentas = await Cuenta.findAll({
+                where: { id_expediente: id },
+                order: [['createdAt', 'DESC']]
+            });
+    
+            if (cuentas.length === 0) {
+                return res.status(400).json({ msg: 'No se encontró ninguna cuenta para este expediente' });
+            }
+
+            const cuenta_lab = await Cuenta_Lab.findAll({
+                where: { id_expediente: id },
+                order: [['createdAt', 'DESC']]
+            });
+    
+            if (cuenta_lab.length === 0) {
+                return res.status(400).json({ msg: 'No se encontró ninguna cuenta de laboratorio para este expediente' });
+            }
+
+            const historial = {
+                Consumo: [], 
+                'Consumo Comun': [],
+                'Consumo Medicamentos': [],
+                'Consumo Quirurgicos': [],
+                Examenes: [],
+                ServicioSalaOperaciones: []
+            };
+
+            for (const cuenta of cuentas) {
+                const id_cuenta = cuenta.dataValues.id;
+    
+                // CONSUMO SERVICIOS
+                const consumos = await Consumo.findAll({
+                    where: { id_cuenta: id_cuenta },
+                    include: [{
+                        model: Servicio,
+                        attributes: ['descripcion', 'precio']
+                    }],
+                    attributes: ['id', 'cantidad', 'descripcion', 'subtotal', 'estado', 'createdAt', 'updatedAt']
+                });
+    
+                // CONSUMO MATERIAL COMUNES
+                const consumosComunes = await Movimiento.findAll({
+                    where: { id_cuenta: id_cuenta },
+                    include: [{
+                        model: Comun, 
+                        attributes: ['nombre']
+                    }],
+                    attributes: ['id', 'descripcion', 'cantidad', 'precio_venta', 'total', 'estado', 'createdAt', 'updatedAt']
+                });
+    
+                // CONSUMO DE MEDICAMENTOS
+                const consumosMedicamentos = await Movimiento2.findAll({
+                    where: { id_cuenta: id_cuenta },
+                    include: [{
+                        model: Medicamento, 
+                        attributes: ['nombre']
+                    }],
+                    attributes: ['id', 'descripcion', 'cantidad', 'precio_venta', 'total', 'estado', 'createdAt', 'updatedAt']
+                });
+    
+                // CONSUMO DE MATERIAL QUIRURGICO
+                const consumosQuirurgicos = await Movimiento3.findAll({
+                    where: { id_cuenta: id_cuenta },
+                    include: [{
+                        model: Quirurgico, 
+                        attributes: ['nombre']
+                    }],
+                    attributes: ['id', 'descripcion', 'cantidad', 'precio_venta', 'total', 'estado', 'createdAt', 'updatedAt']
+                });
+
+                // SERVICIO SALA OPERACIONES
+                const sala_operaciones = await SalaOperaciones.findAll({
+                    where: { id_cuenta: id_cuenta },
+                    include: [{
+                        model: Categoria,
+                        attributes: ['categoria']
+                    }],
+                    attributes: ['id', 'descripcion', 'horas', 'total', 'id_cuenta', 'createdAt', 'updatedAt', 'id_categoria']
+                });
+    
+                historial.Consumo.push(...consumos);
+                historial['Consumo Comun'].push(...consumosComunes);
+                historial['Consumo Medicamentos'].push(...consumosMedicamentos);
+                historial['Consumo Quirurgicos'].push(...consumosQuirurgicos);
+                historial.ServicioSalaOperaciones.push(...sala_operaciones);
+            }
+
+            for (const cuenta of cuenta_lab) {
+
+                const id_cuenta_lab = cuenta.dataValues.id
+            
+                    
+                // EXAMENES
+                const examenes = await Examenes.findAll({
+                    where: { id_cuenta: id_cuenta_lab},
+                    include: [{
+                        model: ExamenAlmacenado,
+                        attributes: ['nombre']
+                    }],
+                    attributes: ['id', 'expediente', 'cui', 'comision', 'total', 'correo', 'whatsapp', 'numero_muestra', 'referido', 'id_encargado', 'pagado', 'por_pagar', 'estado', 'createdAt', 'updatedAt']
+                });
+
+                historial.Examenes.push(...examenes);
+
+            }
+
+            return res.status(200).json(historial);
+    
+        } catch (error) {
+            console.error('Error al obtener los datos:', error);
+            return res.status(500).json({ msg: 'Error al obtener los datos', error: error.message });
+        }
+    }
+    
 };
 

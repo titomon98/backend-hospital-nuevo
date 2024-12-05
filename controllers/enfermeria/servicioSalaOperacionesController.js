@@ -2,7 +2,7 @@
 
 const Sequelize = require('sequelize');
 const db = require('../../models');
-const SalaOperaciones = db.servicio_sala_operaciones; // Asegúrate de que el nombre es correcto
+const SalaOperaciones = db.servicio_sala_operaciones;
 const Cuenta = db.cuentas;
 const Categoria = db.categoria_sala_operaciones;
 const Servicios = db.servicios;
@@ -108,7 +108,7 @@ module.exports = {
       const servicios = await Servicios.findAll({
         where: {
           descripcion: {
-            [Op.like]: `%${descripcion}%`, // Case-insensitive search
+            [Op.like]: `%${descripcion}%`,
           },
           estado: estado,
         },

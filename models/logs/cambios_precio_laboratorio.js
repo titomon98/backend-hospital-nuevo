@@ -6,27 +6,17 @@ const {
 module.exports = (sequelize, DataTypes) => {
   class logs extends Model {
     static associate(models) {
-      logs.belongsTo(models.expedientes, {
-        foreignKey: "id_expediente",
-      });
+
     }
   };
   logs.init({
-    origen: {
-      type: DataTypes.STRING,
-      allowNull: false
-    },
-    destino: {
-      type: DataTypes.INTEGER,
-      allowNull: false
-    },
-    motivo: {
+    descripcion: {
       type: DataTypes.STRING,
       allowNull: true
     },
-    id_habitacionDestino : {
-      type: DataTypes.INTEGER,
-      allowNull: false
+    accion: {
+        type: DataTypes.STRING,
+        allowNull: true
     },
     created_by: {
       type: DataTypes.STRING,
@@ -34,12 +24,9 @@ module.exports = (sequelize, DataTypes) => {
     updated_by: {
       type: DataTypes.STRING,
     },
-    id_expediente : {
-      type: DataTypes.INTEGER,
-    },
   }, {
     sequelize,
-    modelName: 'log_traslados',
+    modelName: 'cambios_precio_laboratorios',
   });
   return logs;
 };

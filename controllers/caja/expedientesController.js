@@ -14,14 +14,19 @@ module.exports = {
         let form = req.body.form
         const today = new Date();
         let status = 0
+        let lugar = ''
         if (form.selectedOption == 'hospi') {
             status = 1
+            lugar = 'Hospitalización'
         } else if (form.selectedOption == 'emergencia') {
             status = 5
+            lugar = 'Emergencias'
         } else if (form.selectedOption == 'quirofano') {
             status = 3
+            lugar = 'Quirófano'
         } else if (form.selectedOption == 'intensivo') {
             status = 4
+            lugar = 'Intensivos'
         }
         const datos = {
             nombres: form.nombre,
@@ -78,6 +83,17 @@ module.exports = {
                 .catch(err=>
                     console.log(err)
                 )
+            //Agregando log inicial de ingreso de paciente
+            Logs.create({
+                id_expediente: expediente_id,
+                origen: 'Recién ingresado',
+                destino: lugar,
+                motivo: form.motivo,
+                id_habitacionDestino : null,
+                createdAt: restarHoras(new Date(), 6),
+                updatedAt: restarHoras(new Date(), 6),
+                created_by: req.body.user,
+            })
 
             //Actualizar expediente
             const year = today.getFullYear();
@@ -104,7 +120,7 @@ module.exports = {
     asignarHabitacion(req, res){
         let form = req.body.form
         console.log(form)
-        console.log(req.body)
+
         Expediente.update(
         { 
             estado: 1,
