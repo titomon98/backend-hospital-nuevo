@@ -380,7 +380,7 @@ module.exports = (app) => {
     router.post('/asuetos/create', AsuetosController.create);
     router.get('/asuetos/list', AsuetosController.list);
     router.get('/asuetos/getId/:id', AsuetosController.gitId);
-    router.put('/asuetos', AsuetosController.update);
+    router.put('/asuetos/:id', AsuetosController.update);
 
     //CARPETA HONORARIOS
     

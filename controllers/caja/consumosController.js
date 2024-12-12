@@ -295,7 +295,7 @@ module.exports = {
             }
     
             if (!cuentaSeleccionada) {
-                return res.status(400).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
+                return res.status(401).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
             }
     
             const id_cuenta = cuentaSeleccionada.dataValues.id;
@@ -313,11 +313,8 @@ module.exports = {
                 }
             }
     
-            if (!cuenta_lab_Seleccionada) {
-                return res.status(400).json({ msg: 'No se encontró ninguna cuenta activa de laboratorio para este expediente' });
-            }
-    
-            const id_cuenta_lab = cuenta_lab_Seleccionada.dataValues.id;
+            // Si no hay cuenta activa de laboratorio, usar valores por defecto
+            const id_cuenta_lab = cuenta_lab_Seleccionada ? cuenta_lab_Seleccionada.dataValues.id : null;
 
             //CONSUMO SERVICIOS
             const consumos = await Consumo.findAll({
@@ -414,10 +411,6 @@ module.exports = {
                 where: { id_expediente: id },
                 order: [['createdAt', 'DESC']]
             });
-    
-            if (cuenta_lab.length === 0) {
-                return res.status(400).json({ msg: 'No se encontró ninguna cuenta de laboratorio para este expediente' });
-            }
 
             const historial = {
                 Consumo: [], 
@@ -490,7 +483,8 @@ module.exports = {
 
             for (const cuenta of cuenta_lab) {
 
-                const id_cuenta_lab = cuenta.dataValues.id
+                 // Si no hay cuenta activa de laboratorio, usar valores por defecto
+                const id_cuenta_lab = cuenta ? cuenta.dataValues.id : null;
             
                     
                 // EXAMENES
