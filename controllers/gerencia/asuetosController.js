@@ -6,9 +6,13 @@ const Asueto = db.asuetos; // Importa el modelo de asuetos
 
 module.exports = {
 // Obtener todos los asuetos
-async list (req, res) {
+async list(req, res) {
   try {
-    const asuetos = await Asueto.findAll();
+    const asuetos = await Asueto.findAll({
+      where: {
+        estado: 1
+      }
+    });
     res.json(asuetos);
   } catch (error) {
     console.error(error);
@@ -27,6 +31,7 @@ async create (req, res){
     res.status(500).json({ error: 'Error al crear asueto' });
   }
 },
+
 //Obtenerte asueto por id
 async gitId (req, res) {
     const { id } = req.params;
@@ -44,20 +49,23 @@ async gitId (req, res) {
     }
   },
 // Actualizar un asueto existente
-async update (req, res) {
+async update(req, res) {
   const { id } = req.params;
-  const { nombre, fecha } = req.body;
+  console.log(id)
+
   try {
     const asuetoActualizado = await Asueto.findByPk(id);
+    console.log(asuetoActualizado)
+
     if (asuetoActualizado) {
-      await asuetoActualizado.update({ nombre, fecha });
-      res.json({ mensaje: 'Asueto actualizado' });
+      await asuetoActualizado.update({ estado: 0 });
+      res.json({ mensaje: 'Estado de asueto actualizado a 0' });
     } else {
       res.status(400).json({ error: 'Asueto no encontrado' });
     }
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Error al actualizar asueto' });
+    res.status(500).json({ error: 'Error al actualizar estado de asueto' });
   }
 },
 
