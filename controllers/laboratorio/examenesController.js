@@ -6,6 +6,8 @@ const ExamenAlmacenado = db.examenes_almacenados;
 const Encargado = db.encargados;
 const Expediente = db.expedientes;
 const Cuenta = db.lab_cuentas;
+const Asueto = db.asuetos
+
 const Op = db.Sequelize.Op;
 const moment = require('moment');
 
@@ -23,8 +25,8 @@ module.exports = {
         let nuevaFecha = new Date(fecha);
         nuevaFecha.setHours(nuevaFecha.getHours() - horas);
         return nuevaFecha;
-      };
-    
+      }
+
       const today = new Date();
       console.log(req.body.form)
       let form = req.body.form;
@@ -268,9 +270,35 @@ module.exports = {
           nombre: { [Op.like]: `%${busqueda}%` }  // Cambio a Op.like y nombres (plural)
         } : null;
       
+        
+      // OBTENER DIA ACTUAL
+      const currentDate = new Date();
+
+      //VALIDAR SI ES DIA ASUETO
+      const formattedDate = currentDate.toISOString().split("T")[0]; // Formato YYYY-MM-DD
+      const isAsueto = await Asueto.findOne({
+        where: { fecha: formattedDate },
+      });
+      
+      //VALIDAR SI ES SABADO DESPUES DE LA 1:00PM
+      const isSaturdayAfter1PM =
+        currentDate.getDay() === 6 &&
+        (currentDate.getHours() >= 13 || (currentDate.getHours() === 12 && currentDate.getMinutes() >= 60));
+
+      //VALIDANDO CONDICIONES
+      const shouldUseSurcharge = isSaturdayAfter1PM || isAsueto;
+
         try {
           const data = await ExamenAlmacenado.findAll({ where: condition });
-          res.send(data);
+          //MODIFICAR PRECIO EN BASE A CONDICIONES
+          const modifiedData = data.map((examen) => {
+            const examenData = examen.toJSON()
+            if (shouldUseSurcharge) {
+              examenData.precio_normal = examenData.precio_sobrecargo || examenData.precio_normal
+            }
+            return examenData
+          });
+          res.send(modifiedData);
         } catch (error) {
           console.error(error);
           res.status(500).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
@@ -285,16 +313,42 @@ module.exports = {
       const condition = busqueda ? { 
         nombre: { [Op.like]: `%${busqueda}%` } 
       } : null;
-    
+
+      // OBTENER DIA ACTUAL
+      const currentDate = new Date();
+
+      //VALIDAR SI ES DIA ASUETO
+      const formattedDate = currentDate.toISOString().split("T")[0]; // Formato YYYY-MM-DD
+      const isAsueto = await Asueto.findOne({
+        where: { fecha: formattedDate },
+      });
+
+      //VALIDAR SI ES SABADO DESPUES DE LA 1:00PM
+      const isSaturdayAfter1PM =
+        currentDate.getDay() === 6 &&
+        (currentDate.getHours() >= 13 || (currentDate.getHours() === 12 && currentDate.getMinutes() >= 60));
+
+      //VALIDANDO CONDICIONES
+      const shouldUseSurcharge = isSaturdayAfter1PM || isAsueto;
+
       try {
         const { count, rows: data } = await ExamenAlmacenado.findAndCountAll({ 
           where: condition,
           limit: limit,
           offset: (page - 1) * limit 
         });
-    
+
+        //MODIFICAR PRECIO EN BASE A CONDICIONES
+        const modifiedData = data.map((examen) => {
+          const examenData = examen.toJSON()
+          if (shouldUseSurcharge) {
+            examenData.precio_normal = examenData.precio_sobrecargo || examenData.precio_normal
+          }
+          return examenData
+        });
+            
         res.json({
-          data: data,
+          data: modifiedData,
           currentPage: page,
           total: count,
           perPage: limit
@@ -392,7 +446,7 @@ module.exports = {
                   'por_pagar',
                   'id_examenes_almacenados',
                   'createdAt'],
-                order: [[Criterio, Order]], // Ordenamos por createdAt DESC
+                order: [['numero_muestra', 'DESC']], // Ordenamos por createdAt DESC
                 limit,
                 offset,
                 where: whereClause 

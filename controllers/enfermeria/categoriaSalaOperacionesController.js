@@ -2,6 +2,7 @@
 const Sequelize     = require('sequelize');
 const db = require("../../models");
 //const Contrato = db.contratos;
+const Asueto = db.asuetos
 const Categoria = db.categoria_sala_operaciones;
 const Op = db.Sequelize.Op;
 
@@ -141,17 +142,63 @@ module.exports = {
     },
 
     getSearch (req, res) {
-        var busqueda = req.query.search;
-        var condition = busqueda?{ [Op.or]:[ {categoria: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
-        Categoria.findAll({
-            where: condition})
-        .then(data => {
-            res.send(data);
-        })
-        .catch(error => {
-            console.log(error)
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
+        const busqueda = req.query.search;
+        const condition = busqueda
+          ? {
+              [Op.and]: [
+                {
+                  [Op.or]: [{ categoria: { [Op.like]: `%${busqueda}%` } }],
+                },
+                { estado: 1 },
+              ],
+            }
+          : { estado: 1 };
+      
+        // Obtener fecha y hora actuales
+        const currentDate = new Date();
+        const formattedDate = currentDate.toISOString().split("T")[0]; // Formato YYYY-MM-DD
+      
+        //PRUEBA
+        const testMode = true; // Cambia a false en producción
+        const isTestConditionMet =
+          testMode &&
+          currentDate.getHours() >= 16 &&
+          (currentDate.getHours() > 16 || currentDate.getMinutes() >= 40);
+      
+        const isSaturdayAfter1PM =
+          currentDate.getDay() === 6 &&
+          (currentDate.getHours() >= 13 || (currentDate.getHours() === 12 && currentDate.getMinutes() >= 60));
+      
+        // Consultar días de asueto
+        Asueto.findOne({ where: { fecha: formattedDate } })
+          .then((asueto) => {
+            const isAsueto = !!asueto;
+      
+            // Consultar categorías
+            return Categoria.findAll({ where: condition }).then((data) => {
+              // Aplicar lógica para cobro_extra
+              const shouldUseExtraCharge =
+                isTestConditionMet || isSaturdayAfter1PM || isAsueto;
+      
+              const modifiedData = data.map((categoria) => {
+                const categoriaData = categoria.toJSON()
+                if (shouldUseExtraCharge) {
+                    const precioNormal = Number(categoriaData.precio) || 0; // Asegurar que sea numérico
+                    const cobroExtra = Number(categoriaData.cobro_extra) || 0; // Asegurar que sea numérico
+                    categoriaData.precio = precioNormal + cobroExtra; // Sumar valores
+                  }
+                return categoriaData;
+              });
+      
+              res.send(modifiedData);
+            });
+          })
+          .catch((error) => {
+            console.error(error);
+            res
+              .status(400)
+              .json({ msg: "Ha ocurrido un error, por favor intente más tarde" });
+          });      
     },
 
     get(req, res) {
