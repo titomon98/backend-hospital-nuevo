@@ -26,6 +26,9 @@ module.exports = (sequelize, DataTypes) => {
     updated_by: {
       type: DataTypes.STRING,
     },
+    id_expediente : {
+      type: DataTypes.INTEGER,
+    },
   }, {
     sequelize,
     modelName: 'log_traslados',
