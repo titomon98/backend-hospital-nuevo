@@ -1,7 +1,7 @@
 'use strict';
 
 const Sequelize = require('sequelize');
-const { Op, Sequelize } = require('sequelize');
+const { Op} = require('sequelize');
 const db = require('../../models');
 const HonorariosMedicos = db.detalle_honorarios; // Importa el modelo de asuetos
 const Medicos = db.medicos;
