@@ -561,9 +561,21 @@ module.exports = (app) => {
     router.get('/reporte/ingresosDia', reportesCajaHospiController.ingresosDia)
     router.get('/reporte/detalleMediosDePago', reportesCajaHospiController.detalleMediosDePagoMesActual)
     router.get('/reporte/simpleMediosDePago', reportesCajaHospiController.simpleMediosDePago)
+    //router.get('/reporte/detalleMediosDePago', reportesCajaHospiController.detalleMediosDePagoMesActual)
+    //router.get('/reporte/simpleMediosDePago', reportesCajaHospiController.simpleMediosDePago)
 
     //reportes de enfermeria
-    router.get('/reporte/pacientesFechas', reportesEnfermeriaController.list)
+    router.get('/reporte/enfermeria/pacientesLugar', reportesEnfermeriaController.getPacientesPorLugar)
+    router.get('/reporte/enfermeria/pacientesActuales', reportesEnfermeriaController.getPacientesActuales)
+    router.get('/reporte/enfermeria/pacientesTodos', reportesEnfermeriaController.getTodosPacientesPorFechas)
+    router.get('/reporte/enfermeria/serviciosMasConsumidos', reportesEnfermeriaController.getServiciosMasConsumidos)
+    router.get('/reporte/enfermeria/medicamentos', reportesEnfermeriaController.getMedicamentosMasConsumidos)
+    router.get('/reporte/enfermeria/fallecidos', reportesEnfermeriaController.getPacientesFallecidos)
+    router.get('/reporte/enfermeria/egresados', reportesEnfermeriaController.getPacientesEgresados)
+
+    //reportes de Medicos
+    router.get('/reporte/medicos/honorarios', reportesMedicosController.reporteHonorarios)
+    router.get('/reporte/medicos/medicoMasHonorarios', reportesMedicosController.reporteMedicoMasHonorarios)
 
     //AUTH
     router.post('/login', authController.login);

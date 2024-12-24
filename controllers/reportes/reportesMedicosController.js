@@ -1,79 +1,140 @@
 'use strict';
 
 const Sequelize = require('sequelize');
+const { Op} = require('sequelize');
 const db = require('../../models');
-const Asueto = db.asuetos; // Importa el modelo de asuetos
-
+const HonorariosMedicos = db.detalle_honorarios;
+const Medicos = db.medicos;
 module.exports = {
-// Obtener todos los asuetos
-async list (req, res) {
-  try {
-    const asuetos = await Asueto.findAll();
-    res.json(asuetos);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error al obtener asuetos' });
-  }
-},
+    async reporteHonorarios(req, res) {
+      const { fechaInicio, fechaFin } = req.query;
+        try {
+            const honorarios = await HonorariosMedicos.findAll({
+                where: {
+                    updatedAt: {
+                      [Op.between]: [
+                          `${fechaInicio} 00:00:00`,
+                          `${fechaFin} 23:59:59`,
+                      ],
+                  },
+                },
+                attributes: ['id_medico', 'descripcion', 'total', 'updatedAt'],
+            });
 
-// Crear un nuevo asueto
-async create (req, res){
-  const { nombre, fecha } = req.body;
-  try {
-    const nuevoAsueto = await Asueto.create({ nombre, fecha });
-    res.json(nuevoAsueto);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error al crear asueto' });
-  }
-},
-//Obtenerte asueto por id
-async gitId (req, res) {
-    const { id } = req.params;
+            const ids = honorarios.map((honorario) => honorario.id_medico);
+
+            const medicos = await Medicos.findAll({
+              where: {
+                  id: ids,
+              },
+              attributes: ['id', 'nombre'],
+          });
+
+          const mapaHonorarios = medicos.reduce((mapa, medico) => {
+            mapa[medico.id] = {
+                nombre_medico: medico.nombre,
+            };
+            return mapa;
+        }, {});
+
+        const honorariosFormateados = honorarios.map((honorario) => {
+          const medico = mapaHonorarios[honorario.id_medico] || {};
+          return {
+              nombre_medico: medico.nombre_medico || 'Nombre no especificado',
+              descripcion: honorario.descripcion,
+              total_honorario: Number(honorario.total).toFixed(2),
+              fecha:new Intl.DateTimeFormat('es-ES', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+              }).format(new Date(honorario.updatedAt,)),
+          };
+      });
   
-    try {
-      const asueto = await Asueto.findByPk(id);
-      if (asueto) {
-        res.json(asueto);
-      } else {
-        res.status(400).json({ error: 'Asueto no encontrado' });
-      }
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Error al obtener asueto' });
-    }
-  },
-// Actualizar un asueto existente
-async update (req, res) {
-  const { id } = req.params;
-  const { nombre, fecha } = req.body;
-  try {
-    const asuetoActualizado = await Asueto.findByPk(id);
-    if (asuetoActualizado) {
-      await asuetoActualizado.update({ nombre, fecha });
-      res.json({ mensaje: 'Asueto actualizado' });
-    } else {
-      res.status(400).json({ error: 'Asueto no encontrado' });
-    }
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error al actualizar asueto' });
-  }
-},
+            res.json(honorariosFormateados);
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Error al generar el reporte de pacientes fallecidos' });
+        }
+    },
 
-// Eliminar un asueto
-async delete (req, res) {
-  const { id } = req.params;
-  try {
-    const asuetoEliminado = await Asueto.destroy({ where: { id } });
-    if (asuetoEliminado) {
-      res.json({ mensaje: 'Asueto eliminado' });
-    } else {
-      res.status(400).json({ error: 'Asueto no encontrado' });
+    async reporteMedicoMasHonorarios(req, res) {
+      const { fechaInicio, fechaFin } = req.query;
+    
+      try {
+        const honorarios = await HonorariosMedicos.findAll({
+          where: {
+            updatedAt: {
+              [Op.between]: [
+                `${fechaInicio} 00:00:00`,
+                `${fechaFin} 23:59:59`,
+              ],
+            },
+          },
+          attributes: ['id_medico', 'total', 'updatedAt'],
+        });
+    
+        if (!honorarios.length) {
+          return res.status(404).json({ mensaje: "No se encontraron honorarios en el rango de fechas especificado." });
+        }
+    
+        const honorariosPorMedico = honorarios.reduce((acumulador, honorario) => {
+          const { id_medico, total, updatedAt } = honorario;
+          if (!acumulador[id_medico]) {
+            acumulador[id_medico] = {
+              total_honorarios: 0,
+              fechas: [],
+            };
+          }
+          acumulador[id_medico].total_honorarios += parseFloat(total);
+          acumulador[id_medico].fechas.push(updatedAt);
+          return acumulador;
+        }, {});
+    
+        const medicosOrdenados = Object.entries(honorariosPorMedico)
+          .map(([id_medico, { total_honorarios, fechas }]) => ({
+            id_medico,
+            total_honorarios,
+            fechas,
+          }))
+          .sort((a, b) => b.total_honorarios - a.total_honorarios);
+    
+        const ids = medicosOrdenados.map((medico) => medico.id_medico);
+    
+        const medicos = await Medicos.findAll({
+          where: {
+            id: ids,
+          },
+          attributes: ['id', 'nombre'],
+        });
+    
+
+        const reporte = medicosOrdenados.map((medico) => {
+          const infoMedico = medicos.find((m) => m.id === parseInt(medico.id_medico)) || {};
+          return {
+            nombre_medico: infoMedico.nombre || 'Nombre no especificado',
+            total_honorarios: medico.total_honorarios,
+            fechas: medico.fechas.map((fecha) => {
+              const formattedDate = new Intl.DateTimeFormat('es-ES', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+              }).format(new Date(fecha));
+              return formattedDate;
+            }),
+          };
+        });
+    
+        const medicoConMasHonorarios = reporte[0] || null;
+    
+        res.json({
+          medicoConMasHonorarios,
+          listaDeMedicos: reporte,
+        });
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error al generar el reporte de honorarios' });
+      }
     }
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error al eliminar asueto' });
-  }
-}
+    
 };
