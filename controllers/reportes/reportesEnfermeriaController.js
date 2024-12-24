@@ -232,10 +232,8 @@ const Medicamentos = db.medicamentos
           order: [[Sequelize.fn('SUM', Sequelize.col('cantidad')), 'DESC']],
       });
 
-      // Extraer IDs de servicios
       const idsServicios = consumos.map((consumo) => consumo.id_servicio);
 
-      // Consulta 2: Obtener datos de servicios
       const servicios = await Servicio.findAll({
           where: {
               id: idsServicios,
@@ -243,7 +241,6 @@ const Medicamentos = db.medicamentos
           attributes: ['id', 'descripcion', 'precio'],
       });
 
-      // Crear un mapa de servicios para unir los datos fácilmente
       const mapaServicios = servicios.reduce((mapa, servicio) => {
           mapa[servicio.id] = {
               nombre_servicio: servicio.descripcion,
@@ -252,7 +249,6 @@ const Medicamentos = db.medicamentos
           return mapa;
       }, {});
 
-      // Combinar resultados
       const consumosFormateados = consumos.map((consumo) => {
           const servicio = mapaServicios[consumo.id_servicio] || {};
           return {
@@ -264,7 +260,6 @@ const Medicamentos = db.medicamentos
           };
       });
 
-      // Resaltar el consumo más alto
       const consumoMasAlto = consumosFormateados[0] || null;
 
       res.json({
