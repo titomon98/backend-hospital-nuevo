@@ -20,7 +20,7 @@ module.exports = {
             lugar = 'Hospitalización'
         } else if (form.selectedOption == 'emergencia') {
             status = 5
-            lugar = 'Emergencias'
+            lugar = 'Emergencia'
         } else if (form.selectedOption == 'quirofano') {
             status = 3
             lugar = 'Quirófano'

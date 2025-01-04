@@ -13,112 +13,91 @@ const Medicamentos = db.medicamentos
     module.exports = {
 
     // Reporte 1: Pacientes en cada lugar por fechas
-  async getPacientesPorLugar (req, res) {
+  async getPacientesPorLugar(req, res) {
     const { fechaInicio, fechaFin } = req.query;
+
     try {
         const expedientes = await Expediente.findAll({
-          where: {
-            estado: {
-              [Op.in]: [1, 3, 4, 5],
+            where: {
+                estado: { [Op.in]: [1, 3, 4, 5] },
+                updatedAt: { [Op.between]: [`${fechaInicio} 00:00:00`, `${fechaFin} 23:59:59`] },
             },
-            updatedAt: {
-              [Op.between]: [
-                `${fechaInicio} 00:00:00`,
-                `${fechaFin} 23:59:59`,
-              ],
-            },
-          },
         });
-    
+
         const traslados = await LogTraslados.findAll({
-          where: {
-            updatedAt: {
-              [Op.between]: [
-                `${fechaInicio} 00:00:00`,
-                `${fechaFin} 23:59:59`,
-              ],
+            where: {
+                updatedAt: { [Op.between]: [`${fechaInicio} 00:00:00`, `${fechaFin} 23:59:59`] },
             },
-          },
         });
+
         const registrosSalaOperaciones = await SalaOperaciones.findAll({
-          where: {
-            updatedAt: {
-              [Op.between]: [
-                `${fechaInicio} 00:00:00`,
-                `${fechaFin} 23:59:59`,
-              ],
+            where: {
+                updatedAt: { [Op.between]: [`${fechaInicio} 00:00:00`, `${fechaFin} 23:59:59`] },
             },
-          },
         });
-    
+
+        const cuentasIds = registrosSalaOperaciones.map((r) => r.id_cuenta);
+        const cuentas = await Cuentas.findAll({ where: { id: cuentasIds } });
+        const expedientesIds = cuentas.map((c) => c.id_expediente);
+        const expedientesMap = await Expediente.findAll({
+            where: { id: expedientesIds },
+        });
+
+        const expedientesIdsTraslados = traslados.map((c) => c.id_expediente);
+        const expedientesMapTraslados = await Expediente.findAll({
+            where: { id: expedientesIdsTraslados },
+        });
+
         const lugares = {
-          'Hospitalización': [],
-          'Quirófano': [],
-          'Intensivos': [],
-          'Emergencia': [],
-          'Sala de Operaciones': [],
+            'Hospitalización': [],
+            'Quirófano': [],
+            'Intensivos': [],
+            'Emergencia': [],
+            'Sala de Operaciones': [],
         };
-    
-        const pacientesContados = new Set();
-    
+
         const agregarPaciente = (idExpediente, nombres, apellidos, cui, fecha, lugar) => {
-          const key = `${idExpediente}-${lugar}`;
-          if (!pacientesContados.has(key)) {
-            lugares[lugar].push({ idExpediente, nombres, apellidos, cui, fecha });
-            pacientesContados.add(key);
-          }
+          lugares[lugar].push({ idExpediente, nombres, apellidos, cui, fecha });
         };
 
-        expedientes.forEach((expediente) => {
-          const { id_expediente, nombres, apellidos, cui, updatedAt, estado } = expediente;
-          const lugar = {
-            1: 'Hospitalización',
-            3: 'Quirófano',
-            4: 'Intensivos',
-            5: 'Emergencia',
-          }[estado];
-          if (lugar) {
-            agregarPaciente(id_expediente, nombres, apellidos, cui, updatedAt, lugar);
-          }
+        expedientes.forEach(({ id_expediente, nombres, apellidos, cui, updatedAt, estado }) => {
+            const lugar = { 1: 'Hospitalización', 3: 'Quirófano', 4: 'Intensivos', 5: 'Emergencia' }[estado];
+            if (lugar) agregarPaciente(id_expediente, nombres, apellidos, cui, updatedAt, lugar);
         });
 
-        traslados.forEach((traslado) => {
-          const { id_expediente, nombres, apellidos, cui, updatedAt, destino } = traslado;
-          if (lugares[destino]) {
-            agregarPaciente(id_expediente, nombres, apellidos, cui, updatedAt, destino);
-          }
+        traslados.forEach(({id_expediente, updatedAt, destino }) => {
+          const expedienteTraslados = expedientesMapTraslados.find((e) => e.id === id_expediente);
+          if (!expedienteTraslados) return;
+
+          const { nombres, apellidos, cui } = expedienteTraslados;
+          if (lugares[destino]) agregarPaciente(id_expediente, nombres, apellidos, cui, updatedAt, destino);
         });
 
-        for (const registro of registrosSalaOperaciones) {
-          const { id_cuenta, updatedAt } = registro;
-    
-          const cuenta = await Cuentas.findOne({ where: { id : id_cuenta } });
-          if (!cuenta) continue;
-    
-          const { id_expediente } = cuenta;
-    
-          const expediente = await Expediente.findOne({ where: { id : id_expediente } });
-          if (!expediente) continue;
-    
-          const { nombres, apellidos, cui } = expediente;
-    
-          agregarPaciente(id_expediente, nombres, apellidos, cui, updatedAt, 'Sala de Operaciones');
-        }
+        registrosSalaOperaciones.forEach(({ id_cuenta, updatedAt }) => {
+            const cuenta = cuentas.find((c) => c.id === id_cuenta);
+            if (!cuenta) return;
+
+            const expediente = expedientesMap.find((e) => e.id === cuenta.id_expediente);
+            if (!expediente) return;
+
+            const { id_expediente, nombres, apellidos, cui } = expediente;
+            agregarPaciente(id_expediente, nombres, apellidos, cui, updatedAt, 'Sala de Operaciones');
+        });
 
         const respuesta = {
-          cantidadHospitalizacion: lugares['Hospitalización'].length,
-          cantidadQuirófano: lugares['Quirófano'].length,
-          cantidadIntensivo: lugares['Intensivos'].length,
-          cantidadEmergencia: lugares['Emergencia'].length,
-          cantidadSalaOperaciones: lugares['Sala de Operaciones'].length,
-          detalles: lugares,
+            cantidadHospitalizacion: lugares['Hospitalización'].length,
+            cantidadQuirófano: lugares['Quirófano'].length,
+            cantidadIntensivo: lugares['Intensivos'].length,
+            cantidadEmergencia: lugares['Emergencia'].length,
+            cantidadSalaOperaciones: lugares['Sala de Operaciones'].length,
+            detalles: lugares,
         };
-    
+
         res.json(respuesta);
-      } catch (error) {
+    } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Error al generar el reporte de pacientes por lugar' });
-      }
+    }
   },
 
   // Reporte 2: Pacientes actuales en cada lugar
