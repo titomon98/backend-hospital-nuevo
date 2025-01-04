@@ -80,6 +80,7 @@ const labDetalleCuentasController = require('../controllers/laboratorio/labDetal
 const especialidadesController = require('../controllers/medicos/especialidadesController')
 const medicosController = require('../controllers/medicos/medicosController')
 const sociosController = require('../controllers/medicos/sociosController')
+const voucherHonorariosController = require('../controllers/medicos/voucher_honorariosController.js')
 
 //CARPETA DE PACIENTES
 const recetaController = require('../controllers/paciente/recetaController')
@@ -107,6 +108,7 @@ const reportesEnfermeriaController = require('../controllers/reportes/reportesEn
 const reportesExamenesController = require('../controllers/reportes/reportesExamenesController')
 const reportesMedicosController = require('../controllers/reportes/reportesMedicosController')
 const reportesPacientesController = require('../controllers/reportes/reportesPacientesController')
+
 
 //RUTAS
 
@@ -485,6 +487,10 @@ module.exports = (app) => {
     router.put('/socios/activate', sociosController.activate);
     router.put('/socios/deactivate', sociosController.deactivate);
     router.get('/socios/getSearch', sociosController.getSearch);
+
+    //voucherPagoHonorarios
+    router.post('/voucher/create', voucherHonorariosController.create);
+    router.get('/voucher/getSearch', voucherHonorariosController.getSearch);
 
     //CARPETA DE PACIENTES
     //recetas
