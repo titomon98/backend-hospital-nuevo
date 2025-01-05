@@ -80,6 +80,7 @@ const labDetalleCuentasController = require('../controllers/laboratorio/labDetal
 const especialidadesController = require('../controllers/medicos/especialidadesController')
 const medicosController = require('../controllers/medicos/medicosController')
 const sociosController = require('../controllers/medicos/sociosController')
+const voucherHonorariosController = require('../controllers/medicos/voucher_honorariosController.js')
 
 //CARPETA DE PACIENTES
 const recetaController = require('../controllers/paciente/recetaController')
@@ -107,6 +108,7 @@ const reportesEnfermeriaController = require('../controllers/reportes/reportesEn
 const reportesExamenesController = require('../controllers/reportes/reportesExamenesController')
 const reportesMedicosController = require('../controllers/reportes/reportesMedicosController')
 const reportesPacientesController = require('../controllers/reportes/reportesPacientesController')
+
 
 //RUTAS
 
@@ -486,6 +488,10 @@ module.exports = (app) => {
     router.put('/socios/deactivate', sociosController.deactivate);
     router.get('/socios/getSearch', sociosController.getSearch);
 
+    //voucherPagoHonorarios
+    router.post('/voucher/create', voucherHonorariosController.create);
+    router.get('/voucher/getSearch', voucherHonorariosController.getSearch);
+
     //CARPETA DE PACIENTES
     //recetas
     router.get('/recetas/list', recetaController.list);
@@ -561,9 +567,21 @@ module.exports = (app) => {
     router.get('/reporte/ingresosDia', reportesCajaHospiController.ingresosDia)
     router.get('/reporte/detalleMediosDePago', reportesCajaHospiController.detalleMediosDePagoMesActual)
     router.get('/reporte/simpleMediosDePago', reportesCajaHospiController.simpleMediosDePago)
+    //router.get('/reporte/detalleMediosDePago', reportesCajaHospiController.detalleMediosDePagoMesActual)
+    //router.get('/reporte/simpleMediosDePago', reportesCajaHospiController.simpleMediosDePago)
 
     //reportes de enfermeria
-    router.get('/reporte/pacientesFechas', reportesEnfermeriaController.list)
+    router.get('/reporte/enfermeria/pacientesLugar', reportesEnfermeriaController.getPacientesPorLugar)
+    router.get('/reporte/enfermeria/pacientesActuales', reportesEnfermeriaController.getPacientesActuales)
+    router.get('/reporte/enfermeria/pacientesTodos', reportesEnfermeriaController.getTodosPacientesPorFechas)
+    router.get('/reporte/enfermeria/serviciosMasConsumidos', reportesEnfermeriaController.getServiciosMasConsumidos)
+    router.get('/reporte/enfermeria/medicamentos', reportesEnfermeriaController.getMedicamentosMasConsumidos)
+    router.get('/reporte/enfermeria/fallecidos', reportesEnfermeriaController.getPacientesFallecidos)
+    router.get('/reporte/enfermeria/egresados', reportesEnfermeriaController.getPacientesEgresados)
+
+    //reportes de Medicos
+    router.get('/reporte/medicos/honorarios', reportesMedicosController.reporteHonorarios)
+    router.get('/reporte/medicos/medicoMasHonorarios', reportesMedicosController.reporteMedicoMasHonorarios)
 
     //AUTH
     router.post('/login', authController.login);
