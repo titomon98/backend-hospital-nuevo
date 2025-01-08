@@ -104,6 +104,7 @@ const facturaController = require('../controllers/caja/facturaController.js');
 // CARPETA DE REPORTES
 const reportesCajaHospiController = require('../controllers/reportes/reportesCajaHospiController')
 const reportesCajaLabController = require('../controllers/reportes/reportesCajaLabController')
+const reportesFarmaciaController = require('../controllers/reportes/reportesFarmaciaController.js')
 const reportesEnfermeriaController = require('../controllers/reportes/reportesEnfermeriaController')
 const reportesExamenesController = require('../controllers/reportes/reportesExamenesController')
 const reportesMedicosController = require('../controllers/reportes/reportesMedicosController')
@@ -569,6 +570,13 @@ module.exports = (app) => {
     router.get('/reporte/simpleMediosDePago', reportesCajaHospiController.simpleMediosDePago)
     //router.get('/reporte/detalleMediosDePago', reportesCajaHospiController.detalleMediosDePagoMesActual)
     //router.get('/reporte/simpleMediosDePago', reportesCajaHospiController.simpleMediosDePago)
+
+    //reportes de farmacia
+    router.get('/reporte/farmacia/productosMasUtilizados', reportesFarmaciaController.getProductosMasUtilizados)
+    router.get('/reporte/farmacia/proveedores', reportesFarmaciaController.getProveedoresMasSolicitados)
+    router.get('/reporte/farmacia/inventarioMedicina', reportesFarmaciaController.getInventarioMedicinas)
+    router.get('/reporte/farmacia/iventarioGeneral', reportesFarmaciaController.getInventarioGeneral)
+    router.get('/reporte/farmacia/suministroMedicamentos', reportesFarmaciaController.getMedicametosSuministrados)
 
     //reportes de enfermeria
     router.get('/reporte/enfermeria/pacientesLugar', reportesEnfermeriaController.getPacientesPorLugar)

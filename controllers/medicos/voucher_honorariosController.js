@@ -19,7 +19,8 @@ module.exports = {
             cantidad_pagada: form.cantidad,
             fecha_creacion: restarHoras(new Date(), 6),
             createdAt: restarHoras(new Date(), 6),
-            updatedAt: restarHoras(new Date(), 6)
+            updatedAt: restarHoras(new Date(), 6),
+            created_by: req.body.user
         };
 
         VoucherHonorarios.create(datos)
