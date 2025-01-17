@@ -48,14 +48,12 @@ module.exports = {
             const fechaActual = restarHoras(new Date(), 6)
             const [Medicos, ultimo_id] = await Promise.all([
                 Medico.findAll({ where: condition }),
-
                 VoucherHonorarios.findOne({
                     attributes: ['id'],
                     order: [['id', 'DESC']],
                 }),
             ]);
             const numero = ultimo_id? ultimo_id.id + 1 : 1;
-
             res.json({ Medicos, numero, fechaActual });
         } catch (error) {
             console.error(error);
