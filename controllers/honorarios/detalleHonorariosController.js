@@ -7,7 +7,9 @@ const Medico = db.medicos;
 const Cuenta = db.cuentas;
 const Op = db.Sequelize.Op;
 
-
+// ESTADOS DE DETALLE
+// SIN PAGAR = 1
+// PAGADO = 0
 // Funciones auxiliares para paginación
 const getPagingData = (data, page, limit) => {
   const { count: totalItems, rows: items } = data;
@@ -24,11 +26,15 @@ const getPagination = (page, size) => {
 
 module.exports = {
   async create(req, res) {
+
+    console.log(req.body)
+
     const restarHoras = (fecha, horas) => {
       let nuevaFecha = new Date(fecha); // Crear una nueva instancia de fecha
       nuevaFecha.setHours(nuevaFecha.getHours() - horas);
       return nuevaFecha;
     };
+
     const idMedico = parseInt(req.body.id_medico, 10);
     if (isNaN(idMedico)) {
       return res.status(400).json({ msg: 'El id_medico debe ser un número entero' });
@@ -57,6 +63,8 @@ module.exports = {
     const datos = {
       id_medico: idMedico,
       id_cuenta: id_cuenta,
+      estado: 1,
+      lugar: req.body.lugar,
       descripcion: req.body.descripcion || null,
       total: req.body.total,
       createdAt: restarHoras(new Date(), 6),
@@ -117,7 +125,7 @@ module.exports = {
     console.log("ID Expediente recibido:", idCuenta); 
     try {
       const { count, rows } = await DetalleHonorarios.findAndCountAll({
-        where: { id_cuenta: idCuenta }, // Buscar por id_expediente
+        where: { id_cuenta: idCuenta , estado : 1 }, // Buscar por id_expediente
         include: [{ model: db.medicos, as: 'medico' }], 
         limit: pageSize,
         offset: (page - 1) * pageSize
@@ -149,6 +157,7 @@ module.exports = {
       await DetalleHonorarios.update(
         {
           id_medico: form.id_medico,
+          estado: 1,
           total: form.total,
           descripcion: form.descripcion,
           updatedAt: new Date(),

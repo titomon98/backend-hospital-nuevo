@@ -61,7 +61,7 @@ const Medicamentos = db.medicamentos
         };
 
         expedientes.forEach(({ id_expediente, nombres, apellidos, cui, updatedAt, estado }) => {
-            const lugar = { 1: 'Hospitalización', 3: 'Quirófano', 4: 'Intensivos', 5: 'Emergencia' }[estado];
+            const lugar = { 1: 'Hospitalización', 3: 'Sala de Operaciones', 4: 'Intensivos', 5: 'Emergencia' }[estado];
             if (lugar) agregarPaciente(id_expediente, nombres, apellidos, cui, updatedAt, lugar);
         });
 
@@ -177,7 +177,7 @@ const Medicamentos = db.medicamentos
                     ],
                   },
               },
-              attributes: ['nombres', 'apellidos', 'cui', 'estado', 'updatedAt'],
+              attributes: ['nombres', 'apellidos', 'estado', 'createdAt', 'updatedAt'],
           });
 
           res.json(pacientes);

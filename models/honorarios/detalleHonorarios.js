@@ -29,6 +29,14 @@ module.exports = (sequelize, DataTypes) => {
         key: 'id'
       }
     },
+    estado: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    lugar: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
     descripcion: {
       type: DataTypes.STRING(250),
       allowNull: true
