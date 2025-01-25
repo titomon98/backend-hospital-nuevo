@@ -1,22 +1,20 @@
 'use strict'
 const Sequelize     = require('sequelize');
 const db = require("../../models");
-const Caja_chicas = db.caja_chicas;
 const Rubro = db.rubros;
 const Op = db.Sequelize.Op;
 
 module.exports = {
     create(req, res) {
+        console.log(req.body)
         let form = req.body.form
         const datos = {
-            cantidad: form.cantidad,
             nombre: form.nombre,
             estado: 1,
-            id_rubro: form.rubro,
             created_by: req.body.user
         };
 
-        Caja_chicas.create(datos)
+        Rubro.create(datos)
         .then(tipo => {
             res.send(tipo);
         })
@@ -55,15 +53,9 @@ module.exports = {
 
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Op.or]: [{ Caja_chicas: { [Op.like]: `%${busqueda}%` } }] } : null ;
+        var condition = busqueda ? { [Op.or]: [{ Rubro: { [Op.like]: `%${busqueda}%` } }] } : null ;
 
-        Caja_chicas.findAndCountAll({ 
-            include: [
-                {
-                    model: Rubro
-                }
-            ],
-            where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        Rubro.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
         console.log('data: '+JSON.stringify(data))
@@ -82,16 +74,16 @@ module.exports = {
     find (req, res) {
         const id = req.params.id;
 
-        return Caja_chicas.findByPk(id)
+        return Rubro.findByPk(id)
         .then(marca => res.status(200).send(marca))
         .catch(error => res.status(400).send(error))
     },
 
     update (req, res) {
         let form = req.body.form
-        Caja_chicas.update(
+        Rubro.update(
             { 
-                Caja_chicas: form.Caja_chicas,
+                Rubro: form.Rubro,
                 nombre: form.nombre,
                 updated_by: req.body.user
             },
@@ -107,7 +99,7 @@ module.exports = {
     },
 
     activate (req, res) {
-        Caja_chicas.update(
+        Rubro.update(
             { estado: 1 },
             { where: { 
                 id: req.body.id 
@@ -121,7 +113,7 @@ module.exports = {
     },
 
     deactivate (req, res) {
-        Caja_chicas.update(
+        Rubro.update(
             { estado: 0 },
             { where: { 
                 id: req.body.id 
@@ -134,7 +126,7 @@ module.exports = {
         });
     },
     get (req, res) {
-        Caja_chicas.findAll({attributes: ['id', 'Caja_chicas']})
+        Rubro.findAll({attributes: ['id', 'nombre']})
         .then(data => {
             res.send(data);
         })
@@ -145,8 +137,8 @@ module.exports = {
     },
     getSearch (req, res) {
         var busqueda = req.query.search;
-        var condition = busqueda?{ [Op.or]:[ {Caja_chicas: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
-        Caja_chicas.findAll({
+        var condition = busqueda?{ [Op.or]:[ {Rubro: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
+        Rubro.findAll({
             where: condition})
         .then(data => {
             res.send(data);
