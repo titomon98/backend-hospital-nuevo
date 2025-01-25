@@ -7,6 +7,10 @@ module.exports = (sequelize, DataTypes) => {
   class voucher_honorarios extends Model {
   };
   voucher_honorarios.init({
+    id_medico: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
     nombre_medico: {
       type: DataTypes.STRING,
       allowNull: false

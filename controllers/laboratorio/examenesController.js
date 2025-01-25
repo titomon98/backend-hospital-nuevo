@@ -28,7 +28,6 @@ module.exports = {
       }
 
       const today = new Date();
-      console.log(req.body.form)
       let form = req.body.form;
 
       try {
@@ -63,13 +62,16 @@ module.exports = {
                 examenesAlmacenados.map(async (examenAlmacenado) => {
                   const datosExamen = {
                     expediente: form.nombre,
+                    edad: form.edad,
                     cui: parseInt(form.cui),
-                    comision: form.comision,
+                    comision: form.comision.nombre,
                     total: examenAlmacenado.precio_normal,
                     correo: form.correo,
                     whatsapp: form.whatsapp,
                     numero_muestra: form.numero_muestra,
                     referido: form.referido,
+                    nombre_factura: form.factura,
+                    nit: form.nit,
                     id_encargado: form.id_encargado?.id || null,
                     pagado: 0,
                     por_pagar: examenAlmacenado.precio_normal,
@@ -137,13 +139,16 @@ module.exports = {
                 examenesAlmacenados.map(async (examenAlmacenado) => {
                   const datosExamen = {
                     expediente: form.nombre + ' ' + form.apellido,
+                    edad: form.edad,
                     cui: form.cui,
-                    comision: form.comision,
+                    comision: form.comision.nombre,
                     total: examenAlmacenado.precio_normal,
                     correo: form.correo,
                     whatsapp: form.whatsapp,
                     numero_muestra: form.numero_muestra,
                     referido: form.referido,
+                    nombre_factura: form.factura,
+                    nit: form.nit,
                     id_encargado: form.id_encargado?.id || null,
                     pagado: 0,
                     por_pagar: examenAlmacenado.precio_normal,
@@ -175,13 +180,16 @@ module.exports = {
                 examenesAlmacenados.map(async (examenAlmacenado) => {
                   const datosExamen = {
                     expediente: form.nombre,
+                    edad: form.edad,
                     cui: parseInt(form.cui),
-                    comision: form.comision,
+                    comision: form.comision.nombre,
                     total:0,
                     correo: form.correo,
                     whatsapp: form.whatsapp,
                     numero_muestra: form.numero_muestra,
                     referido: form.referido,
+                    nombre_factura: form.factura,
+                    nit: form.nit,
                     id_encargado: form.id_encargado?.id || null,
                     pagado: 0,
                     por_pagar: 0,
@@ -229,13 +237,16 @@ module.exports = {
                 examenesAlmacenados.map(async (examenAlmacenado) => {
                   const datosExamen = {
                     expediente: form.nombre + ' ' + form.apellido,
+                    edad: form.edad,
                     cui: form.cui,
-                    comision: form.comision,
+                    comision: form.comision.nombre,
                     total: 0,
                     correo: form.correo,
                     whatsapp: form.whatsapp,
                     numero_muestra: form.numero_muestra,
                     referido: form.referido,
+                    nombre_factura: form.factura,
+                    nit: form.nit,
                     id_encargado: form.id_encargado?.id || null,
                     pagado: 0,
                     por_pagar: 0,
@@ -435,6 +446,7 @@ module.exports = {
                 attributes: [
                   'id',
                   'expediente',
+                  'edad',
                   'cui', 
                   'comision',
                   'total',
@@ -458,6 +470,7 @@ module.exports = {
                 const dataResponse = response.referido.map(item => ({
                     id: item.id,
                     nombre : item.expediente,
+                    edad: item.edad,
                     cui : item.cui,
                     comision : item.comision,
                     total : item.total,
@@ -527,6 +540,7 @@ module.exports = {
               attributes: [
                 'id',
                 'expediente',
+                'edad',
                 'cui', 
                 'comision',
                 'total',
@@ -550,6 +564,7 @@ module.exports = {
               const dataResponse = response.referido.map(item => ({
                   id: item.id,
                   nombre : item.expediente,
+                  edad: item.edad,
                   cui : item.cui,
                   comision : item.comision,
                   total : item.total,
@@ -619,6 +634,7 @@ module.exports = {
               attributes: [
                 'id',
                 'expediente',
+                'edad',
                 'cui', 
                 'comision',
                 'total',
@@ -642,6 +658,7 @@ module.exports = {
               const dataResponse = response.referido.map(item => ({
                   id: item.id,
                   nombre : item.expediente,
+                  edad: item.edad,
                   cui : item.cui,
                   comision : item.comision,
                   total : item.total,
@@ -685,6 +702,7 @@ module.exports = {
               attributes: [
                   'id',
                   'expediente',
+                  'edad',
                   'cui',
                   'comision',
                   'total',
@@ -702,6 +720,7 @@ module.exports = {
           const dataResponse = data.map(item => ({
               id: item.id,
               nombre: item.expediente,
+              edad: item.edad,
               cui: item.cui,
               total: item.total,
               whatsapp: item.whatsapp,
@@ -728,7 +747,7 @@ module.exports = {
       if (!examenSeleccionado) {
         return res.status(300).json({ msg: 'No se encontró el examen a actualizar' });
       }
-      await examenSeleccionado.update({estado: 3})
+      await examenSeleccionado.update({estado: 4})
       .then(tipo => {
           res.send(tipo);
       })

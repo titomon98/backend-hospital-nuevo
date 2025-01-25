@@ -137,6 +137,8 @@ module.exports = (app) => {
     router.get('/consumos/getId', consumosController.getId);
     router.get('/consumos/getById/:id',consumosController.obtenerConsumosPorIdCuenta);
     router.get('/consumos/historial/:id',consumosController.historialCuenta);
+    router.get('/consumos/sumario/:id',consumosController.getDataSumario);
+
 
     //cuentas
     router.get('/cuentas/list', cuentasController.list);
@@ -598,6 +600,14 @@ module.exports = (app) => {
     //reportes de Medicos
     router.get('/reporte/medicos/honorarios', reportesMedicosController.reporteHonorarios)
     router.get('/reporte/medicos/medicoMasHonorarios', reportesMedicosController.reporteMedicoMasHonorarios)
+    router.get('/reporte/medicos/optenerPacientes', voucherHonorariosController.getPacientesHonorarios)
+
+    //reportes de Laboratorio
+    router.get('/reporte/laboratio/examenesGeneral', reportesExamenesController.getReporteGeneralExamenes)
+    router.get('/reporte/laboratio/MasMenosRealizados', reportesExamenesController.getReporteExamenesMasMenosRealizados)
+    router.get('/reporte/laboratio/examenesDiarios', reportesExamenesController.getReporteExamenesDiarios)
+    router.get('/reporte/laboratio/porMedico', reportesExamenesController.getReporteExamenesPorMedico)
+    router.get('/reporte/laboratio/comisiones', reportesExamenesController.getAllExamenesPorMedico)
 
     //AUTH
     router.post('/login', authController.login);

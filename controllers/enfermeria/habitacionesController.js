@@ -52,7 +52,7 @@ module.exports = {
 
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Op.or]: [{ nombre: { [Op.like]: `%${busqueda}%` } }] } : null ;
+        var condition = busqueda ? { [Op.or]: [{ tipo: { [Op.like]: `%${busqueda}%` } }] } : null ;
 
         Habitaciones.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
