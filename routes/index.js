@@ -23,7 +23,8 @@ const detallePagoSegurosController = require('../controllers/caja/pagoSegurosCon
 const expedientesController = require('../controllers/caja/expedientesController')
 const aseguradorasController = require('../controllers/caja/aseguradorasController')
 const segurosController = require('../controllers/caja/segurosController')
-
+const rubrosController = require('../controllers/caja/rubrosController')
+const cajaChicaController = require('../controllers/caja/cajaChicaController')
 
 //CARPETA DE ENFERMERIA
 const habitacionesController = require('../controllers/enfermeria/habitacionesController')
@@ -168,7 +169,14 @@ module.exports = (app) => {
     router.put('/seguros/debt', segurosController.debt);
     router.get('/seguros/getByExp', segurosController.getAssuranceByExp);
 
+    //Rubros
+    router.post('/rubros/create', rubrosController.create);
+    router.get('/rubros/list', rubrosController.list);
+    router.get('/rubros/get', rubrosController.get);
 
+    //CajaChica
+    router.post('/cajaChica/create', cajaChicaController.create);
+    router.get('/cajaChica/list', cajaChicaController.list);
 
     //Aseguradoras
     router.post('/aseguradoras/create', aseguradorasController.create);
