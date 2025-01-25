@@ -28,7 +28,6 @@ module.exports = {
       }
 
       const today = new Date();
-      console.log(req.body.form)
       let form = req.body.form;
 
       try {
@@ -748,7 +747,7 @@ module.exports = {
       if (!examenSeleccionado) {
         return res.status(300).json({ msg: 'No se encontró el examen a actualizar' });
       }
-      await examenSeleccionado.update({estado: 3})
+      await examenSeleccionado.update({estado: 4})
       .then(tipo => {
           res.send(tipo);
       })
