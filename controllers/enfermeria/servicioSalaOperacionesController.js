@@ -93,12 +93,8 @@ module.exports = {
       TotalCateg = parseFloat(categoriaselect.dataValues.precio)
     }
 
-    console.log(req.body)
-
    let Oximetro = req.body.oximetro;
    let Cauterio = req.body.cauterio;
-
-    console.log('DATOS ---------------- ' + Oximetro + '-----------' + Cauterio)
 
     let PrecioServicios = 0;
     let precioOximetro = 0;
@@ -125,8 +121,6 @@ module.exports = {
       if (cauterioService) {
           precioCauterio = parseFloat(cauterioService[0].precio);
         }
-
-        console.log('PRECIOS ---------------- ' + cauterioService[0].precio + ' ----------- ' + oximetroService[0].precio)
 
         PrecioServicios = precioOximetro + precioCauterio; //FIN IF
     } else if (Oximetro == true){

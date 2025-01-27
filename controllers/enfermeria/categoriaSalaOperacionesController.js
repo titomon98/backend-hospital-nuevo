@@ -156,21 +156,14 @@ module.exports = {
       
         // Obtener fecha y hora actuales
         const currentDate = new Date();
-        const formattedDate = currentDate.toISOString().split("T")[0]; // Formato YYYY-MM-DD
-      
-        //PRUEBA
-        const testMode = true; // Cambia a false en producción
-        const isTestConditionMet =
-          testMode &&
-          currentDate.getHours() >= 16 &&
-          (currentDate.getHours() > 16 || currentDate.getMinutes() >= 40);
+        const formattedDate = currentDate.toLocaleDateString("en-CA");
       
         const isSaturdayAfter1PM =
           currentDate.getDay() === 6 &&
-          (currentDate.getHours() >= 13 || (currentDate.getHours() === 12 && currentDate.getMinutes() >= 60));
-      
+          (currentDate.getHours() >= 13);
+        
         // Consultar días de asueto
-        Asueto.findOne({ where: { fecha: formattedDate } })
+        Asueto.findOne({ where: { fecha: formattedDate, estado: 1 } })
           .then((asueto) => {
             const isAsueto = !!asueto;
       
@@ -178,7 +171,7 @@ module.exports = {
             return Categoria.findAll({ where: condition }).then((data) => {
               // Aplicar lógica para cobro_extra
               const shouldUseExtraCharge =
-                isTestConditionMet || isSaturdayAfter1PM || isAsueto;
+               isSaturdayAfter1PM || isAsueto;
       
               const modifiedData = data.map((categoria) => {
                 const categoriaData = categoria.toJSON()

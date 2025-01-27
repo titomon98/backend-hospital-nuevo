@@ -23,8 +23,9 @@ async list(req, res) {
 // Crear un nuevo asueto
 async create (req, res){
   const { nombre, fecha } = req.body;
+  const estado = 1
   try {
-    const nuevoAsueto = await Asueto.create({ nombre, fecha });
+    const nuevoAsueto = await Asueto.create({ nombre, fecha, estado });
     res.json(nuevoAsueto);
   } catch (error) {
     console.error(error);
@@ -50,9 +51,7 @@ async gitId (req, res) {
   },
 // Actualizar un asueto existente
 async update(req, res) {
-  const { id } = req.params;
-  console.log(id)
-
+  const { id } = req.params
   try {
     const asuetoActualizado = await Asueto.findByPk(id);
     console.log(asuetoActualizado)

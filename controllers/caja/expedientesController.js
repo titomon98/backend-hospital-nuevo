@@ -11,8 +11,13 @@ const Op = db.Sequelize.Op;
 
 module.exports = {
     create(req, res) {
+        const restarHoras = (fecha, horas) => {
+            let nuevaFecha = new Date(fecha);
+            nuevaFecha.setHours(nuevaFecha.getHours() - horas);
+            return nuevaFecha;
+        };
         let form = req.body.form
-        const today = new Date();
+        const today =restarHoras(new Date(), 6);
         let status = 0
         let lugar = ''
         if (form.selectedOption == 'hospi') {
@@ -20,7 +25,7 @@ module.exports = {
             lugar = 'Hospitalización'
         } else if (form.selectedOption == 'emergencia') {
             status = 5
-            lugar = 'Emergencias'
+            lugar = 'Emergencia'
         } else if (form.selectedOption == 'quirofano') {
             status = 3
             lugar = 'Quirófano'
@@ -56,7 +61,7 @@ module.exports = {
             nombre_conyuge: form.nombre_conyuge,
             direccion_conyuge: form.direccion_conyuge,
             telefono_conyuge: form.telefono_conyuge,
-            fecha_ingreso_reciente: form.fecha,
+            fecha_ingreso_reciente: restarHoras(new Date(), 6),
             created_by: req.body.user,
         };
 

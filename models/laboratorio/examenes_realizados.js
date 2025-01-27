@@ -19,6 +19,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false
     },
+    edad: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
     cui: {
       type: DataTypes.STRING,
       allowNull: true
@@ -44,6 +48,14 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     referido: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    nombre_factura: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    nit: {
       type: DataTypes.STRING,
       allowNull: true
     },

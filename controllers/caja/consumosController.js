@@ -4,6 +4,11 @@ const db = require("../../models");
 const Consumo = db.consumos;
 const Servicio = db.servicios;
 const Cuenta = db.cuentas;
+const Expediente = db.expedientes;
+const Habitaciones = db.habitaciones;
+
+const Honorario = db.detalle_honorarios
+const Medico = db.medicos
 
 const Movimiento = db.detalle_consumo_comunes;
 const Comun = db.comunes;
@@ -507,7 +512,148 @@ module.exports = {
             console.error('Error al obtener los datos:', error);
             return res.status(500).json({ msg: 'Error al obtener los datos', error: error.message });
         }
-    }
+    },
+
+    async getDataSumario(req, res) {
+        const { id } = req.params;
+      
+        try {
+
+            const idMedico = await Expediente.findOne({
+                where: { id: id },
+                order: [['createdAt', 'DESC']],
+                attributes: ['id_medico'],
+            });
+
+          const cuentaSeleccionada = await Cuenta.findOne({
+            where: { id_expediente: id, estado: 1 },
+            order: [['createdAt', 'DESC']],
+          });
+      
+          if (!cuentaSeleccionada) {
+            return res.status(401).json({ msg: 'No se encontró ninguna cuenta activa para este expediente.' });
+          }
+      
+          const id_cuenta = cuentaSeleccionada.id;
+      
+          const cuentaLabSeleccionada = await Cuenta_Lab.findOne({
+            where: { id_expediente: id, estado: 1 },
+            order: [['createdAt', 'DESC']],
+          });
+      
+          const id_cuenta_lab = cuentaLabSeleccionada ? cuentaLabSeleccionada.id : null;
+
+          const [
+            consumos,
+            consumosComunes,
+            consumosMedicamentos,
+            consumosQuirurgicos,
+            examenes,
+            salaOperaciones,
+            honorarios,
+          ] = await Promise.all([
+
+            Consumo.findAll({
+              where: { id_cuenta },
+              include: [{ model: Servicio, attributes: ['descripcion', 'precio'] }],
+              attributes: ['id', 'cantidad', 'descripcion', 'subtotal', 'estado', 'createdAt', 'updatedAt'],
+            }),
+      
+            Movimiento.findAll({
+              where: { id_cuenta },
+              include: [{ model: Comun, attributes: ['nombre'] }],
+              attributes: ['id', 'descripcion', 'cantidad', 'precio_venta', 'total', 'estado', 'createdAt', 'updatedAt'],
+            }),
+      
+            Movimiento2.findAll({
+              where: { id_cuenta },
+              include: [{ model: Medicamento, attributes: ['nombre'] }],
+              attributes: ['id', 'descripcion', 'cantidad', 'precio_venta', 'total', 'estado', 'createdAt', 'updatedAt'],
+            }),
+      
+            Movimiento3.findAll({
+              where: { id_cuenta },
+              include: [{ model: Quirurgico, attributes: ['nombre'] }],
+              attributes: ['id', 'descripcion', 'cantidad', 'precio_venta', 'total', 'estado', 'createdAt', 'updatedAt'],
+            }),
+      
+            id_cuenta_lab
+              ? Examenes.findAll({
+                  where: { id_cuenta: id_cuenta_lab },
+                  include: [{ model: ExamenAlmacenado, attributes: ['nombre'] }],
+                  attributes: [
+                    'id',
+                    'expediente',
+                    'cui',
+                    'comision',
+                    'total',
+                    'correo',
+                    'whatsapp',
+                    'numero_muestra',
+                    'referido',
+                    'id_encargado',
+                    'pagado',
+                    'por_pagar',
+                    'estado',
+                    'createdAt',
+                    'updatedAt',
+                  ],
+                })
+              : [],
+      
+            SalaOperaciones.findAll({
+              where: { id_cuenta },
+              include: [{ model: Categoria, attributes: ['categoria'] }],
+              attributes: ['id', 'descripcion', 'horas', 'total', 'id_cuenta', 'createdAt', 'updatedAt', 'id_categoria'],
+            }),
+      
+            // Honorarios con estado = 1
+            Honorario.findAll({
+              where: { id_cuenta, estado: 1 },
+              attributes: ['id', 'id_medico', 'descripcion', 'total', 'updatedAt', 'estado'],
+              include: [{ model: Medico, attributes: ['nombre'] }],
+            }),
+          ]);
+
+          //NOMBRE DEL MEDICO
+          let nombremedico = 'NO ASIGNADO'
+          if (idMedico) {
+            const nombreMedico = await Medico.findOne({
+              where: { id: idMedico.id_medico },
+              attributes: ['nombre'],
+            });
+            nombremedico = nombreMedico && nombreMedico.nombre ? nombreMedico.nombre : 'NO ASIGNADO';
+          }
+
+          //NUMERO HABITACION
+          let numerohabitacion = 'NO ASIGNADO'
+          if (id) {
+            const numeroHabitacion = await Habitaciones.findOne({
+                where: { ocupante: id },
+                order: [['createdAt', 'DESC']],
+                attributes: ['numero'],
+            });
+            numerohabitacion = numeroHabitacion && numeroHabitacion.numero ? numeroHabitacion.numero : 'NO ASIGNADO';
+          }
+          // Crear el reporte agrupado
+          const reporte = {
+            consumos,
+            consumosComunes,
+            consumosMedicamentos,
+            consumosQuirurgicos,
+            examenes,
+            salaOperaciones,
+            honorarios,
+            nombremedico,
+            numerohabitacion,
+          };
+      
+          return res.status(200).json(reporte);
+        } catch (error) {
+          console.error('Error al obtener los datos:', error);
+          return res.status(500).json({ msg: 'Error al obtener los datos', error: error.message });
+        }
+      }      
     
 };
 
