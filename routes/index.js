@@ -149,6 +149,8 @@ module.exports = (app) => {
     router.get('/cuentas/getSearch', cuentasController.getSearch);
     router.post('/cuentas/requestDiscount', cuentasController.DiscountRequest);
     router.get('/cuentas/listDiscount', cuentasController.listNoPayDiscountRequest);
+    router.get('/cuentas/listCortesPerDate', cuentasController.listCortesPerDate);
+    router.get('/cuentas/getByAccount', cuentasController.getByAccount);
     
     //Facturas
     router.post('/facturas/create', facturaController.create);

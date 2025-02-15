@@ -143,7 +143,48 @@ module.exports = {
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
+    listCortesPerDate(req, res) {
+        const getPagingData = (data, page, limit) => {
+            const { count: totalItems, rows: referido } = data;
 
+            const currentPage = page ? +page : 0;
+            const totalPages = Math.ceil(totalItems / limit);
+
+            return { totalItems, referido, totalPages, currentPage };
+        };
+
+        const getPagination = (page, size) => {
+            const limit = size ? +size : 2;
+            const offset = page ? page * limit : 0;
+
+            return { limit, offset };
+        };
+
+        console.log("DATE-----------------------------------", req.query.fecha_corte.split(' ')[0])
+        var condition = { 
+            [Op.and]: [
+                { estado: { [Op.like]: 0 } },
+                Sequelize.where(Sequelize.fn('DATE', Sequelize.col('cuentas.updatedAt')), req.query.fecha_corte.split(' ')[0])  // Compara solo la parte de la fecha
+            ]
+        };
+
+
+        Cuenta.findAndCountAll({ 
+            include: [
+                {
+                    model: Expediente,
+                }
+            ],
+            where: condition})
+        .then(data => {
+            console.log('------------ data: '+JSON.stringify(data.rows))
+            res.send(data.rows);
+        })
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
     listNoPayDiscountRequest(req, res) {
         const getPagingData = (data, page, limit) => {
             const { count: totalItems, rows: referido } = data;
@@ -443,6 +484,23 @@ module.exports = {
         .catch(error => {
             console.log(error)
             res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
+
+    getByAccount (req, res) {
+        Cuenta.findAll({
+            where:{
+                id: req.query.id,
+                estado: 0,
+                pendiente_de_pago: 0
+            }
+        })
+        .then(data => {
+            res.send(data);
+        })
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
     
