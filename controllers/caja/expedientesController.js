@@ -139,6 +139,7 @@ module.exports = {
             Habitaciones.update(
                 {
                     estado: 2,
+                    ocupante: form.id,
                 },
                 { where: { 
                     id: form.habitacion

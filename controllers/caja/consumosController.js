@@ -1,6 +1,7 @@
 'use strict'
 const Sequelize     = require('sequelize');
 const db = require("../../models");
+const Logs = db.log_traslados;
 const Consumo = db.consumos;
 const Servicio = db.servicios;
 const Cuenta = db.cuentas;
@@ -519,6 +520,17 @@ module.exports = {
       
         try {
 
+            const costoHospitalizacion = await Habitaciones.findOne({
+                where: { ocupante: id },
+                attributes: ['costo_ambulatorio','costo_diario'],
+            });
+
+            const fecha_ingreso = await Logs.findOne({
+                where: { id_expediente: id, origen: 'Recién ingresado' },
+                order: [['createdAt', 'DESC']],
+                attributes: ['createdAt'],
+            });
+
             const idMedico = await Expediente.findOne({
                 where: { id: id },
                 order: [['createdAt', 'DESC']],
@@ -635,6 +647,14 @@ module.exports = {
             });
             numerohabitacion = numeroHabitacion && numeroHabitacion.numero ? numeroHabitacion.numero : 'NO ASIGNADO';
           }
+
+          //fecha a enviar
+          const fechaFormateada = fecha_ingreso.createdAt.toISOString().split('T')[0];
+
+          //COSTOS ESTUDIO DE SUEÑO 
+
+          const costo1 = parseFloat(costoHospitalizacion?.costo_ambulatorio) || 0;
+          const costo2 = parseFloat(costoHospitalizacion?.costo_diario) || 0;
           // Crear el reporte agrupado
           const reporte = {
             consumos,
@@ -646,6 +666,9 @@ module.exports = {
             honorarios,
             nombremedico,
             numerohabitacion,
+            fechaFormateada,
+            costo1,
+            costo2,
           };
       
           return res.status(200).json(reporte);

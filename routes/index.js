@@ -578,6 +578,7 @@ module.exports = (app) => {
     router.get('/reporte/ingresosDia', reportesCajaHospiController.ingresosDia)
     router.get('/reporte/detalleMediosDePago', reportesCajaHospiController.detalleMediosDePagoMesActual)
     router.get('/reporte/simpleMediosDePago', reportesCajaHospiController.simpleMediosDePago)
+    router.get('/reporte/mediosPagoPaciente', reportesCajaHospiController.mediosPagoPorPaciente)
     //router.get('/reporte/detalleMediosDePago', reportesCajaHospiController.detalleMediosDePagoMesActual)
     //router.get('/reporte/simpleMediosDePago', reportesCajaHospiController.simpleMediosDePago)
 
