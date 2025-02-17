@@ -248,7 +248,13 @@ module.exports = {
 
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` }, estado: {[Sequelize.Op.gte]: 0} }] } : {estado: {[Sequelize.Op.gte]: 0} } ;
+        var condition = busqueda
+        ? { 
+            [Op.or]: [
+                { nombres: { [Op.like]: `%${busqueda}%` }, estado: { [Sequelize.Op.gte]: 0, [Sequelize.Op.ne]: 11 } }
+            ] 
+            } 
+        : { estado: { [Sequelize.Op.gte]: 0, [Sequelize.Op.ne]: 11 } };
 
         Expediente.findAndCountAll({
             include: [
