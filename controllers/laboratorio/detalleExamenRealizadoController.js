@@ -20,7 +20,6 @@ module.exports = {
 
     // Obtener los resultados del request
     const resultados = req.body.resultados;
-    console.log(resultados);
     if (!resultados || !resultados.length) {
         return res.status(400).json({ msg: 'No se recibieron resultados para guardar.' });
     }
@@ -131,7 +130,7 @@ module.exports = {
                 // Obtener el nombre y valores del campo examen (sin asociación)
                 const campoExamen = await CampoExamen.findOne({
                     where: { id: item.id_campo },
-                    attributes: ['nombre', 'valor_minimo', 'valor_maximo']
+                    attributes: ['nombre', 'valor_minimo', 'valor_maximo', 'unidades' ]
                 });
 
                 const tipoExamen = await TipoExamen.findOne({
@@ -142,6 +141,7 @@ module.exports = {
                 return {
                     campo: campoExamen ? campoExamen.nombre : 'Campo no encontrado',  // Nombre del campo
                     tipo_examen: tipoExamen ? tipoExamen.nombre : 'Tipo no encontrado', // Nombre del tipo de examen
+                    unidades: campoExamen ? campoExamen.unidades : null,
                     resultado: item.resultado,                  // Resultado del examen
                     valor_minimo: campoExamen ? campoExamen.valor_minimo : null, // Valor mínimo del campo
                     valor_maximo: campoExamen ? campoExamen.valor_maximo : null, // Valor máximo del campo
@@ -184,54 +184,49 @@ module.exports = {
     },
     async get(req, res) {
         const id = req.query.id;
-    
-        // Verificar si el parámetro 'id' está definido
         if (!id) {
             return res.status(400).json({ msg: 'ID no proporcionado o inválido' });
         }
     
         try {
-            // Consultar la tabla 'Examenes' (detalle_examen_realizado)
             const examenes = await Examenes.findAll({
-                where: { id_examen_realizado: id },  // Filtrar por el ID del examen realizado
+                where: { id_examen_realizado: id },
             });
     
             if (!examenes.length) {
                 return res.status(402).json({ msg: 'No se encontraron resultados para el ID proporcionado.' });
             }
     
-            // Para cada examen, hacer las consultas a las tablas 'CampoExamen' y 'TipoExamen'
             const detailedData = await Promise.all(examenes.map(async (examen) => {
-                // Consultar la tabla 'CampoExamen' para obtener los datos del campo
                 const campoExamen = await CampoExamen.findOne({
-                    where: { id: examen.id_campo },  // Ajustar según la columna que relacione con id_campo
-                    attributes: ['nombre', 'valor_minimo', 'valor_maximo']  // Campos que necesitas
+                    where: { id: examen.id_campo },
+                    attributes: ['nombre', 'valor_minimo', 'valor_maximo', 'unidades']
                 });
-    
-                // Consultar la tabla 'TipoExamen' para obtener el nombre del tipo de examen
                 const tipoExamen = await TipoExamen.findOne({
-                    where: { id: examen.id_tipo },  // Ajustar según la columna que relacione con id_tipo
-                    attributes: ['nombre']  // Solo el nombre del tipo de examen
+                    where: { id: examen.id_tipo },
+                    attributes: ['nombre']
                 });
     
-                // Devolver el formato de los datos necesarios
                 return {
                     campo: campoExamen ? campoExamen.nombre : 'Campo no encontrado',
                     tipo_examen: tipoExamen ? tipoExamen.nombre : 'Tipo no encontrado',
                     resultado: examen.resultado,
+                    unidades: campoExamen ? campoExamen.unidades : null,
                     valor_minimo: campoExamen ? campoExamen.valor_minimo : null,
                     valor_maximo: campoExamen ? campoExamen.valor_maximo : null,
                     alarma: examen.alarma,
                     fecha_hora: examen.createdAt
                 };
             }));
+            const NombreExamen = detailedData.length > 0 ? detailedData[0].tipo_examen : 'Nombre no disponible';
     
-            // Enviar los datos formateados al frontend
-            res.send(detailedData);
+            // Enviar respuesta en formato JSON
+            res.json({ NombreExamen, examenes: detailedData });
     
         } catch (error) {
             console.error('Error al obtener los detalles del examen:', error);
             return res.status(403).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         }
-    }    
+    }
+     
 }
