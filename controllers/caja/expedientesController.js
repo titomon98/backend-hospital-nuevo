@@ -49,6 +49,7 @@ module.exports = {
             contacto_encargado: form.contacto_encargado,
             cui_encargado: form.cui_encargado,
             parentesco_encargado: form.parentesco_encargado,
+            edad_encargado: form.edad_encargado,
             estado: status,
             estado_civil: form.estado_civil,
             profesion: form.profesion,
@@ -336,6 +337,7 @@ module.exports = {
                         contacto_encargado: form.contacto_encargado,
                         cui_encargado: form.cui_encargado,
                         parentesco_encargado: form.parentesco_encargado,
+                        edad_encargado: form.edad_encargado,
                         estado: 1, 
                         estado_civil: form.estado_civil,
                         profesion: form.profesion,
@@ -379,6 +381,7 @@ module.exports = {
                         contacto_encargado: form.contacto_encargado,
                         cui_encargado: form.cui_encargado,
                         parentesco_encargado: form.parentesco_encargado,
+                        edad_encargado: form.edad_encargado,
                         estado: 1, 
                         estado_civil: form.estado_civil,
                         profesion: form.profesion,
@@ -452,6 +455,7 @@ module.exports = {
                 contacto_encargado: form.contacto_encargado,
                 cui_encargado: form.cui_encargado,
                 parentesco_encargado: form.parentesco_encargado,
+                edad_encargado: form.edad_encargado,
                 estado: 1, 
                 estado_civil: form.estado_civil,
                 profesion: form.profesion,
@@ -523,7 +527,7 @@ module.exports = {
             nuevaFecha.setHours(nuevaFecha.getHours() - horas);
             return nuevaFecha;
           };
-        console.log('DATATAOOOOOO---------------------------' + req.body.habitaciones + 'MAS DATOS COMPLETOPS------------------------' + req.body)
+        console.log('DATATAOOOOOO---------------------------' + req.body.habitaciones + 'MAS DATOS COMPLETOPS------------------------')
         Logs.create({
             id_expediente: req.body.id,
             origen: dat[req.body.estado_anterior],
@@ -551,16 +555,20 @@ module.exports = {
             if (logs.length > 0) {
               const registroMasReciente = logs[0];
         
-              try {
-                // SELECCIONAR HABITACIÓN
-                const habitacionSeleccionada = await Habitaciones.findOne({
 
-                  where: { id: registroMasReciente.id_habitacionDestino },
-                });
+                // SELECCIONAR HABITACIÓN
+                let habitacionSeleccionada = 0
+                if (registroMasReciente.id_habitacionDestino) {
+                    habitacionSeleccionada = await Habitaciones.findOne({
+
+                        where: { id: registroMasReciente.id_habitacionDestino },
+                      });
+                }
+                
         console.log("----------------------------------------HABITACION SELECCIONADA---------------------------------------" + habitacionSeleccionada);
-                if (!habitacionSeleccionada) {
+                if (habitacionSeleccionada === 0) {
                   console.log("----------------------------------------No se encontró habitación---------------------------------------");
-                  return res.status(4001).json({ msg: 'No se encontró habitación' })
+                  return res.status(200).json({ msg: 'No se encontró habitación' })
                 }
                 const precioAmbulatorio = parseFloat(habitacionSeleccionada.costo_ambulatorio)
                 const precioDiario = parseFloat(habitacionSeleccionada.costo_diario)
@@ -605,10 +613,7 @@ module.exports = {
                     });
                     await cuentaSeleccionada.update({ total: subtotal});
                 }
-              } catch (err) {
-                console.error('Error al procesar la solicitud:', err);
-                return res.status(500).json({ msg: 'Error interno del servidor' });
-              }
+
             } else {
               console.log('----------------------------------No se encontró un log que coincida con los datos-------------------------------------');
             }
@@ -661,6 +666,7 @@ module.exports = {
                     cui_encargado: req.body.cui_encargado,
                     contacto_encargado: req.body.contacto_encargado,
                     parentesco_encargado: req.body.parentesco_encargado,
+                    edad_encargado: req.body.edad_encargado,
                  },
                 { where: { 
                     id: req.body.id 

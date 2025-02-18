@@ -62,6 +62,10 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false
       },
+      edad_encargado: {
+        type: Sequelize.STRING,
+        allowNull: false
+      },
       cui_encargado: {
         type: Sequelize.STRING,
         allowNull: false
