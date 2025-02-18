@@ -6,8 +6,8 @@ const {
 module.exports = (sequelize, DataTypes) => {
   class habitaciones extends Model {
     static associate(models) {
-      habitaciones.hasMany(models.detalle_habitaciones, {
-        foreignKey: "id_habitaciones",
+      habitaciones.belongsTo(models.expedientes, {
+        foreignKey: "ocupante",
       });
     }
   };

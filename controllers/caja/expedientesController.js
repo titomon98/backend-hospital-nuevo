@@ -259,21 +259,40 @@ module.exports = {
         Expediente.findAndCountAll({
             include: [
                 {
-                    model: Medicos
+                    model: Medicos,
+                    as: 'medico', // Usa el alias que definiste en la relación
+                    attributes: ['id', 'nombre'] // Especifica solo los atributos necesarios
+                },
+                {
+                    model: Habitaciones,
+                    as: 'habitacione', // Usa el alias correcto
+                    attributes: ['id', 'numero'] // Especifica solo los atributos necesarios
                 }
-            ], where: condition, order:[[`${criterio}`,`${order}`]],limit,offset})
+            ],
+            where: condition,
+            order: [[criterio || 'id', order || 'ASC']], // Se asegura de que criterio y order existan
+            limit,
+            offset
+        })
         .then(data => {
-
-        console.log('data: '+JSON.stringify(data))
-        const response = getPagingData(data, page, limit);
-
-        console.log('response: '+JSON.stringify(response))
-        res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
+            console.log('data: ', JSON.stringify(data, null, 2));
+            const response = getPagingData(data, page, limit);
+        
+            console.log('response: ', JSON.stringify(response, null, 2));
+            res.send({
+                total: response.totalItems,
+                last_page: response.totalPages,
+                current_page: page + 1,
+                from: response.currentPage,
+                to: response.totalPages,
+                data: response.referido
+            });
         })
         .catch(error => {
-            console.log(error)
+            console.error('Error en la consulta:', error);
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
+        
     },
 
 
@@ -739,17 +758,40 @@ module.exports = {
 
         var condition = busqueda ? { [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` }, estado: 3 }] } : {estado: 3} ;
 
-        Expediente.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        Expediente.findAndCountAll({
+            include: [
+                {
+                    model: Medicos,
+                    as: 'medico', // Usa el alias que definiste en la relación
+                    attributes: ['id', 'nombre'] // Especifica solo los atributos necesarios
+                },
+                {
+                    model: Habitaciones,
+                    as: 'habitacione', // Usa el alias correcto
+                    attributes: ['id', 'numero'] // Especifica solo los atributos necesarios
+                }
+            ],
+            where: condition,
+            order: [[criterio || 'id', order || 'ASC']], // Se asegura de que criterio y order existan
+            limit,
+            offset
+        })
         .then(data => {
-
-        console.log('data: '+JSON.stringify(data))
-        const response = getPagingData(data, page, limit);
-
-        console.log('response: '+JSON.stringify(response))
-        res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
+            console.log('data: ', JSON.stringify(data, null, 2));
+            const response = getPagingData(data, page, limit);
+        
+            console.log('response: ', JSON.stringify(response, null, 2));
+            res.send({
+                total: response.totalItems,
+                last_page: response.totalPages,
+                current_page: page + 1,
+                from: response.currentPage,
+                to: response.totalPages,
+                data: response.referido
+            });
         })
         .catch(error => {
-            console.log(error)
+            console.error('Error en la consulta:', error);
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
@@ -783,17 +825,40 @@ module.exports = {
 
         var condition = busqueda ? { [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` }, estado: 1 }] } : {estado: 1} ;
 
-        Expediente.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        Expediente.findAndCountAll({
+            include: [
+                {
+                    model: Medicos,
+                    as: 'medico', // Usa el alias que definiste en la relación
+                    attributes: ['id', 'nombre'] // Especifica solo los atributos necesarios
+                },
+                {
+                    model: Habitaciones,
+                    as: 'habitacione', // Usa el alias correcto
+                    attributes: ['id', 'numero'] // Especifica solo los atributos necesarios
+                }
+            ],
+            where: condition,
+            order: [[criterio || 'id', order || 'ASC']], // Se asegura de que criterio y order existan
+            limit,
+            offset
+        })
         .then(data => {
-
-        console.log('data: '+JSON.stringify(data))
-        const response = getPagingData(data, page, limit);
-
-        console.log('response: '+JSON.stringify(response))
-        res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
+            console.log('data: ', JSON.stringify(data, null, 2));
+            const response = getPagingData(data, page, limit);
+        
+            console.log('response: ', JSON.stringify(response, null, 2));
+            res.send({
+                total: response.totalItems,
+                last_page: response.totalPages,
+                current_page: page + 1,
+                from: response.currentPage,
+                to: response.totalPages,
+                data: response.referido
+            });
         })
         .catch(error => {
-            console.log(error)
+            console.error('Error en la consulta:', error);
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
@@ -827,17 +892,40 @@ module.exports = {
 
         var condition = busqueda ? { [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` }, estado: 4 }] } : {estado: 4} ;
 
-        Expediente.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        Expediente.findAndCountAll({
+            include: [
+                {
+                    model: Medicos,
+                    as: 'medico', // Usa el alias que definiste en la relación
+                    attributes: ['id', 'nombre'] // Especifica solo los atributos necesarios
+                },
+                {
+                    model: Habitaciones,
+                    as: 'habitacione', // Usa el alias correcto
+                    attributes: ['id', 'numero'] // Especifica solo los atributos necesarios
+                }
+            ],
+            where: condition,
+            order: [[criterio || 'id', order || 'ASC']], // Se asegura de que criterio y order existan
+            limit,
+            offset
+        })
         .then(data => {
-
-        console.log('data: '+JSON.stringify(data))
-        const response = getPagingData(data, page, limit);
-
-        console.log('response: '+JSON.stringify(response))
-        res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
+            console.log('data: ', JSON.stringify(data, null, 2));
+            const response = getPagingData(data, page, limit);
+        
+            console.log('response: ', JSON.stringify(response, null, 2));
+            res.send({
+                total: response.totalItems,
+                last_page: response.totalPages,
+                current_page: page + 1,
+                from: response.currentPage,
+                to: response.totalPages,
+                data: response.referido
+            });
         })
         .catch(error => {
-            console.log(error)
+            console.error('Error en la consulta:', error);
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
