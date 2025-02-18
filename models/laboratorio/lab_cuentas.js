@@ -8,7 +8,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       labCuenta.belongsTo(models.expedientes, {
             foreignKey: "id_expediente",
-        });
+        }); 
       labCuenta.hasMany(models.examenes_realizados, {
         foreignKey: "id_lab_cuentas",
       })
