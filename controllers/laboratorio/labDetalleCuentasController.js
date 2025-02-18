@@ -74,24 +74,8 @@ module.exports = {
         });
     },
 
-    listCortesPerDate(req, res) {
-        const getPagingData = (data, page, limit) => {
-            const { count: totalItems, rows: referido } = data;
-
-            const currentPage = page ? +page : 0;
-            const totalPages = Math.ceil(totalItems / limit);
-
-            return { totalItems, referido, totalPages, currentPage };
-        };
-
-        const getPagination = (page, size) => {
-            const limit = size ? +size : 2;
-            const offset = page ? page * limit : 0;
-
-            return { limit, offset };
-        };
-
-        console.log("DATE-----------------------------------", req.query.fecha_corte.split(' ')[0])
+    async listCortesPerDate(req, res) {
+        console.log("DATE-----------------------------------", req.query.fecha_corte)
         var condition = { 
             [Op.and]: [
                 { estado: { [Op.like]: 0 } },
@@ -99,8 +83,7 @@ module.exports = {
             ]
         };
 
-
-        Cuenta.findAndCountAll({ 
+        await Cuenta.findAndCountAll({ 
             include: [
                 {
                     model: ExamenesRealizados,  
