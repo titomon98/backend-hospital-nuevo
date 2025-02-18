@@ -5,6 +5,7 @@ const DetalleCuentas = db.lab_detalle_cuentas;
 const Cuenta = db.lab_cuentas;
 const Expediente = db.expedientes;
 const Op = db.Sequelize.Op;
+const ExamenesRealizados = db.examenes_realizados;
 
 module.exports = {
     create(req, res) {
@@ -94,13 +95,16 @@ module.exports = {
         var condition = { 
             [Op.and]: [
                 { estado: { [Op.like]: 0 } },
-                Sequelize.where(Sequelize.fn('DATE', Sequelize.col('fecha_corte')), req.query.fecha_corte.split(' ')[0])
+                Sequelize.where(Sequelize.fn('DATE', Sequelize.col('fecha_corte')), req.query.fecha_corte.split(' ')[0]),
             ]
         };
 
 
         Cuenta.findAndCountAll({ 
             include: [
+                {
+                    model: ExamenesRealizados,  
+                },
                 {
                     model: Expediente,
                 }

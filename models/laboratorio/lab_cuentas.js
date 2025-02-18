@@ -9,6 +9,9 @@ module.exports = (sequelize, DataTypes) => {
       labCuenta.belongsTo(models.expedientes, {
             foreignKey: "id_expediente",
         });
+      labCuenta.hasMany(models.examenes_realizados, {
+        foreignKey: "id_lab_cuentas",
+      })
     }
   };
   labCuenta.init({
