@@ -78,6 +78,9 @@ module.exports = (sequelize, DataTypes) => {
     parentesco_encargado: {
       type: DataTypes.STRING,
     },
+    edad_encargado: {
+      type: DataTypes.STRING,
+    },
     estado: {
       type: DataTypes.INTEGER,
       allowNull: false
