@@ -63,7 +63,7 @@ module.exports = {
                   const datosExamen = {
                     expediente: form.nombre,
                     edad: form.edad,
-                    cui: parseInt(form.cui),
+                    cui: form.cui,
                     comision: form.comision.nombre,
                     total: examenAlmacenado.precio_normal,
                     correo: form.correo,
@@ -181,7 +181,7 @@ module.exports = {
                   const datosExamen = {
                     expediente: form.nombre,
                     edad: form.edad,
-                    cui: parseInt(form.cui),
+                    cui: form.cui,
                     comision: form.comision.nombre,
                     total:0,
                     correo: form.correo,
@@ -264,7 +264,7 @@ module.exports = {
             }
           } catch (error) {
             console.error('Error al crear el examen:', error)
-            res.status(501).send({ error: 'Error al crear el examen:' })
+            res.status(502).send({ error: 'Error al crear el examen:' })
           }  
         }
       } catch (error) {
