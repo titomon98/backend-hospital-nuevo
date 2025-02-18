@@ -8,6 +8,9 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       examenes_realizados.belongsTo(models.examenes_almacenados, {
         foreignKey: "id_examenes_almacenados",
+      });
+      examenes_realizados.belongsTo(models.lab_cuentas, {
+        foreignKey: "id_lab_cuentas",
       }); 
       examenes_realizados.belongsTo(models.encargados, {
         foreignKey: "id_encargado",
@@ -96,6 +99,10 @@ module.exports = (sequelize, DataTypes) => {
     },
     updated_by: {
       type: DataTypes.STRING,
+    },
+    id_lab_cuentas: {
+      type: DataTypes.INTEGER,
+      allowNull: false
     },
   }, {
     sequelize,
