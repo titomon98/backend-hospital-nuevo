@@ -277,6 +277,7 @@ module.exports = (app) => {
 
     //comun
     router.get('/comun/list', comunController.list);
+    router.get('/comun/list2', comunController.get);
     router.post('/comun/create', comunController.create);
     router.put('/comun/update', comunController.update);
     router.put('/comun/activate', comunController.activate);

@@ -87,8 +87,6 @@ module.exports = {
         .then(data => {
 
         const response = getPagingData(data, page, limit);
-
-        console.log('response: '+JSON.stringify(response))
         res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
         })
         .catch(error => {
