@@ -676,7 +676,7 @@ module.exports = {
           console.error('Error al obtener los datos:', error);
           return res.status(500).json({ msg: 'Error al obtener los datos', error: error.message });
         }
-      }      
+    }      
     
 };
 
