@@ -93,7 +93,7 @@ const userTypeController = require('../controllers/empleados/tipoUsuarioControll
 const serviciosController = require('../controllers/enfermeria/serviciosController');
 const encargadosController = require('../controllers/laboratorio/encargadosController');
 const tipoEncargadoController = require('../controllers/laboratorio/tipoEncargadoController.js');
-
+const tipoExamenController = require('../controllers/laboratorio/tipoExamenController');
 
 // examenes realizados
 const examenesRealizados = require('../controllers/laboratorio/examenesController')
@@ -154,6 +154,8 @@ module.exports = (app) => {
     router.get('/cuentas/getSearch', cuentasController.getSearch);
     router.post('/cuentas/requestDiscount', cuentasController.DiscountRequest);
     router.get('/cuentas/listDiscount', cuentasController.listNoPayDiscountRequest);
+    router.get('/cuentas/listCortesPerDate', cuentasController.listCortesPerDate);
+    router.get('/cuentas/getByAccount', cuentasController.getByAccount);
     
     //Facturas
     router.post('/facturas/create', facturaController.create);
@@ -526,6 +528,15 @@ module.exports = (app) => {
 
     //tipos de encargados
     router.get('/tipos_encargados/get', tipoEncargadoController.get);
+
+    //tipos de examenes
+    router.get('/tipos_examenes/list', tipoExamenController.list);
+    router.post('/tipos_examenes/create', tipoExamenController.create);
+    router.put('/tipos_examenes/update', tipoExamenController.update);
+    router.put('/tipos_examenes/activate', tipoExamenController.activate);
+    router.put('/tipos_examenes/deactivate', tipoExamenController.deactivate);
+    router.get('/tipos_examenes/getSearch', tipoExamenController.getSearch);
+    router.get('/tipos_examenes/get', tipoExamenController.get);
 
     // CARPETA DE CUENTAS DE LABORATORIO
     //cuentas
