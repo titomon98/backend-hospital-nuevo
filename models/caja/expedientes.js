@@ -12,8 +12,8 @@ module.exports = (sequelize, DataTypes) => {
       expediente.hasMany(models.recetas, {
         foreignKey: "id_expediente",
       });
-      expediente.hasMany(models.detalle_habitaciones, {
-        foreignKey: "id_expediente",
+      expediente.hasOne(models.habitaciones, {
+        foreignKey: "ocupante",
       });
       expediente.belongsTo(models.medicos, {
         foreignKey: "id_medico"
