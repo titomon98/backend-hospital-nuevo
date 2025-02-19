@@ -69,6 +69,8 @@ module.exports = {
       total: req.body.total,
       createdAt: restarHoras(new Date(), 6),
       updatedAt: restarHoras(new Date(), 6),
+      created_by: req.body.user,
+      updated_by: req.body.user,
     };
 
     try {
@@ -121,8 +123,7 @@ module.exports = {
     const idCuenta = parseInt(req.query.search, 10); // Obtener el id_expediente de la consulta
     const page = parseInt(req.query.page, 10) || 1; // Página actual, con valor predeterminado de 1
     const pageSize = parseInt(req.query.pageSize, 10) || 10; // Tamaño de página, con valor predeterminado de 10
-    
-    console.log("ID Expediente recibido:", idCuenta); 
+
     try {
       const { count, rows } = await DetalleHonorarios.findAndCountAll({
         where: { id_cuenta: idCuenta , estado : 1 }, // Buscar por id_expediente
@@ -131,7 +132,6 @@ module.exports = {
         offset: (page - 1) * pageSize
       });
   
-      console.log("Cuentas encontradas:", rows);
       if (rows.length > 0) {
         const totalPages = Math.ceil(count / pageSize);
         res.send({
@@ -156,11 +156,9 @@ module.exports = {
     try {
       await DetalleHonorarios.update(
         {
-          id_medico: form.id_medico,
-          estado: 1,
           total: form.total,
-          descripcion: form.descripcion,
           updatedAt: new Date(),
+          updated_by: req.body.user,
         },
         { where: { id: form.id } }
       );
