@@ -240,8 +240,9 @@ module.exports = {
         else if (form.solicitud_descuento === 1) {
             Cuenta.findByPk(form.id)
                 .then(cuenta => {
-                    const nuevoTotalPagado = parseFloat(cuenta.total_pagado) + parseFloat(cuenta.descuento);
-                    const nuevoPendienteDePago = parseFloat(cuenta.pendiente_de_pago) - parseFloat(cuenta.descuento);
+                    const descuentoAplicado = (parseFloat(cuenta.total) * parseFloat(cuenta.descuento)) / 100;
+                    const nuevoTotalPagado = parseFloat(cuenta.total_pagado) + descuentoAplicado;
+                    const nuevoPendienteDePago = parseFloat(cuenta.pendiente_de_pago) - descuentoAplicado;
         
                     return Cuenta.update({
                         solicitud_descuento: 1,

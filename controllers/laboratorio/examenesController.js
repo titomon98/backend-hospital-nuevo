@@ -29,6 +29,7 @@ module.exports = {
 
       const today = new Date();
       let form = req.body.form;
+      console.log(form)
 
       try {
         if (form.examenExterior == false) {
@@ -78,6 +79,7 @@ module.exports = {
                     id_examenes_almacenados: examenAlmacenado.id,
                     estado: 1,
                     id_cuenta: cuentaCreada.id,
+                    id_lab_cuentas: cuentaCreada.id,
                     createdAt: restarHoras(new Date(), 6),
                     updatedAt: restarHoras(new Date(), 6),
                   };
@@ -155,6 +157,7 @@ module.exports = {
                     id_examenes_almacenados: examenAlmacenado.id,
                     estado: 1,
                     id_cuenta: cuentaCreada.id,
+                    id_lab_cuentas: cuentaCreada.id,
                     createdAt: restarHoras(new Date(), 6),
                     updatedAt: restarHoras(new Date(), 6),
                   };
@@ -196,6 +199,7 @@ module.exports = {
                     id_examenes_almacenados: examenAlmacenado.id,
                     estado: 2,
                     id_cuenta: 0,
+                    id_lab_cuentas: 0,
                     createdAt: restarHoras(new Date(), 6),
                     updatedAt: restarHoras(new Date(), 6),
                   };
@@ -253,6 +257,7 @@ module.exports = {
                     id_examenes_almacenados: examenAlmacenado.id,
                     estado: 2,
                     id_cuenta: 0,
+                    id_lab_cuentas: 0,
                     createdAt: restarHoras(new Date(), 6),
                     updatedAt: restarHoras(new Date(), 6),
                   };
