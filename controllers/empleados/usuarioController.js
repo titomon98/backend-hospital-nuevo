@@ -15,8 +15,13 @@ module.exports = {
             user: form.user,
             password: hash,
             estado: 1,
-            id_tipo_usuario: form.userType.id
-        };
+            id_tipo_usuario: form.userType.id,
+            nombre: form.nombre || '',
+            apellidos: form.apellidos || '',
+            telefono: form.telefono || '',
+            correo: form.correo || '',
+            id_medico: parseInt(form.medico) || 0
+          };
 
         Usuario.create(datos)
         .then(usuario => {
