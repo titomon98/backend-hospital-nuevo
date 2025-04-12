@@ -39,7 +39,8 @@ module.exports = {
                     token: token,
                     id: usuario.id,
                     tipo_usuario: usuario.id_tipo_usuario,
-                    usuario: usuario.user
+                    usuario: usuario.user,
+                    id_medico: usuario.id_medico
                 }
 
                 // devolver usuario

@@ -45,6 +45,9 @@ module.exports = (sequelize, DataTypes) => {
     id_tipo_usuario: {
       type: DataTypes.INTEGER,
       allowNull: false
+    },
+    id_medico: {
+      type: DataTypes.INTEGER
     }
   }, {
     sequelize,
