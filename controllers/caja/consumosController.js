@@ -292,13 +292,7 @@ module.exports = {
                 order: [['createdAt', 'DESC']]
             });
     
-            let cuentaSeleccionada = null;
-            for (const cuenta of cuentas) {
-                if (cuenta.dataValues.estado === 1) {
-                    cuentaSeleccionada = cuenta;
-                    break;
-                }
-            }
+            let cuentaSeleccionada = cuentas.length > 0 ? cuentas[0] : null;
     
             if (!cuentaSeleccionada) {
                 return res.status(401).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
