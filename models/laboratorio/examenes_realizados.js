@@ -40,15 +40,15 @@ module.exports = (sequelize, DataTypes) => {
     },
     correo: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: true
     },
     whatsapp: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: true
     },
     numero_muestra: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: true
     },
     referido: {
       type: DataTypes.STRING,
@@ -102,7 +102,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     id_lab_cuentas: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: true
     },
   }, {
     sequelize,
