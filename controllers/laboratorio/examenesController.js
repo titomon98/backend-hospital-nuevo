@@ -32,9 +32,9 @@ module.exports = {
       console.log(form)
 
       try {
-        if (form.examenExterior == false) {
+        if (form.examenExterior == false || form.examenExterior == 'false') {
           try {
-            if (form.NewExpediente == false) {
+            if (form.NewExpediente == false || form.NewExpediente == 'false') {
               const examenesAlmacenados = await ExamenAlmacenado.findAll({
                 where: { id: form.id_examenes_almacenados },
               });
@@ -57,7 +57,7 @@ module.exports = {
         
               const cuentaCreada = await Cuenta.create(datosCuenta);
               await cuentaCreada.update({ numero: cuentaCreada.id });
-              
+
               // Crear un examen realizado por cada examen almacenado
               const examenesCreados = await Promise.all(
                 examenesAlmacenados.map(async (examenAlmacenado) => {
@@ -87,8 +87,8 @@ module.exports = {
                 })
               );
         
-              res.send(cuentaCreada);
-            } else if (form.NewExpediente == true) {
+              res.send(examenesCreados);
+            } else if (form.NewExpediente == true || form.NewExpediente == 'true') {
               const examenesAlmacenados = await ExamenAlmacenado.findAll({
                 where: { id: form.id_examenes_almacenados },
               });
@@ -165,18 +165,37 @@ module.exports = {
                 })
               );
         
-              res.send(cuentaCreada);
+              res.send(examenesCreados);
             }
           } catch (error) {
             console.error('Error al crear el examen:', error)
             res.status(501).send({ error: 'Error al crear el examen:' })
           }           
-        } else if (form.examenExterior == true) {
+        } else if (form.examenExterior == true || form.examenExterior == 'true') {
           try {
-            if (form.NewExpediente == false) {
+            if (form.NewExpediente == false || form.NewExpediente == 'false') {
               const examenesAlmacenados = await ExamenAlmacenado.findAll({
                 where: { id: form.id_examenes_almacenados },
               });
+
+              const datosCuenta = {
+                numero: 1,
+                total: 0,
+                estado: 1,
+                total_pagado: 0,
+                pendiente_de_pago: 0,
+                id_expediente: form.id_expediente,
+                createdAt: restarHoras(new Date(), 6),
+                updatedAt: restarHoras(new Date(), 6),
+                fecha_corte: null,
+                created_by: req.body.user,
+                descuento: 0,
+                solicitud_descuento: 3,
+                subtotal: 0
+              };
+        
+              const cuentaCreada = await Cuenta.create(datosCuenta);
+              await cuentaCreada.update({ numero: cuentaCreada.id });
 
               // Crear un examen realizado por cada examen almacenado
               const examenesCreados = await Promise.all(
@@ -198,8 +217,8 @@ module.exports = {
                     por_pagar: 0,
                     id_examenes_almacenados: examenAlmacenado.id,
                     estado: 2,
-                    id_cuenta: 0,
-                    id_lab_cuentas: 0,
+                    id_cuenta: cuentaCreada.id,
+                    id_lab_cuentas: cuentaCreada.id,
                     createdAt: restarHoras(new Date(), 6),
                     updatedAt: restarHoras(new Date(), 6),
                   };
@@ -207,7 +226,7 @@ module.exports = {
                 })
               );
               res.send(examenesCreados);
-            } else if (form.NewExpediente == true) {
+            } else if (form.NewExpediente == true || form.NewExpediente == 'true') {
               const examenesAlmacenados = await ExamenAlmacenado.findAll({
                 where: { id: form.id_examenes_almacenados },
               });
@@ -235,7 +254,26 @@ module.exports = {
               var idFormateado = String(expediente.id).padStart(4, "0");
               const nuevoExpediente = year + "-" + idFormateado;
               await expediente.update({ expediente: nuevoExpediente });
-              
+
+              const datosCuenta = {
+                numero: 1,
+                total: 0,
+                estado: 1,
+                total_pagado: 0,
+                pendiente_de_pago: 0,
+                 id_expediente: expediente.id,
+                createdAt: restarHoras(new Date(), 6),
+                updatedAt: restarHoras(new Date(), 6),
+                fecha_corte: null,
+                created_by: req.body.user,
+                descuento: 0,
+                solicitud_descuento: 3,
+                subtotal: 0
+              };
+        
+              const cuentaCreada = await Cuenta.create(datosCuenta);
+              await cuentaCreada.update({ numero: cuentaCreada.id });
+
               // Crear un examen realizado por cada examen almacenado
               const examenesCreados = await Promise.all(
                 examenesAlmacenados.map(async (examenAlmacenado) => {
@@ -256,8 +294,8 @@ module.exports = {
                     por_pagar: 0,
                     id_examenes_almacenados: examenAlmacenado.id,
                     estado: 2,
-                    id_cuenta: 0,
-                    id_lab_cuentas: 0,
+                    id_cuenta: cuentaCreada.id,
+                    id_lab_cuentas: cuentaCreada.id,
                     createdAt: restarHoras(new Date(), 6),
                     updatedAt: restarHoras(new Date(), 6),
                   };
