@@ -516,7 +516,7 @@ module.exports = {
 
             const costoHospitalizacion = await Habitaciones.findOne({
                 where: { ocupante: id },
-                attributes: ['costo_ambulatorio','costo_diario'],
+                attributes: ['costo_ambulatorio','costo_diario','costo_estudio_de_sueno','costo_quimioterapia'],
             });
 
             const fecha_ingreso = await Logs.findOne({
@@ -649,6 +649,8 @@ module.exports = {
 
           const costo1 = parseFloat(costoHospitalizacion?.costo_ambulatorio) || 0;
           const costo2 = parseFloat(costoHospitalizacion?.costo_diario) || 0;
+          const costo3 = parseFloat(costoHospitalizacion?.costo_estudio_de_sueno) || 0;
+          const costo4 = parseFloat(costoHospitalizacion?.costo_quimioterapia) || 0;
           // Crear el reporte agrupado
           const reporte = {
             consumos,
