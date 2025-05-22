@@ -66,7 +66,8 @@ module.exports = {
         const order=req.query.order;
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Op.or]:[{ '$Expediente.expediente$': { [Op.like]: `%${busqueda}%` } }, { '$Expediente.nombres$': { [Op.like]: `%${busqueda}%` } }, { '$Expediente.apellidos$': { [Op.like]: `%${busqueda}%` } }] } : null ;
+        //var condition = busqueda ? { [Op.or]:[{ '$Expediente.expediente$': { [Op.like]: `%${busqueda}%` } }, { '$Expediente.nombres$': { [Op.like]: `%${busqueda}%` } }, { '$Expediente.apellidos$': { [Op.like]: `%${busqueda}%` } }] } : null ;
+        var condition = {estado: 1}
         console.log(busqueda)
         Cuenta.findAndCountAll({ 
             include: [
@@ -114,7 +115,7 @@ module.exports = {
         const order=req.query.order;
         const { limit, offset } = getPagination(page, size);
         //var condition = {estado:1, '$Expediente.solvencia$': 0, [Op.or]:[{'$Expediente.estado$': 0},{'$Expediente.estado$': 6},{'$Expediente.estado$': 7},{'$Expediente.estado$': 8},{'$Expediente.estado$': 9}]}
-        var condition = {estado:1, '$Expediente.solvencia$': 0, [Op.or]:[{ '$Expediente.expediente$': { [Op.like]: `%${busqueda}%` } }, { '$Expediente.nombres$': { [Op.like]: `%${busqueda}%` } }, { '$Expediente.apellidos$': { [Op.like]: `%${busqueda}%` } }]}
+        //var condition = {estado:1, '$Expediente.solvencia$': 0, [Op.or]:[{ '$Expediente.expediente$': { [Op.like]: `%${busqueda}%` } }, { '$Expediente.nombres$': { [Op.like]: `%${busqueda}%` } }, { '$Expediente.apellidos$': { [Op.like]: `%${busqueda}%` } }]}
         /* var condition = {
             [Op.and]: [
                 { estado: 1 },
@@ -122,6 +123,7 @@ module.exports = {
                 { '$Expediente.estado$': 7 }
             ]
         }; */
+        var condition = { estado:1}
         console.log(busqueda)
         Cuenta.findAndCountAll({ 
             include: [
