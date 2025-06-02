@@ -32,6 +32,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
         allowNull: false
     },
+    costo_quimioterapia: {
+      type: DataTypes.STRING,
+        allowNull: false
+    },
     estado: {
       type: DataTypes.INTEGER,
       allowNull: false

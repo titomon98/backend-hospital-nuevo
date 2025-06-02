@@ -292,13 +292,7 @@ module.exports = {
                 order: [['createdAt', 'DESC']]
             });
     
-            let cuentaSeleccionada = null;
-            for (const cuenta of cuentas) {
-                if (cuenta.dataValues.estado === 1) {
-                    cuentaSeleccionada = cuenta;
-                    break;
-                }
-            }
+            let cuentaSeleccionada = cuentas.length > 0 ? cuentas[0] : null;
     
             if (!cuentaSeleccionada) {
                 return res.status(401).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
@@ -522,7 +516,7 @@ module.exports = {
 
             const costoHospitalizacion = await Habitaciones.findOne({
                 where: { ocupante: id },
-                attributes: ['costo_ambulatorio','costo_diario'],
+                attributes: ['costo_ambulatorio','costo_diario','costo_estudio_de_sueno','costo_quimioterapia'],
             });
 
             const fecha_ingreso = await Logs.findOne({
@@ -655,6 +649,8 @@ module.exports = {
 
           const costo1 = parseFloat(costoHospitalizacion?.costo_ambulatorio) || 0;
           const costo2 = parseFloat(costoHospitalizacion?.costo_diario) || 0;
+          const costo3 = parseFloat(costoHospitalizacion?.costo_estudio_de_sueno) || 0;
+          const costo4 = parseFloat(costoHospitalizacion?.costo_quimioterapia) || 0;
           // Crear el reporte agrupado
           const reporte = {
             consumos,
