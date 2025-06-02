@@ -201,10 +201,6 @@ module.exports = {
           },
           include: [
             {
-              model: Medicos,
-              attributes: ['nombre']
-            },
-            {
               model: ExamenesAlmacenados,
               attributes: ['nombre']
             }
