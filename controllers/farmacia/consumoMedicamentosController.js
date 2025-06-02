@@ -106,11 +106,11 @@ module.exports = {
         nuevoTotal = (parseFloat(totalCuenta) + parseFloat(Total))
         await cuentaSeleccionada.update({ total: nuevoTotal});
         const datos = {
-            id_medicamento: form.id_medicine,
+            id_medicamento: form.id_medicamento,
             descripcion: descripcion,
-            cantidad: form.cantidad,
-            precio_venta: form.precio_venta,
-            total: Total,
+            cantidad: parseInt(form.cantidad),
+            precio_venta: parseFloat(form.precio_venta).toFixed(2),
+            total: parseFloat(Total).toFixed(2),
             estado: form.state,
             id_cuenta: id_cuenta,
             estado: 1,
@@ -121,7 +121,7 @@ module.exports = {
             existencia_actual: existencia_nueva
         },
         { where: { 
-            id: form.id_medicine 
+            id: form.id_medicamento 
         }})
         Movimiento.create(datos)
         .then(tipo => {
