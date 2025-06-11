@@ -64,6 +64,7 @@ const alimentacionController = require('../controllers/inventario/alimentacionCo
 const alimentacionMovimientosController = require('../controllers/inventario/alimentacionMovimientosController')
 const equiposController = require('../controllers/inventario/equiposController')
 const equiposMovimientosController = require('../controllers/inventario/equiposMovimientosController')
+const mantenimientosController = require('../controllers/inventario/mantenimientosController')
 
 //CARPETA DE LABORATORIO
 const examenesAlmacenadosController = require('../controllers/laboratorio/examenesAlmacenadosController.js')
@@ -449,6 +450,14 @@ module.exports = (app) => {
     router.put('/user/activate', userController.activate);
     router.put('/user/deactivate', userController.deactivate);
     router.get('/user/getSearch', userController.getSearch);
+
+    //mantenimientos
+    router.get('/mantenimientos/list', mantenimientosController.list);
+    router.post('/mantenimientos/create', mantenimientosController.create);
+    router.put('/mantenimientos/update', mantenimientosController.update);
+    router.put('/mantenimientos/activate', mantenimientosController.activate);
+    router.put('/mantenimientos/deactivate', mantenimientosController.deactivate);
+    router.get('/mantenimientos/getSearch', mantenimientosController.getSearch);
 
     //CARPETA DE LIQUIDACIONES
 
