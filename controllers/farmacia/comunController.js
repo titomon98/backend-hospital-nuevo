@@ -86,8 +86,6 @@ module.exports = {
         const busqueda=req.query.search;
         const page=req.query.page-1;
         const size=req.query.limit;
-        const criterio=req.query.criterio;
-        const order=req.query.order;
         
         
         const { limit, offset } = getPagination(page, size);
@@ -106,7 +104,7 @@ module.exports = {
                     model: Proveedor
                 },
             ],
-            where: condition, order:[[`${criterio}`,`${order}`]],limit,offset})
+            where: condition, order:[[`nombre`,`asc`]],limit,offset})
         .then(data => {
 
         const response = getPagingData(data, page, limit);
