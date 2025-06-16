@@ -176,9 +176,8 @@ module.exports = {
         });
     },
     getSearch (req, res) {
-       const busqueda = req.query.search;
-
-        let condition = null;
+        const busqueda = req.query.search;
+        let condition = {};
 
         if (busqueda) {
             condition = {
@@ -192,6 +191,12 @@ module.exports = {
                     { estado: 1 },
                     { factura: 1 }
                 ]
+            };
+        } else {
+            condition = {
+                inventariado: 'INVENTARIADO',
+                estado: 1,
+                factura: 1
             };
         }
         Quirurgico.findAll({

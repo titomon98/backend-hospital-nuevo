@@ -223,24 +223,11 @@ module.exports = {
         });
     },
     getSearch (req, res) {
-        const busqueda = req.query.search;
-
-        let condition = null;
-
-        if (busqueda) {
-            condition = {
-                [Op.and]: [
-                    {
-                        [Op.or]: [
-                            { nombre: { [Op.like]: `%${busqueda}%` } }
-                        ]
-                    },
-                    { inventariado: 'INVENTARIADO' },
-                    { estado: 1 },
-                    { factura: 1 }
-                ]
-            };
-        }
+        var busqueda = req.query.search;
+        var condition = busqueda ? {
+            [Op.or]: [{ nombre: { [Op.like]: `%${busqueda}%` }}],
+            [Op.and]: [{inventariado: 'INVENTARIADO'},{ estado: 1 }, { factura: 1 }]
+        } : [{inventariado: 'INVENTARIADO'},{ estado: 1 }, { factura: 1 }];
         Comun.findAll({
             include: [
                 {
