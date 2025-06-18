@@ -82,7 +82,12 @@ module.exports = {
         let form = req.body.form
         Habitaciones.update(
             { 
-                nombre: form.nombre,
+                numero: form.numero,
+                tipo: form.tipo,
+                costo_ambulatorio: form.costo_ambulatorio,
+                costo_diario: form.costo_diario,
+                costo_estudio_de_sueno: form.costo_estudio_de_sueno,
+                costo_quimioterapia: form.costo_quimioterapia,
                 updated_by: req.body.user,
             },
             { 

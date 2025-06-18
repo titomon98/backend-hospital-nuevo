@@ -4,18 +4,23 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class receta extends Model {
+  class mantenimientos extends Model {
     static associate(models) {
-      receta.belongsTo(models.expedientes, {
-        foreignKey: "id_expediente",
-      });
-      receta.belongsTo(models.medicos, {
-        foreignKey: "id_medico",
+      mantenimientos.belongsTo(models.equipos, {
+        foreignKey: "id_equipo",
       });
     }
   };
-  receta.init({
-    contenido: {
+  mantenimientos.init({
+    fecha: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    costo: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    siguiente: {
       type: DataTypes.STRING,
       allowNull: false
     },
@@ -23,12 +28,9 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false
     },
-    id_expediente: {
+    id_equipo: {
       type: DataTypes.INTEGER,
       allowNull: false
-    },
-    id_medico: {
-      type: DataTypes.INTEGER,
     },
     created_by: {
       type: DataTypes.STRING,
@@ -38,7 +40,7 @@ module.exports = (sequelize, DataTypes) => {
     },
   }, {
     sequelize,
-    modelName: 'recetas',
+    modelName: 'mantenimientos',
   });
-  return receta;
+  return mantenimientos;
 };

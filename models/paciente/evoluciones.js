@@ -4,17 +4,17 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class receta extends Model {
+  class evolucion extends Model {
     static associate(models) {
-      receta.belongsTo(models.expedientes, {
+      evolucion.belongsTo(models.expedientes, {
         foreignKey: "id_expediente",
       });
-      receta.belongsTo(models.medicos, {
+      evolucion.belongsTo(models.medicos, {
         foreignKey: "id_medico",
       });
     }
   };
-  receta.init({
+  evolucion.init({
     contenido: {
       type: DataTypes.STRING,
       allowNull: false
@@ -31,14 +31,14 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
     },
     created_by: {
-      type: DataTypes.STRING,
-    },
-    updated_by: {
-      type: DataTypes.STRING,
-    },
+        type: DataTypes.STRING,
+      },
+      updated_by: {
+        type: DataTypes.STRING,
+      },
   }, {
     sequelize,
-    modelName: 'recetas',
+    modelName: 'evoluciones',
   });
-  return receta;
+  return evolucion;
 };
