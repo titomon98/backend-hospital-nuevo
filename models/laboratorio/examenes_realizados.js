@@ -104,6 +104,9 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: true
     },
+    nota: {
+      type: DataTypes.STRING,
+    },
   }, {
     sequelize,
     modelName: 'examenes_realizados',
