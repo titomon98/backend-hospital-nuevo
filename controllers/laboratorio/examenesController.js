@@ -29,7 +29,6 @@ module.exports = {
 
       const today = new Date();
       let form = req.body.form;
-      console.log(form)
 
       try {
         if (form.examenExterior == false || form.examenExterior == 'false') {
@@ -744,60 +743,64 @@ module.exports = {
       }
     },
 
-    async  listCui(req, res) {
+    async listCui(req, res) {
       try {
-          const whereClause = {
-              estado: { [Op.in]: [1, 2] }
-          };
-          if (req.query.cui) {
-              whereClause.cui = req.query.cui;
-          }
-  
-          const data = await Examenes.findAll({
-              include: [
-                  { model: ExamenAlmacenado, attributes: ['nombre'] },
-                  { model: Encargado, attributes: ['nombres'] }
-              ],
-              attributes: [
-                  'id',
-                  'expediente',
-                  'edad',
-                  'cui',
-                  'comision',
-                  'total',
-                  'correo',
-                  'whatsapp',
-                  'numero_muestra',
-                  'referido',
-                  'pagado',
-                  'por_pagar',
-                  'createdAt'
-              ],
-              where: whereClause
-          });
+        const { id_expediente } = req.query;
 
-          const dataResponse = data.map(item => ({
-              id: item.id,
-              nombre: item.expediente,
-              edad: item.edad,
-              cui: item.cui,
-              total: item.total,
-              whatsapp: item.whatsapp,
-              numero_muestra: item.numero_muestra,
-              nombre_encargago: item.encargado?.nombres || 'Sin Encargado',
-              pagado: item.pagado,
-              por_pagar: item.por_pagar,
-              nombre_examen: item.examenes_almacenado?.nombre || 'Sin Examen',
-              fecha_hora: item.createdAt,
-          }));
-  
-          res.send(dataResponse);
+        if (!id_expediente) {
+          return res.status(400).json({ msg: 'El parámetro id_expediente es requerido.' });
+        }
+        const cuenta = await lab_cuentas.findOne({ where: { id_expediente } });
+
+        if (!cuenta) {
+          return res.status(404).json({ msg: 'No se encontró una cuenta para el expediente proporcionado.' });
+        }
+        const examenes = await examenes_realizados.findAll({
+          where: {
+            id_lab_cuentas: cuenta.id,
+            estado: { [Op.in]: [1, 2] }
+          },
+          include: [
+            { model: examenes_almacenados, attributes: ['nombre'] },
+            { model: encargados, attributes: ['nombres'] }
+          ],
+          attributes: [
+            'id',
+            'expediente',
+            'edad',
+            'cui',
+            'comision',
+            'total',
+            'correo',
+            'whatsapp',
+            'numero_muestra',
+            'referido',
+            'pagado',
+            'por_pagar',
+            'createdAt'
+          ]
+        });
+        const dataResponse = examenes.map(item => ({
+          id: item.id,
+          nombre: item.expediente,
+          edad: item.edad,
+          cui: item.cui,
+          total: item.total,
+          whatsapp: item.whatsapp,
+          numero_muestra: item.numero_muestra,
+          nombre_encargado: item.encargado?.nombres || 'Sin Encargado',
+          pagado: item.pagado,
+          por_pagar: item.por_pagar,
+          nombre_examen: item.examenes_almacenado?.nombre || 'Sin Examen',
+          fecha_hora: item.createdAt,
+        }));
+
+        res.send(dataResponse);
       } catch (error) {
-          console.log(error);
-          return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        console.log(error);
+        return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
       }
-  },  
-    
+    },
     async update(req, res) {
       let form = req.query
       const examenSeleccionado = await Examenes.findOne({ 
