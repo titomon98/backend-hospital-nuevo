@@ -174,7 +174,8 @@ module.exports = {
         Cuenta.findAndCountAll({ 
             include: [
                 {
-                    model: Expediente,
+                    model: Expediente, as: 'Expediente',
+                    model: db.detalle_pago_cuentas, as: 'detalle_pago_cuentas' 
                 }
             ],
             where: condition})
@@ -497,7 +498,8 @@ module.exports = {
                 id: req.query.id,
                 estado: 0,
                 pendiente_de_pago: 0
-            }
+            },
+            include: [{ model: db.detalle_pago_cuentas, as: 'detalle_pago_cuentas' }] 
         })
         .then(data => {
             res.send(data);
