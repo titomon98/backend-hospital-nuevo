@@ -86,6 +86,8 @@ const voucherHonorariosController = require('../controllers/medicos/voucher_hono
 
 //CARPETA DE PACIENTES
 const recetaController = require('../controllers/paciente/recetaController')
+const evolucionController = require('../controllers/paciente/evolucionController')
+const ordenController = require('../controllers/paciente/ordenController')
 
 //CARPETA DE EMPLEADOS
 const detalle_permisosController = require('../controllers/empleados/detalle_permisosController');
@@ -474,7 +476,7 @@ module.exports = (app) => {
     router.get('/Examenes_realizados/list', examenesRealizados.list);
     router.get('/Examenes_realizados/list2', examenesRealizados.list2);
     router.get('/Examenes_realizados/list3', examenesRealizados.list3);
-    router.get('/Examenes_realizados/list/cui', examenesRealizados.listCui);
+    router.get('/Examenes_realizados/listId/:id', examenesRealizados.listCui);
     router.post('/Examenes_realizados/create', examenesRealizados.create);
     router.get('/encargadoExamen/getSearch', examenesRealizados.getsearchEncargado);
     router.get('/examenesAlmacenados/getSearch', examenesRealizados.getsearchExaAlmacenados);
@@ -525,6 +527,24 @@ module.exports = (app) => {
     router.put('/recetas/deactivate', recetaController.deactivate);
     router.get('/recetas/getSearch', recetaController.getSearch);
     router.get('/recetas/getId', recetaController.getId)
+
+    //ordenes
+    router.get('/ordenes/list', ordenController.list);
+    router.post('/ordenes/create', ordenController.create);
+    router.put('/ordenes/update', ordenController.update);
+    router.put('/ordenes/activate', ordenController.activate);
+    router.put('/ordenes/deactivate', ordenController.deactivate);
+    router.get('/ordenes/getSearch', ordenController.getSearch);
+    router.get('/ordenes/getId', ordenController.getId)
+
+    //evoluciones
+    router.get('/evoluciones/list', evolucionController.list);
+    router.post('/evoluciones/create', evolucionController.create);
+    router.put('/evoluciones/update', evolucionController.update);
+    router.put('/evoluciones/activate', evolucionController.activate);
+    router.put('/evoluciones/deactivate', evolucionController.deactivate);
+    router.get('/evoluciones/getSearch', evolucionController.getSearch);
+    router.get('/evoluciones/getId', evolucionController.getId)
 
     //CARPETA DE EMPLEADOS
     

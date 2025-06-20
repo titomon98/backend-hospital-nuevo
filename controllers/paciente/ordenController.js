@@ -1,7 +1,7 @@
 'use strict'
 const Sequelize     = require('sequelize');
 const db = require("../../models");
-const Receta = db.recetas;
+const Orden = db.ordenes;
 const Expediente = db.expedientes;
 const Op = db.Sequelize.Op;
 
@@ -9,14 +9,14 @@ module.exports = {
     create(req, res) {
         let form = req.body.form
         const datos = {
-            contenido: form.receta,
+            contenido: form.orden,
             estado: 1,
             id_expediente: form.id,
             created_by: req.body.user,
             updated_by: req.body.user,
         };
 
-        Receta.create(datos)
+        Orden.create(datos)
         .then(tipo => {
             res.send(tipo);
         })
@@ -57,7 +57,7 @@ module.exports = {
 
         var condition = busqueda ? { [Op.or]: [{ contenido: { [Op.like]: `%${busqueda}%` } }] } : null ;
 
-        Receta.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        Orden.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
         console.log('data: '+JSON.stringify(data))
@@ -76,14 +76,14 @@ module.exports = {
     find (req, res) {
         const id = req.params.id;
 
-        return Receta.findByPk(id)
+        return Orden.findByPk(id)
         .then(marca => res.status(200).send(marca))
         .catch(error => res.status(400).send(error))
     },
 
     update (req, res) {
         let form = req.body.form
-        Receta.update(
+        Orden.update(
             { 
                 contenido: form.contenido,
                 estado: 1,
@@ -101,7 +101,7 @@ module.exports = {
     },
 
     activate (req, res) {
-        Receta.update(
+        Orden.update(
             { estado: 1 },
             { where: { 
                 id: req.body.id 
@@ -115,7 +115,7 @@ module.exports = {
     },
 
     deactivate (req, res) {
-        Receta.update(
+        Orden.update(
             { estado: 0 },
             { where: { 
                 id: req.body.id 
@@ -129,7 +129,7 @@ module.exports = {
     },
     
     get(req, res) {
-        Receta.findAll({
+        Orden.findAll({
             where: {
                 id: req.body.id
             }
@@ -146,7 +146,7 @@ module.exports = {
     getSearch (req, res) {
         var busqueda = req.query.search;
         var condition = busqueda?{ [Op.or]:[ {contenido: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
-        Receta.findAll({
+        Orden.findAll({
             where: condition})
         .then(data => {
             res.send(data);
@@ -181,7 +181,7 @@ module.exports = {
         const id = req.query.id;
         const { limit, offset } = getPagination(page, size);
 
-        Receta.findAndCountAll({ include: [
+        Orden.findAndCountAll({ include: [
             {
                 model: Expediente,
                 require: true
