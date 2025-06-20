@@ -179,6 +179,9 @@ module.exports = (app) => {
     router.post('/rubros/create', rubrosController.create);
     router.get('/rubros/list', rubrosController.list);
     router.get('/rubros/get', rubrosController.get);
+    router.put('/rubros/update', rubrosController.update);
+    router.put('/rubros/activate', rubrosController.activate);
+    router.put('/rubros/deactivate', rubrosController.deactivate);
 
     //CajaChica
     router.post('/cajaChica/create', cajaChicaController.create);

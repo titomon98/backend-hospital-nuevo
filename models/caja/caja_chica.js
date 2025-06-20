@@ -16,7 +16,15 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false
     },
-    nombre: {
+    proveedor: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    fecha: {
+      type: DataTypes.DATE,
+      allowNull: false
+    },
+    descripcion: {
       type: DataTypes.STRING,
       allowNull: false
     },

@@ -9,10 +9,12 @@ module.exports = {
     create(req, res) {
         let form = req.body.form
         const datos = {
-            cantidad: form.cantidad,
-            nombre: form.nombre,
+            cantidad: form.cajaCant,
+            descripcion: form.cajaDesc,
+            fecha: form.fecha,
+            proveedor: form.proveedorNombre,
             estado: 1,
-            id_rubro: form.rubro,
+            id_rubro: form.selectedRubro.id,
             created_by: req.body.user
         };
 
