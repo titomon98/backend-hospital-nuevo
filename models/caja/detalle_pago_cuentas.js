@@ -20,6 +20,10 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.DECIMAL(10,2),
         allowNull: true
     },
+    recargoTarjeta: {
+        type: DataTypes.DECIMAL(10,2),
+        allowNull: true
+    },
     deposito: {
         type: DataTypes.DECIMAL(10,2),
         allowNull: true

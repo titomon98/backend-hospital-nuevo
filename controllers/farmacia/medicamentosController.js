@@ -164,12 +164,7 @@ module.exports = {
         });
     },
     get (req, res) {
-        Medicamento.findAll({attributes: ['id', 'nombre', 'existencia_actual', 'precio_venta'], 
-            where: {
-                existencia_actual:{
-                    [Op.gt]:0
-                }
-            }})
+        Medicamento.findAll({attributes: ['id', 'nombre', 'existencia_actual', 'precio_venta']})
         .then(data => {
             res.send(data);
         })
