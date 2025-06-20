@@ -362,6 +362,7 @@ module.exports = {
                     {
                         efectivo: req.body.efectivo,
                         tarjeta: req.body.tarjeta,
+                        recargoTarjeta: req.body.recargoTarjeta,
                         deposito: req.body.deposito,
                         cheque: req.body.cheque,
                         seguro: req.body.seguro,
@@ -440,6 +441,7 @@ module.exports = {
                     {
                         efectivo: req.body.efectivo,
                         tarjeta: req.body.tarjeta,
+                        recargoTarjeta: req.body.recargoTarjeta,
                         deposito: req.body.deposito,
                         cheque: req.body.cheque,
                         seguro: req.body.seguro,

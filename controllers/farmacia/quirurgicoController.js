@@ -160,12 +160,7 @@ module.exports = {
         });
     },
     get (req, res) {
-        Quirurgico.findAll({attributes: ['id', 'nombre', 'existencia_actual', 'precio_venta'], 
-            where: {
-                existencia_actual:{
-                    [Op.gt]:0
-                }
-            }
+        Quirurgico.findAll({attributes: ['id', 'nombre', 'existencia_actual', 'precio_venta']
         })
         .then(data => {
             res.send(data);
