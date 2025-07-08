@@ -22,7 +22,8 @@ module.exports = {
             id_expediente: form.id_expediente,
             created_by: req.body.user,
             descuento: 0.0,
-            solicitud_descuento: 3
+            solicitud_descuento: 3,
+            tipo: form.tipo_cuenta
          };
 
         Cuenta.create(datos)
@@ -174,8 +175,10 @@ module.exports = {
         Cuenta.findAndCountAll({ 
             include: [
                 {
-                    model: Expediente, as: 'Expediente',
-                    model: db.detalle_pago_cuentas, as: 'detalle_pago_cuentas' 
+                    model: Expediente
+                },
+                {
+                    model: db.detalle_pago_cuentas
                 }
             ],
             where: condition})
