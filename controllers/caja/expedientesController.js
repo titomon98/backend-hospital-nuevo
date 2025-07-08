@@ -36,7 +36,7 @@ module.exports = {
         const datos = {
             nombres: form.nombre,
             apellidos: form.apellidos,
-            expediente: 'TEMPORAL',
+            expediente: 'EXPEDIENTE INCOMPLETO',
             primer_ingreso: today,
             casada: form.casada,
             nacimiento: form.nacimiento,
@@ -166,7 +166,7 @@ module.exports = {
         const datos = {
             nombres: 'PENDIENTE',
             apellidos: 'PENDIENTE',
-            expediente: 'PENDIENTE DE REVISIÓN',
+            expediente: 'EXPEDIENTE INCOMPLETO',
             primer_ingreso: today,
             fecha_ingreso_reciente: form.fecha,
             hora_ingreso_reciente: form.hora,
@@ -308,7 +308,7 @@ module.exports = {
     update (req, res) {
         let form = req.body.form
         const today = new Date();
-        if(form.expediente==='PENDIENTE DE REVISIÓN'){
+        if(form.expediente==='EXPEDIENTE INCOMPLETO'){
             Expediente.findAndCountAll({
                 where: {
                     cui: {

@@ -82,14 +82,13 @@ module.exports = {
     update (req, res) {
         let form = req.body.form
         Rubro.update(
-            { 
-                Rubro: form.Rubro,
-                nombre: form.nombre,
+            {
+                nombre: form.name,
                 updated_by: req.body.user
             },
             { where: { 
                 id: form.id 
-            } }
+            }}
         )
         .then(marca => res.status(200).send('El registro ha sido actualizado'))
         .catch(error => {
