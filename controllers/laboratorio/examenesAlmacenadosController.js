@@ -90,6 +90,7 @@ module.exports = {
                 nombre: form.nombre,
                 precio_normal: form.precio_normal,
                 precio_sobrecargo: form.precio_sobrecargo,
+                precio_costo: form.precio_costo,
                 tipo_examen: form.tipo_examen,
                 updated_by: req.body.user
             },
