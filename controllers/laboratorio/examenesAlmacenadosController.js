@@ -10,6 +10,7 @@ module.exports = {
         const datos = {
             nombre: form.nombre,
             precio_normal: form.precio_normal,
+            precio_costo: form.precio_costo,
             precio_sobrecargo: form.precio_sobrecargo,
             tipo_examen: form.tipo_examen,
             created_by: req.body.user
