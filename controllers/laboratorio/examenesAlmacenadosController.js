@@ -23,6 +23,7 @@ module.exports = {
         })
         .catch(error => {
             console.log(error)
+            console.log(form)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
                     
