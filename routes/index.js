@@ -377,6 +377,7 @@ module.exports = (app) => {
 
     //quirurgico
     router.get('/quirurgico/list', quirurgicoController.list);
+    router.get('/quirurgico/list2', quirurgicoController.get);
     router.post('/quirurgico/create', quirurgicoController.create);
     router.put('/quirurgico/update', quirurgicoController.update);
     router.put('/quirurgico/activate', quirurgicoController.activate);
