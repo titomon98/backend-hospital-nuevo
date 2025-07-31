@@ -51,6 +51,7 @@ module.exports = {
             const { valor_minimo, valor_maximo, nombre } = campoExamen;
             let alarma = null;  // Inicializamos la variable de alarma como null
 
+
             if (parseFloat(form.resultado) < parseFloat(valor_minimo)) {
                 alarma = 'SI';
             } else if (parseFloat(form.resultado) > parseFloat(valor_maximo)) {
@@ -74,13 +75,16 @@ module.exports = {
 
         // Esperar a que todas las promesas se resuelvan
         await Promise.all(promises);
-
+        
         // Actualizar el estado del examen
         await examenSeleccionado.update({ estado: 2 });
-
         // Cambiar el estado del examen a 3
         await UpdateExamenRealizado.update(
-            { estado: 3 },
+            { 
+                estado: 3,
+                nota: resultados[0].nota,
+                updatedAt: restarHoras(new Date(), 6)
+            },
             { where: { id: idExamenRealizado } }
         );
 

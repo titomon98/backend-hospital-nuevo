@@ -174,7 +174,8 @@ module.exports = {
         Cuenta.findAndCountAll({ 
             include: [
                 {
-                    model: Expediente,
+                    model: Expediente, as: 'Expediente',
+                    model: db.detalle_pago_cuentas, as: 'detalle_pago_cuentas' 
                 }
             ],
             where: condition})
@@ -362,6 +363,7 @@ module.exports = {
                     {
                         efectivo: req.body.efectivo,
                         tarjeta: req.body.tarjeta,
+                        recargoTarjeta: req.body.recargoTarjeta,
                         deposito: req.body.deposito,
                         cheque: req.body.cheque,
                         seguro: req.body.seguro,
@@ -440,6 +442,7 @@ module.exports = {
                     {
                         efectivo: req.body.efectivo,
                         tarjeta: req.body.tarjeta,
+                        recargoTarjeta: req.body.recargoTarjeta,
                         deposito: req.body.deposito,
                         cheque: req.body.cheque,
                         seguro: req.body.seguro,
@@ -495,7 +498,8 @@ module.exports = {
                 id: req.query.id,
                 estado: 0,
                 pendiente_de_pago: 0
-            }
+            },
+            include: [{ model: db.detalle_pago_cuentas, as: 'detalle_pago_cuentas' }] 
         })
         .then(data => {
             res.send(data);
