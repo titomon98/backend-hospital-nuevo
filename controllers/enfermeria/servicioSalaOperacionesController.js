@@ -195,7 +195,7 @@ module.exports = {
     try {
       const detalle = await SalaOperaciones.findByPk(id, { include: [ Cuenta] });
       if (!detalle) {
-        return res.status(400).json({ mensaje: 'Detalle de honorario no encontrado' });
+        return res.status(400).json({ mensaje: 'Detalle de sala operaciones no encontrado' });
       }
       res.status(200).send(detalle);
     } catch (error) {
