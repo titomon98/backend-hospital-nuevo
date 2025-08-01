@@ -22,6 +22,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DECIMAL,
       allowNull: false
     },
+    precio_costo: {
+      type: DataTypes.DECIMAL,
+      allowNull: false
+    },
     tipo_examen:{
       type: DataTypes.STRING,
       allowNull: false

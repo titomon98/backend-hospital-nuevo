@@ -7,9 +7,11 @@ const Op = db.Sequelize.Op;
 module.exports = {
     create(req, res) {
         let form = req.body
+        console.log(form)
         const datos = {
             nombre: form.nombre,
             precio_normal: form.precio_normal,
+            precio_costo: form.precio_costo,
             precio_sobrecargo: form.precio_sobrecargo,
             tipo_examen: form.tipo_examen,
             created_by: req.body.user
@@ -21,6 +23,7 @@ module.exports = {
         })
         .catch(error => {
             console.log(error)
+            console.log(form)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
                     
@@ -87,6 +90,7 @@ module.exports = {
                 nombre: form.nombre,
                 precio_normal: form.precio_normal,
                 precio_sobrecargo: form.precio_sobrecargo,
+                precio_costo: form.precio_costo,
                 tipo_examen: form.tipo_examen,
                 updated_by: req.body.user
             },

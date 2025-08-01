@@ -63,6 +63,12 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: 0
     },
+    tipo: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1
+    },
+    //tipo: 1 - hospi; 2 - emergencia; 3 - Quirófano; 4 - Ambulatorio
     id_expediente: {
         type: DataTypes.INTEGER,
         allowNull: false
