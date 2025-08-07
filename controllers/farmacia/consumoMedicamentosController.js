@@ -3,6 +3,7 @@ const Sequelize     = require('sequelize');
 const db = require("../../models");
 const Movimiento = db.detalle_consumo_medicamentos;
 const Medicamento = db.medicamentos;
+const Presentacion = db.presentaciones;
 const Cuenta = db.cuentas;
 const Op = db.Sequelize.Op;
 const moment = require('moment');
@@ -37,7 +38,11 @@ module.exports = {
         Movimiento.findAndCountAll({ 
             include:{
                 model: Medicamento,
-                require: true
+                require: true,
+                include: [{
+                    model: Presentacion,
+                    attributes: ['nombre']
+                }]
             },
             where: condition,
             order:[[`${criterio}`,`${order}`]],

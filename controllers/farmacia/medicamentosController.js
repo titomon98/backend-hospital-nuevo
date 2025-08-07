@@ -164,7 +164,13 @@ module.exports = {
         });
     },
     get (req, res) {
-        Medicamento.findAll({attributes: ['id', 'nombre', 'existencia_actual', 'precio_venta']})
+        Medicamento.findAll({
+            attributes: ['id', 'nombre', 'existencia_actual', 'precio_venta'],
+            include: [{
+              model: Presentacion,
+              attributes: ['nombre']
+            }]
+        })
         .then(data => {
             res.send(data);
         })

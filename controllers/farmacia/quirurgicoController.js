@@ -160,7 +160,12 @@ module.exports = {
         });
     },
     get (req, res) {
-        Quirurgico.findAll({attributes: ['id', 'nombre', 'existencia_actual', 'precio_venta']
+        Quirurgico.findAll({
+            attributes: ['id', 'nombre', 'existencia_actual', 'precio_venta'],
+            include: [{
+              model: Presentacion,
+              attributes: ['nombre']
+            }]
         })
         .then(data => {
             res.send(data);
