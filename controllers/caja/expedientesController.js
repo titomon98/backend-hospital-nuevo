@@ -835,17 +835,19 @@ module.exports = {
             include: [
                 {
                     model: Medicos,
-                    as: 'medico', // Usa el alias que definiste en la relación
-                    attributes: ['id', 'nombre'] // Especifica solo los atributos necesarios
+                    as: 'medico',
+                    attributes: ['id', 'nombre'],
+                    required: true
                 },
                 {
                     model: Habitaciones,
-                    as: 'habitacione', // Usa el alias correcto
-                    attributes: ['id', 'numero'] // Especifica solo los atributos necesarios
+                    as: 'habitacione',
+                    attributes: ['id', 'numero'],
+                    required: true
                 }
             ],
             where: condition,
-            order: [[criterio || 'id', order || 'ASC']], // Se asegura de que criterio y order existan
+            order: [[criterio || 'id', order || 'ASC']],
             limit,
             offset
         })
