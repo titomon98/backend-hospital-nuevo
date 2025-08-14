@@ -54,9 +54,9 @@ module.exports = {
             if (response.referido) {
                 response.referido = response.referido.map(item => ({
                     ...item.get({ plain: true }), // para aplanar el objeto de Sequelize
-                    createdAt: moment(item.createdAt).local().format('DD/MM/YYYY HH:mm'),
+                    createdAt: moment.utc(item.createdAt).format('DD/MM/YYYY HH:mm'),
                     updatedAt: item.updatedAt 
-                        ? moment(item.updatedAt).local().format('DD/MM/YYYY HH:mm')
+                        ? moment.utc(item.updatedAt).format('DD/MM/YYYY HH:mm')
                         : null
                 }));
             }
