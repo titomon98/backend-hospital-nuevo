@@ -519,10 +519,10 @@ module.exports = {
                 attributes: ['costo_ambulatorio','costo_diario','costo_estudio_de_sueno','costo_quimioterapia'],
             });
 
-            const fecha_ingreso = await Logs.findOne({
-                where: { id_expediente: id, origen: 'Recién ingresado' },
+            const fecha_ingreso = await Expediente.findOne({
+                where: { id: id},
                 order: [['createdAt', 'DESC']],
-                attributes: ['createdAt'],
+                attributes: ['updatedAt'],
             });
 
             const idMedico = await Expediente.findOne({
@@ -643,7 +643,7 @@ module.exports = {
           }
 
           //fecha a enviar
-          const fechaFormateada = fecha_ingreso.createdAt.toISOString().split('T')[0];
+          const fechaFormateada = fecha_ingreso.updatedAt.toISOString().split('T')[0];
 
           //COSTOS ESTUDIO DE SUEÑO 
 
