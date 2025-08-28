@@ -967,15 +967,30 @@ module.exports = {
 
         var condition = busqueda ? { [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` }, estado: 5 }] } : {estado: 5} ;
 
-
-        Expediente.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        Expediente.findAndCountAll({
+            include: [
+                {
+                    model: Medicos,
+                    as: 'medico', // Asegúrate de que el alias coincida con la relación definida
+                    attributes: ['id', 'nombre']
+                },
+                {
+                    model: Habitaciones,
+                    as: 'habitacione', // Asegúrate de que el alias coincida
+                    attributes: ['id', 'numero']
+                }
+            ],
+            where: condition,
+            order: [[criterio || 'id', order || 'ASC']], // Mejor manejo de parámetros
+            limit,
+            offset
+        })
         .then(data => {
+            console.log('data: '+JSON.stringify(data))
+            const response = getPagingData(data, page, limit);
 
-        console.log('data: '+JSON.stringify(data))
-        const response = getPagingData(data, page, limit);
-
-        console.log('response: '+JSON.stringify(response))
-        res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
+            console.log('response: '+JSON.stringify(response))
+            res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
         })
         .catch(error => {
             console.log(error)
