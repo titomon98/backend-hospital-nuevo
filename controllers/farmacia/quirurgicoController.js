@@ -161,7 +161,7 @@ module.exports = {
     },
     get (req, res) {
         Quirurgico.findAll({
-            attributes: ['id', 'nombre', 'existencia_actual', 'precio_venta'],
+            attributes: ['id', 'nombre', 'existencia_actual', 'precio_venta', 'inventariado'],
             include: [{
               model: Presentacion,
               attributes: ['nombre']
