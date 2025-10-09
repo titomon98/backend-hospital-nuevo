@@ -120,7 +120,12 @@ module.exports = {
             descripcion = 'Consumo de insumo común por la cuenta ' + numero_cuenta + ' En el area de Emergencia'
         }
 
-        existencia_nueva = parseInt(form.existencias_actuales) - parseInt(form.cantidad)
+        if (form.inventariado === 'NO INVENTARIADO') {
+            existencia_nueva = 0
+        }
+        else {
+            existencia_nueva = parseInt(form.existencias_actuales) - parseInt(form.cantidad)
+        }
         Total = (parseFloat(form.cantidad) * parseFloat(form.precio_venta))
         nuevoTotal = (parseFloat(totalCuenta) + parseFloat(Total))
         await cuentaSeleccionada.update({ total: nuevoTotal});

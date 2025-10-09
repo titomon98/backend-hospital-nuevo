@@ -119,8 +119,13 @@ module.exports = {
         } else if (form.movimiento === 'SALIDAE'){
             descripcion = 'Consumo de insumos quirúrgicos por la cuenta ' + numero_cuenta + ' En el area de Emergencia'
         }
+        if (form.inventariado === 'NO INVENTARIADO') {
+            existencia_nueva = 0
+        }
+        else {
+            existencia_nueva = parseInt(form.existencias_actuales) - parseInt(form.cantidad)
+        }
 
-        existencia_nueva = parseInt(form.existencias_actuales) - parseInt(form.cantidad)
         Total = (parseFloat(form.cantidad) * parseFloat(form.precio_venta))
         console.dir(form)
         nuevoTotal = (parseFloat(totalCuenta) + parseFloat(Total))
