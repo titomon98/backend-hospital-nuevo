@@ -193,6 +193,7 @@ module.exports = (app) => {
 
     //expedientes
     router.get('/expedientes/list', expedientesController.list);
+    router.get('/expedientes/listPanel', expedientesController.listPanel);
     router.post('/expedientes/create', expedientesController.create);
     router.post('/expedientes/createEnfermeria', expedientesController.createFromEnfermeria);
     router.put('/expedientes/update', expedientesController.update);
