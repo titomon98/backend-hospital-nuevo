@@ -9,71 +9,103 @@ const Op = db.Sequelize.Op;
 const moment = require('moment');
 
 module.exports = {
-    get(req, res) {
-        const id = req.params.id;
-    
-        const getPagingData = (data, page, limit) => {
-            const { count: totalItems, rows: referido } = data;
-            const currentPage = page ? +page : 0;
-            const totalPages = Math.ceil(totalItems / limit);
-            return { totalItems, referido, totalPages, currentPage };
-        };
-    
-        const getPagination = (page, size) => {
-            const limit = size ? +size : 2;
-            const offset = page ? page * limit : 0;
+    async get(req, res) {
+        try {
+          const id = req.params.id;
+          const area = req.params.area
+          const page = parseInt(req.query.page) || 1;
+          const size = parseInt(req.query.limit) || 20;
+          const criterio = req.query.criterio || 'id';
+          const order = req.query.order || 'ASC';
+      
+          // --- Helpers ---
+          const getPagination = (page, size) => {
+            const limit = size;
+            const offset = (page - 1) * limit;
             return { limit, offset };
-        };
-    
-        const page = req.query.page - 1;
-        const size = req.query.limit;
-        const criterio = req.query.criterio;
-        const order = req.query.order;
-    
-        const { limit, offset } = getPagination(page, size);
-        const condition = { id_cuenta: { [Op.like]: `%${id}%` } };
-    
-        Movimiento.findAndCountAll({ 
+          };
+      
+          const getPagingData = (data, page, limit) => {
+            const { count: totalItems, rows: referido } = data;
+            const totalPages = Math.ceil(totalItems / limit);
+            return {
+              totalItems,
+              referido,
+              totalPages,
+              currentPage: page
+            };
+          };
+      
+          const { limit, offset } = getPagination(page, size);
+          const condition = {
+            [Op.and]: [
+              { id_cuenta: { [Op.like]: `%${id}%` } },
+              { descripcion: { [Op.like]: `%${area}%` } }
+            ]
+          };
+      
+          const data = await Movimiento.findAndCountAll({
             include: {
-                model: Quirurgico,
-                require: true,
-                include: [{
-                    model: Presentacion,
-                    attributes: ['nombre']
-                }]
+              model: Quirurgico,
+              required: true,
+              include: [{
+                model: Presentacion,
+                attributes: ['nombre']
+              }]
             },
             where: condition,
             order: [[criterio, order]],
             limit,
             offset
-        })
-        .then(data => {
-            const response = getPagingData(data, page, limit);
-    
-            // 🔹 Formatear las fechas antes de enviarlas
-            if (response.referido) {
-                response.referido = response.referido.map(item => ({
-                    ...item.get({ plain: true }), // para aplanar el objeto de Sequelize
-                    createdAt: moment.utc(item.createdAt).format('DD/MM/YYYY HH:mm'),
-                    updatedAt: item.updatedAt 
-                        ? moment.utc(item.updatedAt).format('DD/MM/YYYY HH:mm')
-                        : null
-                }));
+          });
+      
+          const response = getPagingData(data, page, limit);
+      
+          // --- Formatear fechas ---
+          const formattedData = data.rows.map(item => {
+            const plainItem = item.get({ plain: true });
+            // 📘 Formatear cantidad: quitar .00 o .0 si no hay decimales significativos
+            if (plainItem.cantidad !== undefined && plainItem.cantidad !== null) {
+              const parsed = parseFloat(plainItem.cantidad);
+              plainItem.cantidad =
+                Number.isInteger(parsed) ? parsed.toString() : parsed.toFixed(2);
             }
-    
-            res.send({
-                total: response.totalItems,
-                last_page: response.totalPages,
-                current_page: page + 1,
-                from: response.currentPage,
-                to: response.totalPages,
-                data: response.referido
-            });
-        })
-        .catch(error => {
-            console.log(error);
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
+
+            if (plainItem.descripcion) {
+                plainItem.descripcion = plainItem.descripcion
+                  .trim()
+                  .split(/\s+/)
+                  .pop();
+              }
+          
+            // 📘 Formatear fechas
+            plainItem.createdAt = plainItem.createdAt
+              ? moment.utc(plainItem.createdAt).format('DD/MM/YYYY HH:mm')
+              : null;
+            plainItem.updatedAt = plainItem.updatedAt
+              ? moment.utc(plainItem.updatedAt).format('DD/MM/YYYY HH:mm')
+              : null;
+          
+            return plainItem;
+          });
+      
+          // --- Respuesta final coherente ---
+          res.json({
+            total: response.totalItems,
+            per_page: limit,
+            last_page: response.totalPages,
+            current_page: response.currentPage,
+            from: offset + 1,
+            to: offset + formattedData.length,
+            data: formattedData
+          });
+        } catch (error) {
+          console.error(error);
+          return res.status(400).json({
+            msg: 'Ha ocurrido un error, por favor intente más tarde',
+            error: error.message
+          });
+        }
     },
     
     async create(req, res) {
@@ -120,7 +152,7 @@ module.exports = {
             descripcion = 'Consumo de insumos quirúrgicos por la cuenta ' + numero_cuenta + ' En el area de Emergencia'
         }
         if (form.inventariado === 'NO INVENTARIADO') {
-            existencia_nueva = 0
+            existencia_nueva = 1
         }
         else {
             existencia_nueva = parseInt(form.existencias_actuales) - parseInt(form.cantidad)
@@ -134,7 +166,7 @@ module.exports = {
         const datos = {
             id_quirurgico: form.id_medicamento,
             descripcion: descripcion,
-            cantidad: parseInt(form.cantidad),
+            cantidad: parseFloat(form.cantidad),
             precio_venta: parseFloat(form.precio_venta).toFixed(2),
             total: parseFloat(Total).toFixed(2),
             estado: form.state,
@@ -174,7 +206,7 @@ module.exports = {
             return { limit, offset };
         };
         
-        const { page = 1, size = 5, criterio = 'createdAt', order = 'DESC' , fechaDesde, fechaHasta} = req.query;
+        const { page = 1, size = 20, criterio = 'createdAt', order = 'DESC' , fechaDesde, fechaHasta} = req.query;
         const Page=req.query.page-1;
         const Size=req.query.limit;
         const Criterio = req.query.criterio;
