@@ -25,48 +25,64 @@ module.exports = {
     },
 
  
-    list(req, res) {
-        const getPagingData = (data, page, limit) => {
-            const { count: totalItems, rows: referido } = data;
-
-            const currentPage = page ? +page : 0;
-            const totalPages = Math.ceil(totalItems / limit);
-
-            return { totalItems, referido, totalPages, currentPage };
-        };
-
-
-        const getPagination = (page, size) => {
-            const limit = size ? +size : 2;
-            const offset = page ? page * limit : 0;
-
+    async list(req, res) {
+        try {
+            // ---- Helper functions ----
+            const getPagination = (page, size) => {
+            const limit = size ? +size : 10; // default 10 per page
+            const offset = page ? (page - 1) * limit : 0;
             return { limit, offset };
-        };
-
-        const busqueda=req.query.search;
-        const page=req.query.page-1;
-        const size=req.query.limit;
-        const criterio=req.query.criterio;
-        const order=req.query.order;
-
-
-        const { limit, offset } = getPagination(page, size);
-
-        var condition = busqueda ? { [Op.or]: [{ tipo: { [Op.like]: `%${busqueda}%` } }] } : null ;
-
-        Habitaciones.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
-        .then(data => {
-
-        console.log('data: '+JSON.stringify(data))
-        const response = getPagingData(data, page, limit);
-
-        console.log('response: '+JSON.stringify(response))
-        res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
-        })
-        .catch(error => {
-            console.log(error)
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
+            };
+        
+            const getPagingData = (data, page, limit) => {
+            const { count: totalItems, rows: items } = data;
+            const currentPage = page ? +page : 1;
+            const totalPages = Math.ceil(totalItems / limit);
+        
+            return { totalItems, items, totalPages, currentPage };
+            };
+        
+            // ---- Query params ----
+            const busqueda = req.query.search || '';
+            const page = parseInt(req.query.page) || 1;
+            const size = parseInt(req.query.limit) || 10;
+            const criterio = req.query.criterio || 'id';
+            const order = req.query.order || 'ASC';
+        
+            const { limit, offset } = getPagination(page, size);
+        
+            // ---- Condition ----
+            const condition = busqueda
+            ? { [Op.or]: [{ tipo: { [Op.like]: `%${busqueda}%` } }] }
+            : null;
+        
+            // ---- Query ----
+            const data = await Habitaciones.findAndCountAll({
+            where: condition,
+            order: [[criterio, order]],
+            limit,
+            offset,
+            });
+        
+            const response = getPagingData(data, page, limit);
+        
+            // ---- Final Response ----
+            res.json({
+            total: response.totalItems,
+            per_page: limit,
+            last_page: response.totalPages,
+            current_page: response.currentPage,
+            from: offset + 1,
+            to: offset + response.items.length,
+            data: response.items,
+            });
+        } catch (error) {
+            console.error(error);
+            res.status(400).json({
+            msg: 'Ha ocurrido un error, por favor intente más tarde',
+            error: error.message,
+            });
+        }
     },
 
 
