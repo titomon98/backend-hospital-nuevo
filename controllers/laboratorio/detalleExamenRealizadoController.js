@@ -97,79 +97,79 @@ module.exports = {
 
     },
 
-      async list(req, res) {
+    async list(req, res) {
 
-    const getPagingData = (data, page, limit) => {
-        const { count: totalItems, rows: referido } = data;
-        const currentPage = page ? +page : 0;
-        const totalPages = Math.ceil(totalItems / limit);
-        return { totalItems, referido, totalPages, currentPage };
-    };
+        const getPagingData = (data, page, limit) => {
+            const { count: totalItems, rows: referido } = data;
+            const currentPage = page ? +page : 0;
+            const totalPages = Math.ceil(totalItems / limit);
+            return { totalItems, referido, totalPages, currentPage };
+        };
 
-    const getPagination = (page, size) => {
-        const limit = size ? +size : 10;  // Aumentar el límite predeterminado a 10
-        const offset = page ? page * limit : 0;
-        return { limit, offset };
-    };
+        const getPagination = (page, size) => {
+            const limit = size ? +size : 10;  // Aumentar el límite predeterminado a 10
+            const offset = page ? page * limit : 0;
+            return { limit, offset };
+        };
 
-    // Extraer valores de query params
-    const { page = 1, size = 5, criterio = 'createdAt', order = 'DESC' } = req.query;
-    const { limit, offset } = getPagination(page - 1, size);  // Ajustar la paginación correctamente
+        // Extraer valores de query params
+        const { page = 1, size = 5, criterio = 'createdAt', order = 'DESC' } = req.query;
+        const { limit, offset } = getPagination(page - 1, size);  // Ajustar la paginación correctamente
 
-    try {
-        // Buscar los resultados paginados del examen
-        const data = await Examenes.findAndCountAll({
-            attributes: ['resultado', 'alarma', 'id_campo', 'id_tipo', 'createdAt'],  // Incluir 'id_campo' y 'id_tipo'
-            where: { id_examen_realizado: req.query.id },
-            order: [[criterio, order]],  // Usar los parámetros de orden correctamente
-            limit,
-            offset,
-        });
+        try {
+            // Buscar los resultados paginados del examen
+            const data = await Examenes.findAndCountAll({
+                attributes: ['resultado', 'alarma', 'id_campo', 'id_tipo', 'createdAt'],  // Incluir 'id_campo' y 'id_tipo'
+                where: { id_examen_realizado: req.query.id },
+                order: [[criterio, order]],  // Usar los parámetros de orden correctamente
+                limit,
+                offset,
+            });
 
-        const response = getPagingData(data, page - 1, limit);
+            const response = getPagingData(data, page - 1, limit);
 
-        // Formatear los datos de la respuesta
-        const dataResponse = await Promise.all(
-            response.referido.map(async item => {
-                // Obtener el nombre y valores del campo examen (sin asociación)
-                const campoExamen = await CampoExamen.findOne({
-                    where: { id: item.id_campo },
-                    attributes: ['nombre', 'valor_minimo', 'valor_maximo', 'unidades' ]
-                });
+            // Formatear los datos de la respuesta
+            const dataResponse = await Promise.all(
+                response.referido.map(async item => {
+                    // Obtener el nombre y valores del campo examen (sin asociación)
+                    const campoExamen = await CampoExamen.findOne({
+                        where: { id: item.id_campo },
+                        attributes: ['nombre', 'valor_minimo', 'valor_maximo', 'unidades' ]
+                    });
 
-                const tipoExamen = await TipoExamen.findOne({
-                    where: { id: item.id_tipo },
-                    attributes: ['nombre']
-                });
+                    const tipoExamen = await TipoExamen.findOne({
+                        where: { id: item.id_tipo },
+                        attributes: ['nombre']
+                    });
 
-                return {
-                    campo: campoExamen ? campoExamen.nombre : 'Campo no encontrado',  // Nombre del campo
-                    tipo_examen: tipoExamen ? tipoExamen.nombre : 'Tipo no encontrado', // Nombre del tipo de examen
-                    unidades: campoExamen ? campoExamen.unidades : null,
-                    resultado: item.resultado,                  // Resultado del examen
-                    valor_minimo: campoExamen ? campoExamen.valor_minimo : null, // Valor mínimo del campo
-                    valor_maximo: campoExamen ? campoExamen.valor_maximo : null, // Valor máximo del campo
-                    alarma: item.alarma,                        // Si hubo una alarma
-                    fecha_hora: item.createdAt,                 // Fecha y hora del resultado
-                };
-            })
-        );
+                    return {
+                        campo: campoExamen ? campoExamen.nombre : 'Campo no encontrado',  // Nombre del campo
+                        tipo_examen: tipoExamen ? tipoExamen.nombre : 'Tipo no encontrado', // Nombre del tipo de examen
+                        unidades: campoExamen ? campoExamen.unidades : null,
+                        resultado: item.resultado,                  // Resultado del examen
+                        valor_minimo: campoExamen ? campoExamen.valor_minimo : null, // Valor mínimo del campo
+                        valor_maximo: campoExamen ? campoExamen.valor_maximo : null, // Valor máximo del campo
+                        alarma: item.alarma,                        // Si hubo una alarma
+                        fecha_hora: item.createdAt,                 // Fecha y hora del resultado
+                    };
+                })
+            );
 
-        response.referido = dataResponse;
+            response.referido = dataResponse;
 
-        // Enviar respuesta
-        res.send({
-            total: response.totalItems,
-            total_pages: response.totalPages,
-            current_page: page,
-            from: offset + 1,
-            to: offset + data.rows.length,
-            data: response.referido
-        });
-    } catch (error) {
-        console.error(error);
-        return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-    }
+            // Enviar respuesta
+            res.send({
+                total: response.totalItems,
+                total_pages: response.totalPages,
+                current_page: page,
+                from: offset + 1,
+                to: offset + data.rows.length,
+                data: response.referido
+            });
+        } catch (error) {
+            console.error(error);
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        }
     },
     
     async getsearchTipo(req, res) {

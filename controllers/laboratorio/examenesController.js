@@ -745,55 +745,65 @@ module.exports = {
 
     async listCui(req, res) {
       try {
-        const { id_expediente } = req.query;
+        const { id } = req.params;
 
-        if (!id_expediente) {
+        if (!id) {
           return res.status(400).json({ msg: 'El parámetro id_expediente es requerido.' });
         }
-        const cuenta = await lab_cuentas.findOne({ where: { id_expediente } });
+        const cuenta = await Cuenta.findAndCountAll({ where: { id_expediente: id } });
 
-        if (!cuenta) {
-          return res.status(404).json({ msg: 'No se encontró una cuenta para el expediente proporcionado.' });
+        if (!cuenta.rows || cuenta.rows.length === 0) {
+          return res.status(404).json({ msg: 'No se encontró ninguna cuenta para el expediente proporcionado.' });
         }
-        const examenes = await examenes_realizados.findAll({
-          where: {
-            id_lab_cuentas: cuenta.id,
-            estado: { [Op.in]: [1, 2] }
-          },
-          include: [
-            { model: examenes_almacenados, attributes: ['nombre'] },
-            { model: encargados, attributes: ['nombres'] }
-          ],
-          attributes: [
-            'id',
-            'expediente',
-            'edad',
-            'cui',
-            'comision',
-            'total',
-            'correo',
-            'whatsapp',
-            'numero_muestra',
-            'referido',
-            'pagado',
-            'por_pagar',
-            'createdAt'
-          ]
-        });
-        const dataResponse = examenes.map(item => ({
-          id: item.id,
-          nombre: item.expediente,
-          edad: item.edad,
-          cui: item.cui,
-          total: item.total,
-          whatsapp: item.whatsapp,
-          numero_muestra: item.numero_muestra,
-          nombre_encargado: item.encargado?.nombres || 'Sin Encargado',
-          pagado: item.pagado,
-          por_pagar: item.por_pagar,
-          nombre_examen: item.examenes_almacenado?.nombre || 'Sin Examen',
-          fecha_hora: item.createdAt,
-        }));
+        let dataResponse = [];
+
+        // Recorremos todas las cuentas encontradas
+        for (const cta of cuenta.rows) {
+          const examenes = await Examenes.findAll({
+            where: {
+              id_lab_cuentas: cta.id
+            },
+            include: [
+              { model: ExamenAlmacenado, attributes: ['nombre'] },
+              { model: Encargado, attributes: ['nombres'] }
+            ],
+            attributes: [
+              'id',
+              'expediente',
+              'edad',
+              'cui',
+              'comision',
+              'total',
+              'correo',
+              'whatsapp',
+              'numero_muestra',
+              'referido',
+              'pagado',
+              'por_pagar',
+              'createdAt'
+            ]
+          });
+          console.log(examenes)
+          // Mapeamos los resultados de cada examen y los agregamos al arreglo general
+          const examenesFormateados = examenes.map(item => ({
+            id: item.id,
+            nombre: item.expediente,
+            edad: item.edad,
+            cui: item.cui,
+            total: item.total,
+            whatsapp: item.whatsapp,
+            numero_muestra: item.numero_muestra,
+            nombre_encargado: item.encargado?.nombres || 'Sin Encargado',
+            pagado: item.pagado,
+            por_pagar: item.por_pagar,
+            nombre_examen: item.examenes_almacenado?.nombre || 'Sin Examen',
+            fecha_hora: item.createdAt,
+            id_cuenta: cta.id, // Puedes incluir también el id de la cuenta si te sirve
+          }));
+
+          // Agregar los resultados de esta cuenta al arreglo principal
+          dataResponse.push(...examenesFormateados);
+        }
 
         res.send(dataResponse);
       } catch (error) {
