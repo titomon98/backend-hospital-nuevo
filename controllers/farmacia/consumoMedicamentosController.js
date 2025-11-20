@@ -5,6 +5,7 @@ const Movimiento = db.detalle_consumo_medicamentos;
 const Medicamento = db.medicamentos;
 const Presentacion = db.presentaciones;
 const Cuenta = db.cuentas;
+const Expediente = db.expedientes;
 const Op = db.Sequelize.Op;
 const moment = require('moment');
 
@@ -222,24 +223,37 @@ module.exports = {
             }
             const data = await Movimiento.findAndCountAll({
                 include: [
-                    { model: Cuenta, attributes: ['numero'] },
-                    { model: Medicamento, attributes: ['nombre'] }
+                    { 
+                      model: Cuenta, 
+                      attributes: ['numero'],
+                      include: [
+                        {
+                          model: Expediente, 
+                          attributes: ['nombres', 'apellidos']
+                        }
+                      ] 
+                    },
+                    { model: Medicamento, attributes: ['id', 'nombre'] }
                 ],
-                attributes: ['cantidad', 'createdAt'],
+                attributes: ['id', 'descripcion', 'cantidad', 'createdAt', 'created_by', 'updated_by', 'estado'],
                 order: [[Criterio, Order]], // Ordenamos por createdAt DESC
                 limit,
                 offset,
                 where: whereClause 
             }); 
-    
             const response = getPagingData(data, Page, limit);
-    
             if (response.referido) {
                 const dataResponse = response.referido.map(item => ({
+                    id: item.id,
+                    medicamento_id: item.medicamento.id,
                     numero_cuenta: item.cuenta.numero,
                     nombre_medicamento: item.medicamento.nombre,
                     cantidad: item.cantidad,
                     fecha_consumo: item.createdAt,
+                    nombre_completo: item.cuenta.expediente.nombres + ' ' + item.cuenta.expediente.apellidos,
+                    created_by: item.created_by,
+                    updated_by: item.updated_by,
+                    estado: item.estado
                 }));
     
                 response.referido = dataResponse;
@@ -252,5 +266,26 @@ module.exports = {
             console.log(error);
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         }
+    },
+
+    async deactivate(req, res) {
+      const id_consumo = req.body.delete.id
+      const medicamento_id = req.body.delete.medicamento_id
+      const cantidad_eliminada = req.body.delete.cantidad
+      const responsable = req.body.delete.responsable
+
+      const medicamento = await Medicamento.findByPk(medicamento_id);
+      if (!medicamento) {
+        return res.send('El medicamento no existe');
+      }
+      medicamento.existencia_actual = medicamento.existencia_actual + cantidad_eliminada;
+      await medicamento.save();
+
+      const movimiento = await Movimiento.findByPk(id_consumo);
+      movimiento.estado = 0
+      movimiento.updated_by = responsable
+      await movimiento.save();
+
+      return res.send('Consumo eliminado correctamente')
     }    
 }

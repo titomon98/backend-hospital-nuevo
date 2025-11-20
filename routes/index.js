@@ -398,16 +398,19 @@ module.exports = (app) => {
     router.post('/detalle_consumo_medicamentos/create', detalle_consumo_medicamentos.create);
     router.get('/detalle_consumo_medicamentos/list/:id/:area', detalle_consumo_medicamentos.get);
     router.get('/detalle_consumo_medicamentos/list', detalle_consumo_medicamentos.list);
+    router.put('/detalle_consumo_medicamentos/deactivate', detalle_consumo_medicamentos.deactivate)
 
     //detalle_consumo_quirurgicos
     router.post('/detalle_consumo_quirugicos/create', detalle_consumo_quirugicos.create);
     router.get('/detalle_consumo_quirugicos/list/:id/:area', detalle_consumo_quirugicos.get);
     router.get('/detalle_consumo_quirugicos/list', detalle_consumo_quirugicos.list);
+    router.put('/detalle_consumo_quirurgicos/deactivate', detalle_consumo_quirugicos.deactivate)
 
     //detalle_consumo_comunes
     router.post('/detalle_consumo_comun/create', detalle_consumo_comunes.create);
     router.get('/detalle_consumo_comun/list/:id/:area', detalle_consumo_comunes.get);
     router.get('/detalle_consumo_comun/list', detalle_consumo_comunes.list);
+    router.put('/detalle_consumo_comun/deactivate', detalle_consumo_comunes.deactivate)
 
     //CARPETA GERENCIA
     //asuetos

@@ -52,6 +52,10 @@ module.exports = (sequelize, DataTypes) => {
     updated_by: {
       type: DataTypes.STRING,
     },
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true
+    }
   }, {
     sequelize,
     modelName: 'comun_movimientos',
