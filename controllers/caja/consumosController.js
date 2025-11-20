@@ -11,13 +11,13 @@ const Habitaciones = db.habitaciones;
 const Honorario = db.detalle_honorarios
 const Medico = db.medicos
 
-const Movimiento = db.detalle_consumo_comunes;
+const MovimientoComun = db.detalle_consumo_comunes;
 const Comun = db.comunes;
 
-const Movimiento2 = db.detalle_consumo_medicamentos;
+const MovimientoMedicamentos = db.detalle_consumo_medicamentos;
 const Medicamento = db.medicamentos;
 
-const Movimiento3 = db.detalle_consumo_quirugicos;
+const MovimientoQuirurgico = db.detalle_consumo_quirugicos;
 const Quirurgico = db.quirurgicos;
 
 const Examenes = db.examenes_realizados;
@@ -327,7 +327,7 @@ module.exports = {
             });
 
             //CONSUMO MATERIAL COMUNES
-            const consumosComunes = await Movimiento.findAll({
+            const consumosComunes = await MovimientoComun.findAll({
                 where: { id_cuenta: id_cuenta },
                 include: [{
                     model: Comun, 
@@ -337,7 +337,7 @@ module.exports = {
             });
 
             //CONSUMO DE MEDICAMENTOS
-            const consumosMedicamentos = await Movimiento2.findAll({
+            const consumosMedicamentos = await MovimientoMedicamentos.findAll({
                 where: { id_cuenta: id_cuenta },
                 include: [{
                     model: Medicamento, 
@@ -347,7 +347,7 @@ module.exports = {
             });
 
             //CONSUMO DE MATERIAL QUIRURGICO
-            const consumosQuirurgicos = await Movimiento3.findAll({
+            const consumosQuirurgicos = await MovimientoQuirurgico.findAll({
                 where: { id_cuenta: id_cuenta },
                 include: [{
                     model: Quirurgico, 
@@ -435,7 +435,7 @@ module.exports = {
                 });
     
                 // CONSUMO MATERIAL COMUNES
-                const consumosComunes = await Movimiento.findAll({
+                const consumosComunes = await MovimientoComun.findAll({
                     where: { id_cuenta: id_cuenta },
                     include: [{
                         model: Comun, 
@@ -445,7 +445,7 @@ module.exports = {
                 });
     
                 // CONSUMO DE MEDICAMENTOS
-                const consumosMedicamentos = await Movimiento2.findAll({
+                const consumosMedicamentos = await MovimientoMedicamentos.findAll({
                     where: { id_cuenta: id_cuenta },
                     include: [{
                         model: Medicamento, 
@@ -455,7 +455,7 @@ module.exports = {
                 });
     
                 // CONSUMO DE MATERIAL QUIRURGICO
-                const consumosQuirurgicos = await Movimiento3.findAll({
+                const consumosQuirurgicos = await MovimientoQuirurgico.findAll({
                     where: { id_cuenta: id_cuenta },
                     include: [{
                         model: Quirurgico, 
@@ -565,20 +565,29 @@ module.exports = {
               attributes: ['id', 'cantidad', 'descripcion', 'subtotal', 'estado', 'createdAt', 'updatedAt'],
             }),
       
-            Movimiento.findAll({
-              where: { id_cuenta },
+            MovimientoComun.findAll({
+                where: {
+                    id_cuenta: id_cuenta,
+                    estado: 1
+                  },
               include: [{ model: Comun, attributes: ['nombre'] }],
               attributes: ['id', 'descripcion', 'cantidad', 'precio_venta', 'total', 'estado', 'createdAt', 'updatedAt'],
             }),
       
-            Movimiento2.findAll({
-              where: { id_cuenta },
+            MovimientoMedicamentos.findAll({
+                where: {
+                    id_cuenta: id_cuenta,
+                    estado: 1
+                  },
               include: [{ model: Medicamento, attributes: ['nombre'] }],
               attributes: ['id', 'descripcion', 'cantidad', 'precio_venta', 'total', 'estado', 'createdAt', 'updatedAt'],
             }),
       
-            Movimiento3.findAll({
-              where: { id_cuenta },
+            MovimientoQuirurgico.findAll({
+                where: {
+                    id_cuenta: id_cuenta,
+                    estado: 1
+                  },
               include: [{ model: Quirurgico, attributes: ['nombre'] }],
               attributes: ['id', 'descripcion', 'cantidad', 'precio_venta', 'total', 'estado', 'createdAt', 'updatedAt'],
             }),
