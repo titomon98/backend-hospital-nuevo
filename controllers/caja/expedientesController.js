@@ -33,7 +33,7 @@ module.exports = {
             status = 4
             lugar = 'Intensivos'
         }
-        const datos = {
+        let datos = {
             nombres: form.nombre,
             apellidos: form.apellidos,
             expediente: 'EXPEDIENTE INCOMPLETO',
@@ -65,6 +65,12 @@ module.exports = {
             fecha_ingreso_reciente: restarHoras(new Date(), 6),
             created_by: req.body.user,
         };
+
+        if (form.selectedOption == 'emergencia') {
+            datos.fecha_ingreso_reciente = form.fecha
+            datos.hora_ingreso_reciente = form.hora
+            datos.id_medico = form.assignedDoctor
+        }
 
         Expediente.create(datos)
         .then(expediente => {
@@ -559,7 +565,6 @@ module.exports = {
         }
     },
     updateMedico (req, res) {
-        console.log(req.body.form)
         Expediente.update(
             { id_medico: req.body.form.assignedDoctor },
             { where: { 
