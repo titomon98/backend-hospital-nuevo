@@ -10,6 +10,9 @@ module.exports = (sequelize, DataTypes) => {
       servicio_sala_operaciones.belongsTo(models.categoria_sala_operaciones, {
         foreignKey: 'id_categoria',
       });
+      servicio_sala_operaciones.hasMany(models.detalle_personals, {
+        foreignKey: "id_servicio",
+      });
     }
   }
   servicio_sala_operaciones.init({

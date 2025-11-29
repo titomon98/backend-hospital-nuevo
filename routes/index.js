@@ -83,6 +83,8 @@ const especialidadesController = require('../controllers/medicos/especialidadesC
 const medicosController = require('../controllers/medicos/medicosController')
 const sociosController = require('../controllers/medicos/sociosController')
 const voucherHonorariosController = require('../controllers/medicos/voucher_honorariosController.js')
+const personalController = require('../controllers/medicos/personalController')
+const detallePersonalController = require('../controllers/medicos/detallePersonalController')
 
 //CARPETA DE PACIENTES
 const recetaController = require('../controllers/paciente/recetaController')
@@ -525,6 +527,18 @@ module.exports = (app) => {
     //voucherPagoHonorarios
     router.post('/voucher/create', voucherHonorariosController.create);
     router.get('/voucher/getSearch', voucherHonorariosController.getSearch);
+
+    //personal
+    router.get('/personal/list', personalController.list);
+    router.post('/personal/create', personalController.create);
+    router.put('/personal/update', personalController.update);
+    router.put('/personal/activate', personalController.activate);
+    router.put('/personal/deactivate', personalController.deactivate);
+    router.get('/personal/getSearch', personalController.getSearch);
+
+    //detalle_personal
+    router.get('/detalle_personal/get', detallePersonalController.get);
+    router.get('/detalle_personal/getAll', detallePersonalController.getAll);
 
     //CARPETA DE PACIENTES
     //recetas

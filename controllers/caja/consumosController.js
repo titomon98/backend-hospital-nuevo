@@ -519,10 +519,10 @@ module.exports = {
                 attributes: ['costo_ambulatorio','costo_diario','costo_estudio_de_sueno','costo_quimioterapia'],
             });
 
-            const fecha_ingreso = await Expediente.findOne({
-                where: { id: id},
+            let fecha_ingreso = await Expediente.findOne({
+                where: { id: id },
                 order: [['createdAt', 'DESC']],
-                attributes: ['updatedAt'],
+                attributes: ['fecha_ingreso_reciente', 'hora_ingreso_reciente'],
             });
 
             const idMedico = await Expediente.findOne({
@@ -652,14 +652,33 @@ module.exports = {
           }
 
           //fecha a enviar
-          const fechaFormateada = fecha_ingreso.updatedAt.toISOString().split('T')[0];
+          let formato = fecha_ingreso.fecha_ingreso_reciente + 'T' + fecha_ingreso.hora_ingreso_reciente
+          const fechaFormateada = formato
 
           //COSTOS ESTUDIO DE SUEÑO 
 
-          const costo1 = parseFloat(costoHospitalizacion?.costo_ambulatorio) || 0;
+          let costo1 = parseFloat(costoHospitalizacion?.costo_ambulatorio) || 200;
           const costo2 = parseFloat(costoHospitalizacion?.costo_diario) || 0;
           const costo3 = parseFloat(costoHospitalizacion?.costo_estudio_de_sueno) || 0;
           const costo4 = parseFloat(costoHospitalizacion?.costo_quimioterapia) || 0;
+
+          const costoBase = 200
+          const costoExtraHora = 50
+          const fechaIngreso = new Date(formato);
+          const fechaActual = new Date();
+
+          const diffMs = fechaActual - fechaIngreso;
+    
+          // Convertimos a horas (redondeando hacia arriba después de las 8 horas)
+          const diffHoras = diffMs / (1000 * 60 * 60);
+      
+          if (diffHoras <= 8) {
+            costo1 = 200
+          } else {
+            const horasExtra = Math.ceil(diffHoras - 8);
+            costo1 = costoBase + (horasExtra * costoExtraHora);
+          }
+
           // Crear el reporte agrupado
           const reporte = {
             consumos,
@@ -674,6 +693,8 @@ module.exports = {
             fechaFormateada,
             costo1,
             costo2,
+            costo3,
+            costo4
           };
       
           return res.status(200).json(reporte);
@@ -681,7 +702,28 @@ module.exports = {
           console.error('Error al obtener los datos:', error);
           return res.status(500).json({ msg: 'Error al obtener los datos', error: error.message });
         }
-    }      
+    },
+
+    calcularCosto(fechaFormato, costoBase = 200, costoExtraHora = 50) {
+        // Normalizar la fecha en caso venga con espacio
+        const fechaNormalizada = fechaFormato.replace(" ", "T");
+    
+        const fechaIngreso = new Date(fechaNormalizada);
+        const fechaActual = new Date(); // ahora
+    
+        // Diferencia en milisegundos
+        const diffMs = fechaActual - fechaIngreso;
+    
+        // Convertimos a horas (redondeando hacia arriba después de las 8 horas)
+        const diffHoras = diffMs / (1000 * 60 * 60);
+    
+        if (diffHoras <= 8) {
+            return costoBase;
+        }
+    
+        const horasExtra = Math.ceil(diffHoras - 8);
+        return costoBase + (horasExtra * costoExtraHora);
+    }
     
 };
 

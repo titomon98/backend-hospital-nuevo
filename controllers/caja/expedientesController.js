@@ -422,7 +422,6 @@ module.exports = {
                         cui_encargado: form.cui_encargado,
                         parentesco_encargado: form.parentesco_encargado,
                         edad_encargado: form.edad_encargado,
-                        estado: 1, 
                         estado_civil: form.estado_civil,
                         profesion: form.profesion,
                         nombre_padre: form.nombre_padre,

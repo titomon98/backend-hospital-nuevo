@@ -6,6 +6,7 @@ const SalaOperaciones = db.servicio_sala_operaciones;
 const Cuenta = db.cuentas;
 const Categoria = db.categoria_sala_operaciones;
 const Servicios = db.servicios;
+const DetallePersonal = db.detalle_personals
 const Op = db.Sequelize.Op;
 
 
@@ -147,7 +148,7 @@ module.exports = {
     let nuevoTotal = (parseFloat(totalCuenta) + parseFloat(Total))
 
     const datos = {
-      descripcion: `Sele sumo el total del uso de la sala de operaciones a la cuenta (${numero_cuenta})`,
+      descripcion: `Se le sumo el total del uso de la sala de operaciones a la cuenta (${numero_cuenta})`,
       id_categoria: categoriaselect.dataValues.id,
       horas: req.body.horas + ':' + req.body.minutos,
       total: Total,
@@ -161,6 +162,15 @@ module.exports = {
     try {
       const nuevoDetalle = await SalaOperaciones.create(datos);
       await cuentaSeleccionada.update({ total: nuevoTotal});
+      const personal = req.body.personal
+      personal.forEach(persona => {
+        const personalData = {
+          descripcion: 'Persona involucrada con identificador ' + persona.id,
+          id_personal: persona.id,
+          id_servicio: nuevoDetalle.id
+        }
+        const personalRespuesta = DetallePersonal.create(personalData)
+      });
       res.send(nuevoDetalle);
     } catch (error) {
       console.log(error);
