@@ -49,7 +49,8 @@ module.exports = {
               include: [{
                 model: Presentacion,
                 attributes: ['nombre']
-              }]
+              }],
+              where: { anestesico: { [Op.eq]: 1 } } //Para el futuro, por una extraña razón las condiciones están al revés
             },
             where: condition,
             order: [[criterio, order]],
@@ -106,6 +107,104 @@ module.exports = {
           });
         }
     },
+
+    async getAnestesico(req, res) {
+      try {
+        const id = req.params.id;
+        const area = req.params.area;
+        const page = parseInt(req.query.page) || 1;
+        const size = parseInt(req.query.limit) || 20;
+        const criterio = req.query.criterio || 'id';
+        const order = req.query.order || 'ASC';
+    
+        // --- Helpers ---
+        const getPagination = (page, size) => {
+          const limit = size ? +size : 10;
+          const offset = (page - 1) * limit;
+          return { limit, offset };
+        };
+    
+        const getPagingData = (data, page, limit) => {
+          const { count: totalItems, rows: referido } = data;
+          const totalPages = Math.ceil(totalItems / limit);
+          const currentPage = page;
+          return { totalItems, referido, totalPages, currentPage };
+        };
+    
+        const { limit, offset } = getPagination(page, size);
+        const condition = {
+          [Op.and]: [
+            { id_cuenta: { [Op.like]: `%${id}%` } },
+            { descripcion: { [Op.like]: `%${area}%` } },
+            { estado: { [Op.eq]: 1 } }
+          ]
+        };
+    
+        const data = await Movimiento.findAndCountAll({
+          include: {
+            model: Medicamento,
+            required: true,
+            include: [{
+              model: Presentacion,
+              attributes: ['nombre']
+            }],
+            where: { anestesico: { [Op.eq]: 0 } } //Para el futuro, por una extraña razón las condiciones están al revés
+          },
+          where: condition,
+          order: [[criterio, order]],
+          limit,
+          offset,
+        });
+    
+        const response = getPagingData(data, page, limit);
+    
+        // --- Formatear fechas ---
+        const formattedData = data.rows.map(item => {
+          const plainItem = item.get({ plain: true });
+          // 📘 Formatear cantidad: quitar .00 o .0 si no hay decimales significativos
+          if (plainItem.cantidad !== undefined && plainItem.cantidad !== null) {
+            const parsed = parseFloat(plainItem.cantidad);
+            plainItem.cantidad =
+              Number.isInteger(parsed) ? parsed.toString() : parsed.toFixed(2);
+          }
+
+          if (plainItem.descripcion) {
+              plainItem.descripcion = plainItem.descripcion
+                .trim()
+                .split(/\s+/)
+                .pop();
+            }
+        
+          // 📘 Formatear fechas
+          plainItem.createdAt = plainItem.createdAt
+            ? moment.utc(plainItem.createdAt).format('DD/MM/YYYY HH:mm')
+            : null;
+          plainItem.updatedAt = plainItem.updatedAt
+            ? moment.utc(plainItem.updatedAt).format('DD/MM/YYYY HH:mm')
+            : null;
+        
+          return plainItem;
+        });
+    
+        // --- Respuesta final ---
+        res.json({
+          total: response.totalItems,
+          per_page: limit,
+          last_page: response.totalPages,
+          current_page: response.currentPage,
+          from: offset + 1,
+          to: offset + formattedData.length,
+          data: formattedData,
+        });
+    
+      } catch (error) {
+        console.error(error);
+        res.status(400).json({
+          msg: 'Ha ocurrido un error, por favor intente más tarde',
+          error: error.message,
+        });
+      }
+  },
     
     async create(req, res) {
         const restarHoras = (fecha, horas) => {
