@@ -157,29 +157,16 @@ module.exports = {
         // Obtener fecha y hora actuales
         const currentDate = new Date();
         const formattedDate = currentDate.toLocaleDateString("en-CA");
-      
-        const isSaturdayAfter1PM =
-          currentDate.getDay() === 6 &&
-          (currentDate.getHours() >= 13);
         
         // Consultar días de asueto
         Asueto.findOne({ where: { fecha: formattedDate, estado: 1 } })
           .then((asueto) => {
-            const isAsueto = !!asueto;
       
             // Consultar categorías
             return Categoria.findAll({ where: condition }).then((data) => {
-              // Aplicar lógica para cobro_extra
-              const shouldUseExtraCharge =
-               isSaturdayAfter1PM || isAsueto;
       
               const modifiedData = data.map((categoria) => {
                 const categoriaData = categoria.toJSON()
-                if (shouldUseExtraCharge) {
-                    const precioNormal = Number(categoriaData.precio) || 0; // Asegurar que sea numérico
-                    const cobroExtra = Number(categoriaData.cobro_extra) || 0; // Asegurar que sea numérico
-                    categoriaData.precio = precioNormal + cobroExtra; // Sumar valores
-                  }
                 return categoriaData;
               });
       

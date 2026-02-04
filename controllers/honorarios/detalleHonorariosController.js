@@ -67,8 +67,8 @@ module.exports = {
       lugar: req.body.lugar,
       descripcion: req.body.descripcion || null,
       total: req.body.total,
-      createdAt: restarHoras(new Date(), 6),
-      updatedAt: restarHoras(new Date(), 6),
+      createdAt: restarHoras(new Date(), 0),
+      updatedAt: restarHoras(new Date(), 0),
       created_by: req.body.user,
       updated_by: req.body.user,
     };
