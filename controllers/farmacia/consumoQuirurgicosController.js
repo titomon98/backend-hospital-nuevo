@@ -56,7 +56,7 @@ module.exports = {
               }]
             },
             where: condition,
-            order: [[criterio, order]],
+            order: [[Quirurgico, 'nombre', 'ASC']],
             limit,
             offset
           });

@@ -532,7 +532,7 @@ module.exports = {
             });
 
           const cuentaSeleccionada = await Cuenta.findOne({
-            where: { id_expediente: id, estado: 1 },
+            where: { id_expediente: id },
             order: [['createdAt', 'DESC']],
           });
       

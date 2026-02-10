@@ -53,7 +53,7 @@ module.exports = {
               where: { anestesico: { [Op.eq]: 1 } } //Para el futuro, por una extraña razón las condiciones están al revés
             },
             where: condition,
-            order: [[criterio, order]],
+            order: [[Medicamento, 'nombre', 'ASC']],
             limit,
             offset,
           });
@@ -151,7 +151,7 @@ module.exports = {
             where: { anestesico: { [Op.eq]: 0 } } //Para el futuro, por una extraña razón las condiciones están al revés
           },
           where: condition,
-          order: [[criterio, order]],
+          order: [[Medicamento, 'nombre', 'ASC']],
           limit,
           offset,
         });

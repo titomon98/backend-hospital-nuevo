@@ -43,7 +43,7 @@ module.exports = {
             ]
           };
       
-          // 📘 Consulta
+          // Consulta
           const data = await Movimiento.findAndCountAll({
             include: {
               model: Comun,
@@ -56,7 +56,7 @@ module.exports = {
               ]
             },
             where: condition,
-            order: [[criterio, order]],
+            order: [[Comun, 'nombre', 'ASC']],
             limit,
             offset
           });

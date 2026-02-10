@@ -169,7 +169,26 @@ module.exports = {
             include: [{
               model: Presentacion,
               attributes: ['nombre']
-            }]
+            }],
+            where: { anestesico: { [Op.eq]: 1 } } //Para el futuro, por una extraña razón las condiciones están al revés
+        })
+        .then(data => {
+            res.send(data);
+        })
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
+
+    getAnestesicos (req, res) {
+        Medicamento.findAll({
+            attributes: ['id', 'nombre', 'existencia_actual', 'precio_venta'],
+            include: [{
+              model: Presentacion,
+              attributes: ['nombre']
+            }],
+            where: { anestesico: { [Op.eq]: 0 } }
         })
         .then(data => {
             res.send(data);
