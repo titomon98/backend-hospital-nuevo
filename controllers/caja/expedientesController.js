@@ -865,6 +865,9 @@ module.exports = {
                     model: Habitaciones,
                     as: 'habitacione', // Usa el alias correcto
                     attributes: ['id', 'numero'] // Especifica solo los atributos necesarios
+                },
+                {
+                    model: Cuenta
                 }
             ],
             where: condition,

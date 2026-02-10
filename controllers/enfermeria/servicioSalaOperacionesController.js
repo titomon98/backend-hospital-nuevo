@@ -155,6 +155,7 @@ module.exports = {
       id_cuenta: id_cuenta,
       createdAt: restarHoras(new Date(), 6),
       updatedAt: restarHoras(new Date(), 6),
+      created_by: req.body.user
     };
 
     console.log(datos)
@@ -201,9 +202,15 @@ module.exports = {
 
   async find(req, res) {
     const id = req.params.id;
-
     try {
-      const detalle = await SalaOperaciones.findByPk(id, { include: [ Cuenta] });
+      const detalle = await SalaOperaciones.findAll({
+        where: {
+          id_cuenta: {
+            [Op.eq]: id,
+          },
+        },
+        include: [Cuenta]
+      });
       if (!detalle) {
         return res.status(400).json({ mensaje: 'Detalle de sala operaciones no encontrado' });
       }
