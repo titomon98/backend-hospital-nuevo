@@ -7,6 +7,10 @@ const detallePagoCuentas = db.detalle_pago_cuentas;
 const Seguro = db.seguros;
 const PagoSeguro = db.lab_pago_seguros;
 const Op = db.Sequelize.Op;
+const MovimientoMedicamento = db.detalle_consumo_medicamentos;
+const MovimientoComun = db.detalle_consumo_comunes;
+const MovimientoQuirurgico = db.detalle_consumo_quirugicos;
+const Medicamento = db.medicamentos;
 
 module.exports = {
     create(req, res) {
@@ -633,6 +637,7 @@ module.exports = {
             order: [['createdAt', 'DESC']], // Buscar por id_expediente
             include: [{ model: db.expedientes, as: 'expediente' }] 
           });
+
           let cuentaSeleccionada = null;
           for (const cuentas of cuenta) {
             if (cuentas.dataValues.estado == 1) {
@@ -643,7 +648,7 @@ module.exports = {
           if (!cuentaSeleccionada) {
             return res.status(400).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
           }
-        console.log("Cuenta encontrada:", cuentaSeleccionada);
+            console.log("Cuenta encontrada:", cuentaSeleccionada);
           if (cuentaSeleccionada) {
             res.send(cuentaSeleccionada); // Enviar la cuenta encontrada
           } else {
@@ -653,7 +658,53 @@ module.exports = {
             console.error("Error en getSearch:", error);
           return res.status(500).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         }
-      }      
+      },
+
+    async getTotales(req, res) {
+        const idCuenta = req.query.id
+        if (idCuenta) {
+            const totalMedicamentos = (await MovimientoMedicamento.sum('total', {
+                include: {
+                    model: Medicamento,
+                    required: true,
+                    where: { anestesico: { [Op.eq]: 1 } } //Para el futuro, por una extraña razón las condiciones están al revés
+                  },
+            where: { 
+                id_cuenta: idCuenta
+            },
+            })) || 0;
+
+            const totalAnestesicos = (await MovimientoMedicamento.sum('total', {
+                include: {
+                    model: Medicamento,
+                    required: true,
+                    where: { anestesico: { [Op.eq]: 0 } } //Para el futuro, por una extraña razón las condiciones están al revés
+                  },
+                where: { 
+                    id_cuenta: idCuenta
+                }
+                })) || 0;
+            
+            const totalComun = await MovimientoComun.sum('total', {
+            where: { id_cuenta: idCuenta }
+            });
+            
+            const totalQuirurgico = await MovimientoQuirurgico.sum('total', {
+            where: { id_cuenta: idCuenta }
+            });
+    
+            const totales = {
+                totalMedicamentos: totalMedicamentos,
+                totalComun: totalComun,
+                totalQuirurgico: totalQuirurgico,
+                totalAnestesicos: totalAnestesicos
+            }
+            
+            return res.status(200).json(totales);
+        }
+        res.status(400).json({ msg: 'No se encontró ninguna cuenta para este expediente' });
+        
+    }
 
 };
 
