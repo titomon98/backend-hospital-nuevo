@@ -685,13 +685,13 @@ module.exports = {
                 }
                 })) || 0;
             
-            const totalComun = await MovimientoComun.sum('total', {
+            const totalComun = (await MovimientoComun.sum('total', {
             where: { id_cuenta: idCuenta }
-            });
+            })) || 0;
             
-            const totalQuirurgico = await MovimientoQuirurgico.sum('total', {
+            const totalQuirurgico = (await MovimientoQuirurgico.sum('total', {
             where: { id_cuenta: idCuenta }
-            });
+            }) || 0);
     
             const totales = {
                 totalMedicamentos: totalMedicamentos,
