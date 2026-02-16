@@ -666,14 +666,17 @@ module.exports = {
         if (idCuenta) {
             const totalMedicamentosResult = await MovimientoMedicamento.findOne({
                 attributes: [
-                    [fn('SUM', col('total')), 'total']
+                    [sequelize.fn('SUM', sequelize.col('detalle_consumo_medicamentos.total')), 'total']
                 ],
                 include: {
                     model: Medicamento,
                     required: true,
-                    where: { anestesico: 1 }
+                    where: { anestesico: 1 },
+                    attributes: []
                 },
-                where: { id_cuenta: idCuenta },
+                where: {
+                    id_cuenta: idCuenta
+                },
                 raw: true
             });
 
@@ -681,12 +684,13 @@ module.exports = {
 
             const totalAnestesicosResult = await MovimientoMedicamento.findOne({
                 attributes: [
-                    [fn('SUM', col('detalle_consumo_medicamentos.total')), 'total']
+                    [sequelize.fn('SUM', sequelize.col('detalle_consumo_medicamentos.total')), 'total']
                 ],
                 include: {
                     model: Medicamento,
                     required: true,
-                    where: { anestesico: 0 }
+                    where: { anestesico: 0 },
+                    attributes: []
                 },
                 where: {
                     id_cuenta: idCuenta
