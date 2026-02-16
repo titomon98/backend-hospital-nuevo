@@ -663,35 +663,13 @@ module.exports = {
     async getTotales(req, res) {
         const idCuenta = req.query.id
         if (idCuenta) {
-            const totalMedicamentos = (await MovimientoMedicamento.sum('total', {
-                include: {
-                    model: Medicamento,
-                    required: true,
-                    where: { anestesico: { [Op.eq]: 1 } } //Para el futuro, por una extraña razón las condiciones están al revés
-                  },
-            where: { 
-                id_cuenta: idCuenta
-            },
-            })) || 0;
+            const totalMedicamentos = 0;
 
-            const totalAnestesicos = (await MovimientoMedicamento.sum('total', {
-                include: {
-                    model: Medicamento,
-                    required: true,
-                    where: { anestesico: { [Op.eq]: 0 } } //Para el futuro, por una extraña razón las condiciones están al revés
-                  },
-                where: { 
-                    id_cuenta: idCuenta
-                }
-                })) || 0;
+            const totalAnestesicos = 0;
             
-            const totalComun = (await MovimientoComun.sum('total', {
-            where: { id_cuenta: idCuenta }
-            })) || 0;
+            const totalComun = 0;
             
-            const totalQuirurgico = (await MovimientoQuirurgico.sum('total', {
-            where: { id_cuenta: idCuenta }
-            }) || 0);
+            const totalQuirurgico = 0;
     
             const totales = {
                 totalMedicamentos: totalMedicamentos,
