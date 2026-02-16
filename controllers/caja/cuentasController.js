@@ -1,5 +1,6 @@
 'use strict'
 const Sequelize = require('sequelize');
+const { fn, col } = require('sequelize');
 const db = require("../../models");
 const Cuenta = db.cuentas;
 const Expediente = db.expedientes;
@@ -663,13 +664,45 @@ module.exports = {
     async getTotales(req, res) {
         const idCuenta = req.query.id
         if (idCuenta) {
-            const totalMedicamentos = 0;
+            const totalMedicamentosResult = await MovimientoMedicamento.findOne({
+                attributes: [
+                    [fn('SUM', col('total')), 'total']
+                ],
+                include: {
+                    model: Medicamento,
+                    required: true,
+                    where: { anestesico: 1 }
+                },
+                where: { id_cuenta: idCuenta },
+                raw: true
+            });
 
-            const totalAnestesicos = 0;
+            const totalMedicamentos = Number(totalMedicamentosResult?.total || 0);
+
+            const totalAnestesicosResult = await MovimientoMedicamento.findOne({
+                attributes: [
+                    [fn('SUM', col('detalle_consumo_medicamentos.total')), 'total']
+                ],
+                include: {
+                    model: Medicamento,
+                    required: true,
+                    where: { anestesico: 0 }
+                },
+                where: {
+                    id_cuenta: idCuenta
+                },
+                raw: true
+            });
+
+            const totalAnestesicos = Number(totalAnestesicosResult?.total || 0);
             
-            const totalComun = 0;
+            const totalComun = (await MovimientoComun.sum('total', {
+            where: { id_cuenta: idCuenta }
+            })) || 0;
             
-            const totalQuirurgico = 0;
+            const totalQuirurgico = (await MovimientoQuirurgico.sum('total', {
+            where: { id_cuenta: idCuenta }
+            }) || 0);
     
             const totales = {
                 totalMedicamentos: totalMedicamentos,
