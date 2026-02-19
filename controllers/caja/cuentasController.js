@@ -662,11 +662,13 @@ module.exports = {
 
     async getTotales(req, res) {
         const idCuenta = req.query.id
+        const area = req.params.area;
         if (idCuenta) {
 
             const condition = {
                 [Op.and]: [
                   { id_cuenta: { [Op.like]: `%${idCuenta}%` } },
+                  { descripcion: { [Op.like]: `%${area}%` } },
                   { estado: { [Op.eq]: 1 } }
                 ]
             };
@@ -690,8 +692,7 @@ module.exports = {
                 where: condition,
                 attributes: ['total']
             });
-            console.log("AQUI ESTAMOS")
-            console.log(dataMedicamento)
+
             let totalMedicamentos = 0.0
             let totalAnestesicos = 0.0
 
@@ -707,14 +708,16 @@ module.exports = {
             const totalComun = (await MovimientoComun.sum('total', {
                 where: { 
                     id_cuenta: idCuenta,
-                    estado: 1
+                    estado: 1,
+                    descripcion: { [Op.like]: `%${area}%` }
                 }
             })) || 0;
             
             const totalQuirurgico = (await MovimientoQuirurgico.sum('total', {
                 where: { 
                     id_cuenta: idCuenta,
-                    estado: 1
+                    estado: 1,
+                    descripcion: { [Op.like]: `%${area}%` }
                 }
             }) || 0);
     

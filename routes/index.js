@@ -158,7 +158,7 @@ module.exports = (app) => {
     router.put('/cuentas/activate', cuentasController.activate);
     router.put('/cuentas/deactivate', cuentasController.deactivate);
     router.get('/cuentas/getSearch', cuentasController.getSearch);
-    router.get('/cuentas/getTotales', cuentasController.getTotales);
+    router.get('/cuentas/getTotales/:area', cuentasController.getTotales);
     
     router.post('/cuentas/requestDiscount', cuentasController.DiscountRequest);
     router.get('/cuentas/listDiscount', cuentasController.listNoPayDiscountRequest);

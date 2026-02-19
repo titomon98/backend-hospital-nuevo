@@ -129,10 +129,26 @@ module.exports = {
                     
     },
 
-    asignarHabitacion(req, res){
+    async asignarHabitacion(req, res){
         let form = req.body.form
-        console.log(form)
-
+        await Habitaciones.update(
+            {
+                estado: 1,
+                ocupante: null,
+            },
+            { where: { 
+                ocupante: form.id
+            }}
+        )
+        await Habitaciones.update(
+            {
+                estado: 2,
+                ocupante: form.id,
+            },
+            { where: { 
+                id: form.habitacion
+            }}
+        )
         Expediente.update(
         { 
             estado: 1,
@@ -143,15 +159,6 @@ module.exports = {
             id: form.id
         } }).then(expediente => {
             console.log('HABITACION ', form.habitacion)
-            Habitaciones.update(
-                {
-                    estado: 2,
-                    ocupante: form.id,
-                },
-                { where: { 
-                    id: form.habitacion
-                }}
-            )
             res.send(expediente);
         }).catch(error => console.log(error))
     },

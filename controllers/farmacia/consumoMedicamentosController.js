@@ -16,8 +16,17 @@ module.exports = {
           const area = req.params.area;
           const page = parseInt(req.query.page) || 1;
           const size = parseInt(req.query.limit) || 20;
-          const criterio = req.query.criterio || 'id';
+          let criterio = req.query.criterio || 'id';
           const order = req.query.order || 'ASC';
+          
+          if (criterio === "total" || criterio === "cantidad" || criterio === "descripcion")
+          {
+            orderConfig = [[criterio, order]]
+          }
+          if (criterio === "medicamento.nombre") {
+            criterio = "nombre"
+          }
+          let orderConfig = [[Medicamento, criterio, order]]
       
           // --- Helpers ---
           const getPagination = (page, size) => {
@@ -53,7 +62,7 @@ module.exports = {
               where: { anestesico: { [Op.eq]: 1 } } //Para el futuro, por una extraña razón las condiciones están al revés
             },
             where: condition,
-            order: [[Medicamento, 'nombre', 'ASC']],
+            order: orderConfig,
             limit,
             offset,
           });
@@ -114,8 +123,17 @@ module.exports = {
         const area = req.params.area;
         const page = parseInt(req.query.page) || 1;
         const size = parseInt(req.query.limit) || 20;
-        const criterio = req.query.criterio || 'id';
+        let criterio = req.query.criterio || 'id';
         const order = req.query.order || 'ASC';
+        
+        if (criterio === "total" || criterio === "cantidad" || criterio === "descripcion")
+        {
+          orderConfig = [[criterio, order]]
+        }
+        if (criterio === "medicamento.nombre") {
+          criterio = "nombre"
+        }
+        let orderConfig = [[Medicamento, criterio, order]]
     
         // --- Helpers ---
         const getPagination = (page, size) => {
@@ -151,17 +169,15 @@ module.exports = {
             where: { anestesico: { [Op.eq]: 0 } } //Para el futuro, por una extraña razón las condiciones están al revés
           },
           where: condition,
-          order: [[Medicamento, 'nombre', 'ASC']],
+          order: orderConfig,
           limit,
           offset,
         });
     
         const response = getPagingData(data, page, limit);
     
-        // --- Formatear fechas ---
         const formattedData = data.rows.map(item => {
           const plainItem = item.get({ plain: true });
-          // 📘 Formatear cantidad: quitar .00 o .0 si no hay decimales significativos
           if (plainItem.cantidad !== undefined && plainItem.cantidad !== null) {
             const parsed = parseFloat(plainItem.cantidad);
             plainItem.cantidad =

@@ -18,8 +18,17 @@ module.exports = {
           // 📘 Parámetros con defaults
           const page = parseInt(req.query.page) || 1;
           const size = parseInt(req.query.limit) || 20;
-          const criterio = req.query.criterio || 'id';
+          let criterio = req.query.criterio || 'id';
           const order = req.query.order || 'ASC';
+          
+          if (criterio === "total" || criterio === "cantidad" || criterio === "descripcion")
+          {
+            orderConfig = [[criterio, order]]
+          }
+          if (criterio === "comune.nombre") {
+            criterio = "nombre"
+          }
+          let orderConfig = [[Comun, criterio, order]]
       
           // 📘 Helpers
           const getPagination = (page, size) => {
@@ -56,7 +65,7 @@ module.exports = {
               ]
             },
             where: condition,
-            order: [[Comun, 'nombre', 'ASC']],
+            order: orderConfig,
             limit,
             offset
           });

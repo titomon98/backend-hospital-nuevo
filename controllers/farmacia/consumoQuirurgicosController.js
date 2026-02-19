@@ -16,8 +16,17 @@ module.exports = {
           const area = req.params.area
           const page = parseInt(req.query.page) || 1;
           const size = parseInt(req.query.limit) || 20;
-          const criterio = req.query.criterio || 'id';
+          let criterio = req.query.criterio || 'id';
           const order = req.query.order || 'ASC';
+          
+          if (criterio === "total" || criterio === "cantidad" || criterio === "descripcion")
+          {
+            orderConfig = [[criterio, order]]
+          }
+          if (criterio === "quirurgico.nombre") {
+            criterio = "nombre"
+          }
+          let orderConfig = [[Quirurgico, criterio, order]]
       
           // --- Helpers ---
           const getPagination = (page, size) => {
@@ -56,7 +65,7 @@ module.exports = {
               }]
             },
             where: condition,
-            order: [[Quirurgico, 'nombre', 'ASC']],
+            order: orderConfig,
             limit,
             offset
           });
