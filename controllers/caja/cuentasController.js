@@ -663,13 +663,60 @@ module.exports = {
     async getTotales(req, res) {
         const idCuenta = req.query.id
         if (idCuenta) {
-            const totalMedicamentos = 0;
 
-            const totalAnestesicos = 0;
+            const condition = {
+                [Op.and]: [
+                  { id_cuenta: { [Op.like]: `%${idCuenta}%` } },
+                  { estado: { [Op.eq]: 1 } }
+                ]
+            };
+
+            const dataMedicamento = await MovimientoMedicamento.findAll({
+                include: {
+                  model: Medicamento,
+                  required: true,
+                  where: { anestesico: { [Op.eq]: 1 } } //Para el futuro, por una extraña razón las condiciones están al revés
+                },
+                where: condition,
+                attributes: ['total']
+            });
+
+            const dataAnestesico = await MovimientoMedicamento.findAll({
+                include: {
+                  model: Medicamento,
+                  required: true,
+                  where: { anestesico: { [Op.eq]: 0 } } //Para el futuro, por una extraña razón las condiciones están al revés
+                },
+                where: condition,
+                attributes: ['total']
+            });
+            console.log("AQUI ESTAMOS")
+            console.log(dataMedicamento)
+            let totalMedicamentos = 0.0
+            let totalAnestesicos = 0.0
+
+            dataMedicamento.forEach(element => {
+                totalMedicamentos += parseFloat(element.total)
+            });
+
+            dataAnestesico.forEach(element => {
+                totalAnestesicos += parseFloat(element.total)
+            });
+
             
-            const totalComun = 0;
+            const totalComun = (await MovimientoComun.sum('total', {
+                where: { 
+                    id_cuenta: idCuenta,
+                    estado: 1
+                }
+            })) || 0;
             
-            const totalQuirurgico = 0;
+            const totalQuirurgico = (await MovimientoQuirurgico.sum('total', {
+                where: { 
+                    id_cuenta: idCuenta,
+                    estado: 1
+                }
+            }) || 0);
     
             const totales = {
                 totalMedicamentos: totalMedicamentos,

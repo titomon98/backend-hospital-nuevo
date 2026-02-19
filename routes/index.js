@@ -90,6 +90,7 @@ const detallePersonalController = require('../controllers/medicos/detallePersona
 const recetaController = require('../controllers/paciente/recetaController')
 const evolucionController = require('../controllers/paciente/evolucionController')
 const ordenController = require('../controllers/paciente/ordenController')
+const notasController = require('../controllers/paciente/notasController');
 
 //CARPETA DE EMPLEADOS
 const detalle_permisosController = require('../controllers/empleados/detalle_permisosController');
@@ -114,7 +115,7 @@ const reportesFarmaciaController = require('../controllers/reportes/reportesFarm
 const reportesEnfermeriaController = require('../controllers/reportes/reportesEnfermeriaController')
 const reportesExamenesController = require('../controllers/reportes/reportesExamenesController')
 const reportesMedicosController = require('../controllers/reportes/reportesMedicosController')
-const reportesPacientesController = require('../controllers/reportes/reportesPacientesController')
+const reportesPacientesController = require('../controllers/reportes/reportesPacientesController');
 
 
 //RUTAS
@@ -571,6 +572,15 @@ module.exports = (app) => {
     router.put('/evoluciones/deactivate', evolucionController.deactivate);
     router.get('/evoluciones/getSearch', evolucionController.getSearch);
     router.get('/evoluciones/getId', evolucionController.getId)
+
+    //notas
+    router.get('/notas/list', notasController.list);
+    router.post('/notas/create', notasController.create);
+    router.put('/notas/update', notasController.update);
+    router.put('/notas/activate', notasController.activate);
+    router.put('/notas/deactivate', notasController.deactivate);
+    router.get('/notas/getSearch', notasController.getSearch);
+    router.get('/notas/getId', notasController.getId)
 
     //CARPETA DE EMPLEADOS
     
