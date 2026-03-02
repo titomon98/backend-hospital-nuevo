@@ -247,12 +247,6 @@ module.exports = {
     },
 
     getAll (req, res) {
-        var busqueda = req.query.tipo;
-        if (busqueda === '1') {
-            return Habitaciones.findAll()
-            .then(tipo => res.status(200).send(tipo))
-            .catch(error => res.status(400).send(error));
-        }
         return Habitaciones.findAll()
         .then(tipo => res.status(200).send(tipo))
         .catch(error => res.status(400).send(error));

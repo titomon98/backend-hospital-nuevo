@@ -146,15 +146,15 @@ module.exports = {
         let costo = 0
         const fechaString = form.fecha + " " + form.hora
         const fecha = new Date(fechaString);
-        if (form.tipo_paciente === '0' && form.estudioDeSueno === 0) {
-            costo = habitacion.costo_diario
-        } else if (form.tipo_paciente === '0' && form.estudioDeSueno === 1) {
-            costo = habitacion.costo_estudio_de_sueno
-        } else if (form.tipo_paciente === '0' && form.estudioDeSueno === 2) {
-            costo = habitacion.costo_quimioterapia
-        }  else if (form.tipo_paciente === '1') {
+        if (form.tipo_paciente === '1' || form.tipo_paciente === 1) {
             costo = habitacion.costo_ambulatorio
-        } 
+        } else if (form.tipo_paciente === '0' && form.estudioDeSueno === 0) {
+            costo = habitacion.costo_diario
+        } else if (form.tipo_paciente === '0' && (form.estudioDeSueno === '1' || form.estudioDeSueno === 1)) {
+            costo = habitacion.costo_estudio_de_sueno
+        } else if (form.tipo_paciente === '0' && (form.estudioDeSueno === '2' || form.estudioDeSueno === 2)) {
+            costo = habitacion.costo_quimioterapia
+        }  
         const createHabitacion = {
             id_cuenta: form.cuenta,
             tipo_habitacion: habitacion.tipo,
