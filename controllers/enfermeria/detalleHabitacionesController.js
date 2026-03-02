@@ -1,150 +1,102 @@
 'use strict'
 const Sequelize     = require('sequelize');
 const db = require("../../models");
-const Contrato = db.contratos;
+const DetalleHabitaciones = db.detalle_habitaciones;
+const Cuenta = db.cuentas
+const Expediente = db.expedientes
 const Op = db.Sequelize.Op;
+const moment = require('moment');
 
 module.exports = {
-    create(req, res) {
-        let form = req.body.form
-        const datos = {
-            contrato: form.contrato,
-            nombre: form.nombre,
-            estado: 1
-        };
-
-        Contrato.create(datos)
-        .then(tipo => {
-            res.send(tipo);
-        })
-        .catch(error => {
-            console.log(error)
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
-                    
-    },
-
- 
-    list(req, res) {
+    async list(req, res) {
         const getPagingData = (data, page, limit) => {
             const { count: totalItems, rows: referido } = data;
-
             const currentPage = page ? +page : 0;
             const totalPages = Math.ceil(totalItems / limit);
-
             return { totalItems, referido, totalPages, currentPage };
         };
-
-
         const getPagination = (page, size) => {
             const limit = size ? +size : 2;
             const offset = page ? page * limit : 0;
-
             return { limit, offset };
         };
-
-        const busqueda=req.query.search;
-        const page=req.query.page-1;
-        const size=req.query.limit;
-        const criterio=req.query.criterio;
-        const order=req.query.order;
-
-
-        const { limit, offset } = getPagination(page, size);
-
-        var condition = busqueda ? { [Op.or]: [{ contrato: { [Op.like]: `%${busqueda}%` } }] } : null ;
-
-        Contrato.findAndCountAll({ where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
-        .then(data => {
-
-        console.log('data: '+JSON.stringify(data))
-        const response = getPagingData(data, page, limit);
-
-        console.log('response: '+JSON.stringify(response))
-        res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
-        })
-        .catch(error => {
-            console.log(error)
+        
+        const { page = 1, size = 20, criterio = 'createdAt', order = 'DESC' , fechaDesde, fechaHasta} = req.query;
+        const Page=req.query.page-1;
+        const Size=req.query.limit;
+        const Criterio = req.query.criterio;
+        const Order = req.query.order;
+        const FechaDesde = req.query.fechaDesde;
+        const FechaHasta = req.query.fechaHasta; 
+        const { limit, offset } = getPagination(Page, Size);
+    
+        try {
+            const whereClause = {};
+    
+            if (FechaDesde && FechaHasta) {
+                whereClause.createdAt = {
+                    [Op.between]: [
+                        moment(FechaDesde).startOf('day').toDate(), 
+                        moment(FechaHasta).endOf('day').toDate()
+                    ]
+                };
+            }
+            const data = await DetalleHabitaciones.findAndCountAll({
+                include: [
+                    { 
+                      model: Cuenta, 
+                      attributes: ['numero'],
+                      include: [
+                        {
+                          model: Expediente, 
+                          attributes: ['nombres', 'apellidos']
+                        }
+                      ] 
+                    }
+                ],
+                attributes: ['id', 'tipo_habitacion', 'ingreso', 'costo_base', 'createdAt', 'created_by', 'updated_by', 'estado'],
+                order: [[Criterio, Order]], // Ordenamos por createdAt DESC
+                limit,
+                offset,
+                where: whereClause 
+            }); 
+            const response = getPagingData(data, Page, limit);
+            if (response.referido) {
+                const dataResponse = response.referido.map(item => ({
+                    id: item.id,
+                    numero_cuenta: item.cuenta.numero,
+                    costo_base: item.costo_base,
+                    ingreso: item.ingreso,
+                    tipo_habitacion: item.tipo_habitacion,
+                    nombre_completo: item.cuenta.expediente.nombres + ' ' + item.cuenta.expediente.apellidos,
+                    created_by: item.created_by,
+                    updated_by: item.updated_by,
+                    estado: item.estado
+                }));
+    
+                response.referido = dataResponse;
+            } else {
+                // Manejar el caso en que response.referido es undefined
+                response.referido = []; // O enviar una respuesta adecuada al frontend
+            }
+            console.log(response.referido)
+            res.send({total:response.totalItems,last_page:response.totalPages, current_page: Page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
+        } catch (error) {
+            console.log(error);
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
-    },
-
-
-    find (req, res) {
-        const id = req.params.id;
-
-        return Contrato.findByPk(id)
-        .then(marca => res.status(200).send(marca))
-        .catch(error => res.status(400).send(error))
-    },
-
-    update (req, res) {
-        let form = req.body.form
-        Contrato.update(
-            { 
-                contrato: form.contrato,
-                nombre: form.nombre,
-            },
-            { where: { 
-                id: form.id 
-            } }
-        )
-        .then(marca => res.status(200).send('El registro ha sido actualizado'))
-        .catch(error => {
-            console.log(error)
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
-    },
-
-    activate (req, res) {
-        Contrato.update(
-            { estado: 1 },
-            { where: { 
-                id: req.body.id 
-            } }
-        )
-        .then(marca => res.status(200).send('El registro ha sido activado'))
-        .catch(error => {
-            console.log(error)
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
-    },
-
-    deactivate (req, res) {
-        Contrato.update(
-            { estado: 0 },
-            { where: { 
-                id: req.body.id 
-            } }
-        )
-        .then(marca =>res.status(200).send('El registro ha sido desactivado'))
-        .catch(error => {
-            console.log(error)
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
-    },
-    get (req, res) {
-        Contrato.findAll({attributes: ['id', 'contrato']})
-        .then(data => {
-            res.send(data);
-        })
-        .catch(error => {
-            console.log(error)
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
-    },
-    getSearch (req, res) {
-        var busqueda = req.query.search;
-        var condition = busqueda?{ [Op.or]:[ {contrato: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:1}] } : {estado:1} ;
-        Contrato.findAll({
-            where: condition})
-        .then(data => {
-            res.send(data);
-        })
-        .catch(error => {
-            console.log(error)
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
-    }
+        }
+      },
+    
+      async deactivate(req, res) {
+        const id_honorario = req.body.delete.id
+        const responsable = req.body.delete.responsable
+    
+        const honorario = await DetalleHabitaciones.findByPk(id_honorario);
+        honorario.estado = 0
+        honorario.updated_by = responsable
+        await honorario.save();
+    
+        return res.send('Cobro de habitación eliminado correctamente')
+      } 
 };
 

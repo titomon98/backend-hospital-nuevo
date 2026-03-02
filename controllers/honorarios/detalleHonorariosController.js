@@ -6,6 +6,8 @@ const DetalleHonorarios = db.detalle_honorarios; // Asegúrate de que el nombre 
 const Medico = db.medicos;
 const Cuenta = db.cuentas;
 const Op = db.Sequelize.Op;
+const Expediente = db.expedientes;
+const moment = require('moment');
 
 // ESTADOS DE DETALLE
 // SIN PAGAR = 1
@@ -69,36 +71,13 @@ module.exports = {
       total: req.body.total,
       createdAt: restarHoras(new Date(), 0),
       updatedAt: restarHoras(new Date(), 0),
-      created_by: req.body.user,
-      updated_by: req.body.user,
+      created_by: req.body.user
     };
 
     try {
       const nuevoDetalle = await DetalleHonorarios.create(datos);
       await cuentaSeleccionada.update({ total: nuevoTotal});
       res.send(nuevoDetalle);
-    } catch (error) {
-      console.log(error);
-      return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-    }
-  },
-
-  async list (req, res) {
-    const { page = 1, size = 10, criterio = 'id', order = 'ASC', search = '' } = req.query;
-    const { limit, offset } = getPagination(page - 1, size);
-    const condition = search ? { descripcion: { [Op.like]: `%${search}%` } } : {};
-  
-    try {
-      const data = await DetalleHonorarios.findAndCountAll({
-        include: [{ model: Medico, required: true }],
-        where: condition,
-        order: [[criterio, order]],
-        limit,
-        offset,
-      });
-  
-      const response = getPagingData(data, page - 1, limit);
-      res.send(response);
     } catch (error) {
       console.log(error);
       return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
@@ -150,22 +129,94 @@ module.exports = {
     }
   },
 
-  async update(req, res) {
-    let form = req.body.form;
+  async list(req, res) {
+    const getPagingData = (data, page, limit) => {
+        const { count: totalItems, rows: referido } = data;
+        const currentPage = page ? +page : 0;
+        const totalPages = Math.ceil(totalItems / limit);
+        return { totalItems, referido, totalPages, currentPage };
+    };
+    const getPagination = (page, size) => {
+        const limit = size ? +size : 2;
+        const offset = page ? page * limit : 0;
+        return { limit, offset };
+    };
+    
+    const { page = 1, size = 20, criterio = 'createdAt', order = 'DESC' , fechaDesde, fechaHasta} = req.query;
+    const Page=req.query.page-1;
+    const Size=req.query.limit;
+    const Criterio = req.query.criterio;
+    const Order = req.query.order;
+    const FechaDesde = req.query.fechaDesde;
+    const FechaHasta = req.query.fechaHasta; 
+    const { limit, offset } = getPagination(Page, Size);
 
     try {
-      await DetalleHonorarios.update(
-        {
-          total: form.total,
-          updatedAt: new Date(),
-          updated_by: req.body.user,
-        },
-        { where: { id: form.id } }
-      );
-      res.status(200).send('El registro ha sido actualizado');
+        const whereClause = {};
+
+        if (FechaDesde && FechaHasta) {
+            whereClause.createdAt = {
+                [Op.between]: [
+                    moment(FechaDesde).startOf('day').toDate(), 
+                    moment(FechaHasta).endOf('day').toDate()
+                ]
+            };
+        }
+        const data = await DetalleHonorarios.findAndCountAll({
+            include: [
+                { 
+                  model: Cuenta, 
+                  attributes: ['numero'],
+                  include: [
+                    {
+                      model: Expediente, 
+                      attributes: ['nombres', 'apellidos']
+                    }
+                  ] 
+                },
+                { model: Medico, attributes: ['id', 'nombre'] }
+            ],
+            attributes: ['id', 'descripcion', 'total', 'createdAt', 'created_by', 'updated_by', 'estado'],
+            order: [[Criterio, Order]], // Ordenamos por createdAt DESC
+            limit,
+            offset,
+            where: whereClause 
+        }); 
+        const response = getPagingData(data, Page, limit);
+        if (response.referido) {
+            const dataResponse = response.referido.map(item => ({
+                id: item.id,
+                numero_cuenta: item.cuenta.numero,
+                nombre_medico: item.medico.nombre,
+                total: item.total,
+                fecha_honorario: item.createdAt,
+                nombre_completo: item.cuenta.expediente.nombres + ' ' + item.cuenta.expediente.apellidos,
+                created_by: item.created_by,
+                updated_by: item.updated_by,
+                estado: item.estado
+            }));
+
+            response.referido = dataResponse;
+        } else {
+            // Manejar el caso en que response.referido es undefined
+            response.referido = []; // O enviar una respuesta adecuada al frontend
+        }
+        res.send({total:response.totalItems,last_page:response.totalPages, current_page: Page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
     } catch (error) {
-      console.log(error);
-      return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        console.log(error);
+        return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
     }
   },
+
+  async deactivate(req, res) {
+    const id_honorario = req.body.delete.id
+    const responsable = req.body.delete.responsable
+
+    const honorario = await DetalleHonorarios.findByPk(id_honorario);
+    honorario.estado = 0
+    honorario.updated_by = responsable
+    await honorario.save();
+
+    return res.send('Honorario eliminado correctamente')
+  }    
 };

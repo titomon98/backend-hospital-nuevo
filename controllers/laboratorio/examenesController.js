@@ -45,7 +45,7 @@ module.exports = {
                 total_pagado: 0,
                 pendiente_de_pago: form.total,
                 id_expediente: form.id_expediente,
-                createdAt: restarHoras(new Date(), 6),
+                createdAt: new Date(),
                 updatedAt: restarHoras(new Date(), 6),
                 fecha_corte: null,
                 descuento: 0,
@@ -82,7 +82,7 @@ module.exports = {
                     id_lab_cuentas: cuentaCreada.id,
                     created_by: req.body.user,
                     updated_by: req.body.user,
-                    createdAt: restarHoras(new Date(), 6),
+                    createdAt: new Date(),
                     updatedAt: restarHoras(new Date(), 6),
                   };
                   return Examenes.create(datosExamen);
@@ -128,7 +128,7 @@ module.exports = {
                 total_pagado: 0,
                 pendiente_de_pago: form.total,
                 id_expediente: expediente.id,
-                createdAt: restarHoras(new Date(), 6),
+                createdAt: new Date(),
                 updatedAt: restarHoras(new Date(), 6),
                 fecha_corte: null,
                 created_by: req.body.user,
@@ -163,7 +163,7 @@ module.exports = {
                     estado: 1,
                     id_cuenta: cuentaCreada.id,
                     id_lab_cuentas: cuentaCreada.id,
-                    createdAt: restarHoras(new Date(), 6),
+                    createdAt: new Date(),
                     updatedAt: restarHoras(new Date(), 6),
                     created_by: req.body.user,
                     updated_by: req.body.user,
@@ -192,7 +192,7 @@ module.exports = {
                 total_pagado: 0,
                 pendiente_de_pago: 0,
                 id_expediente: form.id_expediente,
-                createdAt: restarHoras(new Date(), 6),
+                createdAt: new Date(),
                 updatedAt: restarHoras(new Date(), 6),
                 fecha_corte: null,
                 created_by: req.body.user,
@@ -229,7 +229,7 @@ module.exports = {
                     id_lab_cuentas: cuentaCreada.id,
                     created_by: req.body.user,
                     updated_by: req.body.user,
-                    createdAt: restarHoras(new Date(), 6),
+                    createdAt: new Date(),
                     updatedAt: restarHoras(new Date(), 6),
                   };
                   return Examenes.create(datosExamen);
@@ -274,7 +274,7 @@ module.exports = {
                 total_pagado: 0,
                 pendiente_de_pago: 0,
                  id_expediente: expediente.id,
-                createdAt: restarHoras(new Date(), 6),
+                createdAt: new Date(),
                 updatedAt: restarHoras(new Date(), 6),
                 fecha_corte: null,
                 descuento: 0,
@@ -311,7 +311,7 @@ module.exports = {
                     id_lab_cuentas: cuentaCreada.id,
                     created_by: req.body.user,
                     updated_by: req.body.user,
-                    createdAt: restarHoras(new Date(), 6),
+                    createdAt: new Date(),
                     updatedAt: restarHoras(new Date(), 6),
                   };
                   return Examenes.create(datosExamen);

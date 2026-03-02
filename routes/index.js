@@ -28,6 +28,7 @@ const cajaChicaController = require('../controllers/caja/cajaChicaController')
 
 //CARPETA DE ENFERMERIA
 const habitacionesController = require('../controllers/enfermeria/habitacionesController')
+const detalleHabitacionesController = require('../controllers/enfermeria/detalleHabitacionesController')
 const pedidosController = require('../controllers/enfermeria/pedidosController')
 const detallePedidosController = require('../controllers/enfermeria/detallePedidosController')
 const servicioSalaOperacionesController = require('../controllers/enfermeria/servicioSalaOperacionesController')
@@ -198,6 +199,7 @@ module.exports = (app) => {
 
     //expedientes
     router.get('/expedientes/list', expedientesController.list);
+    router.get('/expedientes/listAsignar', expedientesController.listAsignar);
     router.get('/expedientes/listPanel', expedientesController.listPanel);
     router.post('/expedientes/create', expedientesController.create);
     router.post('/expedientes/createEnfermeria', expedientesController.createFromEnfermeria);
@@ -229,6 +231,9 @@ module.exports = (app) => {
     router.get('/habitaciones/getSearch', habitacionesController.getSearch);
     router.get('/habitaciones/get', habitacionesController.get);
     router.get('/habitaciones/getAll', habitacionesController.getAll);
+
+    router.get('/detalle_cobros_habitacion/list', detalleHabitacionesController.list);
+    router.put('/detalle_cobros_habitacion/deactivate', detalleHabitacionesController.deactivate)
 
     //servicios
     router.get('/servicios/list', serviciosController.list);
@@ -433,7 +438,8 @@ module.exports = (app) => {
     router.get('/detalle_honorarios', detalleHonorariosController.list);
     router.get('/detalle_honorarios/getId/:id', detalleHonorariosController.find);
     router.get('/detalle_honorarios/getSearch', detalleHonorariosController.getSearch);
-    router.put('/detalle_honorarios/:id', detalleHonorariosController.update);
+    router.get('/detalle_honorarios/list', detalleHonorariosController.list);
+    router.put('/detalle_honorarios/deactivate', detalleHonorariosController.deactivate)
 
     //CARPETA DE INVENTARIO
     //alimentacion

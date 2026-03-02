@@ -6,14 +6,14 @@ const {
 module.exports = (sequelize, DataTypes) => {
   class cuenta extends Model {
     static associate(models) {
-        cuenta.belongsTo(models.expedientes, {
-            foreignKey: "id_expediente",
-        });
-        cuenta.hasMany(models.consumos, {
-            foreignKey: "id_cuenta",
-        });
-        cuenta.hasMany(models.detalle_pago_cuentas, {
+      cuenta.belongsTo(models.expedientes, {
+          foreignKey: "id_expediente",
+      });
+      cuenta.hasMany(models.consumos, {
           foreignKey: "id_cuenta",
+      });
+      cuenta.hasMany(models.detalle_pago_cuentas, {
+        foreignKey: "id_cuenta",
       });
     }
   };
