@@ -8,6 +8,7 @@ const Medicos = db.medicos
 const Logs = db.log_traslados;
 const DetalleCuentas = db.detalle_cuentas;
 const Op = db.Sequelize.Op;
+const DetalleHabitaciones = db.detalle_habitaciones;
 
 module.exports = {
     create(req, res) {
@@ -102,7 +103,7 @@ module.exports = {
                 destino: lugar,
                 motivo: form.motivo,
                 id_habitacionDestino : null,
-                createdAt: restarHoras(new Date(), 6),
+                createdAt: new Date(),
                 updatedAt: restarHoras(new Date(), 6),
                 created_by: req.body.user,
             })
@@ -130,7 +131,42 @@ module.exports = {
     },
 
     async asignarHabitacion(req, res){
+        const restarHoras = (fecha, horas) => {
+            let nuevaFecha = new Date(fecha); // Crear una nueva instancia de fecha
+            nuevaFecha.setHours(nuevaFecha.getHours() - horas);
+            return nuevaFecha;
+          };
         let form = req.body.form
+        console.log(req.body)
+        const habitacion = await Habitaciones.findOne({
+            where: {
+              id: form.habitacion
+            }
+          });
+        let costo = 0
+        const fechaString = form.fecha + " " + form.hora
+        const fecha = new Date(fechaString);
+        if (form.tipo_paciente === '0' && form.estudioDeSueno === 0) {
+            costo = habitacion.costo_diario
+        } else if (form.tipo_paciente === '0' && form.estudioDeSueno === 1) {
+            costo = habitacion.costo_estudio_de_sueno
+        } else if (form.tipo_paciente === '0' && form.estudioDeSueno === 2) {
+            costo = habitacion.costo_quimioterapia
+        }  else if (form.tipo_paciente === '1') {
+            costo = habitacion.costo_ambulatorio
+        } 
+        const createHabitacion = {
+            id_cuenta: form.cuenta,
+            tipo_habitacion: habitacion.tipo,
+            estado: 1,
+            costo_base: costo,
+            ingreso: fecha,
+            salida: null,
+            createdAt: new Date(),
+            updatedAt: restarHoras(new Date(), 6),
+            created_by: req.body.user
+        }
+        await DetalleHabitaciones.create(createHabitacion)
         await Habitaciones.update(
             {
                 estado: 1,
@@ -281,6 +317,83 @@ module.exports = {
                     model: Habitaciones,
                     as: 'habitacione', // Usa el alias correcto
                     attributes: ['id', 'numero'] // Especifica solo los atributos necesarios
+                }
+            ],
+            where: condition,
+            order: [[criterio || 'id', order || 'ASC']], // Se asegura de que criterio y order existan
+            limit,
+            offset
+        })
+        .then(data => {
+            console.log('data: ', JSON.stringify(data, null, 2));
+            const response = getPagingData(data, page, limit);
+        
+            console.log('response: ', JSON.stringify(response, null, 2));
+            res.send({
+                total: response.totalItems,
+                last_page: response.totalPages,
+                current_page: page + 1,
+                from: response.currentPage,
+                to: response.totalPages,
+                data: response.referido
+            });
+        })
+        .catch(error => {
+            console.error('Error en la consulta:', error);
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+        
+    },
+
+    listAsignar (req, res) {
+        const getPagingData = (data, page, limit) => {
+            const { count: totalItems, rows: referido } = data;
+
+            const currentPage = page ? +page : 0;
+            const totalPages = Math.ceil(totalItems / limit);
+
+            return { totalItems, referido, totalPages, currentPage };
+        };
+
+
+        const getPagination = (page, size) => {
+            const limit = size ? +size : 2;
+            const offset = page ? page * limit : 0;
+
+            return { limit, offset };
+        };
+
+        const busqueda=req.query.search;
+        const page=req.query.page-1;
+        const size=req.query.limit;
+        const criterio=req.query.criterio;
+        const order=req.query.order;
+
+
+        const { limit, offset } = getPagination(page, size);
+
+        var condition = busqueda
+        ? { 
+            [Op.or]: [
+                { nombres: { [Op.like]: `%${busqueda}%` }, estado: { [Sequelize.Op.in]: [1, 3, 4, 5] } }
+            ] 
+            } 
+        : { estado: { [Sequelize.Op.in]: [1, 3, 4, 5] } };
+
+        Expediente.findAndCountAll({
+            include: [
+                {
+                    model: Medicos,
+                    as: 'medico', // Usa el alias que definiste en la relación
+                    attributes: ['id', 'nombre'] // Especifica solo los atributos necesarios
+                },
+                {
+                    model: Habitaciones,
+                    as: 'habitacione', // Usa el alias correcto
+                    attributes: ['id', 'numero'] // Especifica solo los atributos necesarios
+                },
+                {
+                    model: Cuenta,
                 }
             ],
             where: condition,
@@ -631,7 +744,7 @@ module.exports = {
             destino: dat[req.body.estado],
             motivo: dat[req.body.motivo],
             id_habitacionDestino : parseInt(req.body.habitaciones),
-            createdAt: restarHoras(new Date(), 6),
+            createdAt: new Date(),
             updatedAt: restarHoras(new Date(), 6),
             created_by: req.body.user,
         })
@@ -717,7 +830,7 @@ module.exports = {
           })
           .catch(err => {
             console.error('Error al obtener logs:', err);
-            return res.status(4003).json({ msg: 'No se encontró un log que coincida con los datos' });
+            return res.status(403).json({ msg: 'No se encontró un log que coincida con los datos' });
           });
         }
         

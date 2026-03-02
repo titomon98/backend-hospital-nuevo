@@ -153,7 +153,7 @@ module.exports = {
       horas: req.body.horas + ':' + req.body.minutos,
       total: Total,
       id_cuenta: id_cuenta,
-      createdAt: restarHoras(new Date(), 6),
+      createdAt: new Date(),
       updatedAt: restarHoras(new Date(), 6),
       created_by: req.body.user
     };

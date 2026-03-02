@@ -24,7 +24,7 @@ module.exports = {
             nit: form.medico.nit,
             cantidad_pagada: form.cantidad,
             fecha_creacion: restarHoras(new Date(), 6),
-            createdAt: restarHoras(new Date(), 6),
+            createdAt: new Date(),
             updatedAt: restarHoras(new Date(), 6),
             created_by: req.body.user
         };

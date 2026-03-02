@@ -65,7 +65,7 @@ module.exports = {
                 id_tipo: form.id_tipo,
                 resultado: form.resultado,
                 alarma: alarma,  // Guardamos la alarma si existe
-                createdAt: restarHoras(new Date(), 6),
+                createdAt: new Date(),
                 updatedAt: restarHoras(new Date(), 6)
             };
 
