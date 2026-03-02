@@ -553,6 +553,7 @@ module.exports = {
             consumos,
             consumosComunes,
             consumosMedicamentos,
+            consumosAnestesicos,
             consumosQuirurgicos,
             examenes,
             salaOperaciones,
@@ -579,7 +580,16 @@ module.exports = {
                     id_cuenta: id_cuenta,
                     estado: 1
                   },
-              include: [{ model: Medicamento, attributes: ['nombre'] }],
+              include: [{ model: Medicamento, attributes: ['nombre'], where: { anestesico: { [Op.eq]: 1 } } }],
+              attributes: ['id', 'descripcion', 'cantidad', 'precio_venta', 'total', 'estado', 'createdAt', 'updatedAt'],
+            }),
+
+            MovimientoMedicamentos.findAll({
+                where: {
+                    id_cuenta: id_cuenta,
+                    estado: 1
+                  },
+              include: [{ model: Medicamento, attributes: ['nombre'], where: { anestesico: { [Op.eq]: 0 } } }],
               attributes: ['id', 'descripcion', 'cantidad', 'precio_venta', 'total', 'estado', 'createdAt', 'updatedAt'],
             }),
       
@@ -684,6 +694,7 @@ module.exports = {
             consumos,
             consumosComunes,
             consumosMedicamentos,
+            consumosAnestesicos,
             consumosQuirurgicos,
             examenes,
             salaOperaciones,

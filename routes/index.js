@@ -145,7 +145,6 @@ module.exports = (app) => {
     router.get('/consumos/historial/:id',consumosController.historialCuenta);
     router.get('/consumos/sumario/:id',consumosController.getDataSumario);
 
-
     //cuentas
     router.get('/cuentas/list', cuentasController.list);
     router.get('/cuentas/payList', cuentasController.listPay);
