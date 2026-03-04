@@ -130,6 +130,125 @@ module.exports = {
                     
     },
 
+    createEmergencia(req, res) {
+        const restarHoras = (fecha, horas) => {
+            let nuevaFecha = new Date(fecha);
+            nuevaFecha.setHours(nuevaFecha.getHours() - horas);
+            return nuevaFecha;
+        };
+        let form = req.body.form
+        const today =restarHoras(new Date(), 6);
+        let status = 0
+        let lugar = ''
+        if (form.selectedOption == 'hospi') {
+            status = 1
+            lugar = 'Hospitalización'
+        } else if (form.selectedOption == 'emergencia') {
+            status = 5
+            lugar = 'Emergencia'
+        } else if (form.selectedOption == 'quirofano') {
+            status = 3
+            lugar = 'Quirófano'
+        } else if (form.selectedOption == 'intensivo') {
+            status = 4
+            lugar = 'Intensivos'
+        }
+        let datos = {
+            nombres: form.nombre,
+            apellidos: form.apellidos,
+            expediente: 'EXPEDIENTE INCOMPLETO',
+            primer_ingreso: today,
+            casada: form.casada,
+            nacimiento: form.nacimiento,
+            cui: form.cui,
+            nacionalidad: form.nacionalidad,
+            telefono: form.telefono,
+            direccion: form.direccion,
+            genero: form.generos,
+            nombre_encargado: form.nombre_encargado,
+            contacto_encargado: form.contacto_encargado,
+            cui_encargado: form.cui_encargado,
+            parentesco_encargado: form.parentesco_encargado,
+            edad_encargado: form.edad_encargado,
+            estado: status,
+            estado_civil: form.estado_civil,
+            profesion: form.profesion,
+            nombre_padre: form.nombre_padre,
+            nombre_madre: form.nombre_madre,
+            lugar_nacimiento: form.lugar_nacimiento,
+            estado_civil_encargado: form.estado_civil_encargado,
+            profesion_encargado: form.profesion_encargado,
+            direccion_encargado: form.direccion_encargado,
+            nombre_conyuge: form.nombre_conyuge,
+            direccion_conyuge: form.direccion_conyuge,
+            telefono_conyuge: form.telefono_conyuge,
+            fecha_ingreso_reciente: restarHoras(new Date(), 6),
+            created_by: req.body.user,
+        };
+
+        if (form.selectedOption == 'emergencia') {
+            datos.fecha_ingreso_reciente = form.fecha
+            datos.hora_ingreso_reciente = form.hora
+            datos.id_medico = form.assignedDoctor
+        }
+
+        Expediente.create(datos)
+        .then(expediente => {
+            const expediente_id = expediente.id
+            let datos_cuenta = {
+                numero: 1,
+                fecha_ingreso: today,
+                motivo: form.motivo,
+                descripcion: null,
+                otros: null,
+                total: 0.0,
+                id_expediente: expediente_id,
+                estado: 1,
+                created_by: req.body.user,
+                descuento: 0.0,
+                solicitud_descuento: 3
+            }
+            Cuenta.create(datos_cuenta)
+                .then(res=>{
+                    res.update({ numero: res.id });
+                }) 
+                .catch(err=>
+                    console.log(err)
+                )
+            //Agregando log inicial de ingreso de paciente
+            Logs.create({
+                id_expediente: expediente_id,
+                origen: 'Recién ingresado',
+                destino: lugar,
+                motivo: form.motivo,
+                id_habitacionDestino : null,
+                createdAt: new Date(),
+                updatedAt: restarHoras(new Date(), 6),
+                created_by: req.body.user,
+            })
+
+            //Actualizar expediente
+            const year = today.getFullYear();
+            let resto
+            var idFormateado = String(expediente_id).padStart(4, '0');
+            resto = year + '-' + idFormateado
+            Expediente.update(
+                {
+                    expediente: resto
+                },
+                { where: { 
+                    id: expediente_id
+                }}
+            )
+            res.send(expediente);
+        })
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+                    
+    },
+
     async asignarHabitacion(req, res){
         const restarHoras = (fecha, horas) => {
             let nuevaFecha = new Date(fecha); // Crear una nueva instancia de fecha
@@ -227,7 +346,7 @@ module.exports = {
             contacto_encargado: 'PENDIENTE',
             cui_encargado: 'PENDIENTE',
             direccion_encargado: 'PENDIENTE',
-            estado: 10,
+            estado: status,
             created_by: req.body.user,
         };
 
@@ -257,9 +376,23 @@ module.exports = {
             Habitaciones.update(
                 {
                     estado: 2,
+                    ocupante: expediente_id
                 },
                 { where: { 
-                    id: form.habitacion.id
+                    id: form.habitacion
+                }}
+            )
+            //Actualizar expediente
+            const year = today.getFullYear();
+            let resto
+            var idFormateado = String(expediente_id).padStart(4, '0');
+            resto = year + '-' + idFormateado
+            Expediente.update(
+                {
+                    expediente: resto
+                },
+                { where: { 
+                    id: expediente_id
                 }}
             )
             res.send(expediente);
@@ -375,10 +508,10 @@ module.exports = {
         var condition = busqueda
         ? { 
             [Op.or]: [
-                { nombres: { [Op.like]: `%${busqueda}%` }, estado: { [Sequelize.Op.in]: [1, 3, 4, 5] } }
+                { nombres: { [Op.like]: `%${busqueda}%` }, estado: { [Sequelize.Op.in]: [1, 3, 4, 5, 10] } }
             ] 
             } 
-        : { estado: { [Sequelize.Op.in]: [1, 3, 4, 5] } };
+        : { estado: { [Sequelize.Op.in]: [1, 3, 4, 5, 10] } };
 
         Expediente.findAndCountAll({
             include: [
@@ -454,12 +587,12 @@ module.exports = {
             [Op.or]: [
                 { 
                 nombres: { [Op.like]: `%${busqueda}%` },
-                estado: { [Sequelize.Op.in]: [1, 3, 4, 5] }
+                estado: { [Sequelize.Op.in]: [1, 3, 4, 5, 10] }
                 }
             ] 
             } 
         : { 
-            estado: { [Sequelize.Op.in]: [1, 3, 4, 5] } 
+            estado: { [Sequelize.Op.in]: [1, 3, 4, 5, 10] } 
             };
 
         Expediente.findAndCountAll({

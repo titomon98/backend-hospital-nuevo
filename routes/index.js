@@ -201,6 +201,7 @@ module.exports = (app) => {
     router.get('/expedientes/listAsignar', expedientesController.listAsignar);
     router.get('/expedientes/listPanel', expedientesController.listPanel);
     router.post('/expedientes/create', expedientesController.create);
+    router.post('/expedientes/createEmergencia', expedientesController.createEmergencia);
     router.post('/expedientes/createEnfermeria', expedientesController.createFromEnfermeria);
     router.put('/expedientes/update', expedientesController.update);
     router.put('/expedientes/changeState', expedientesController.changeState);

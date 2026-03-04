@@ -21,6 +21,11 @@ module.exports = (sequelize, DataTypes) => {
     }
   };
   expediente.init({
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
     expediente: {
       type: DataTypes.STRING,
       allowNull: false
@@ -140,10 +145,6 @@ module.exports = (sequelize, DataTypes) => {
     },
     updated_by: {
       type: DataTypes.STRING,
-    },
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true
     }
   }, {
     sequelize,
