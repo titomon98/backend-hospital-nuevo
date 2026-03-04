@@ -331,7 +331,7 @@ module.exports = {
         } else if (form.selectedOption == 'intensivo') {
             status = 4
         }
-        const datos = {
+        let datos = {
             nombres: 'PENDIENTE',
             apellidos: 'PENDIENTE',
             expediente: 'EXPEDIENTE INCOMPLETO',
@@ -349,6 +349,8 @@ module.exports = {
             estado: status,
             created_by: req.body.user,
         };
+
+        datos.id_medico = form.assignedDoctor
 
         Expediente.create(datos)
         .then(expediente => {
