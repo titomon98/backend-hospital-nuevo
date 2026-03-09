@@ -180,7 +180,7 @@ module.exports = {
             cantidad: parseFloat(form.cantidad),
             precio_venta: parseFloat(form.precio_venta).toFixed(2),
             total: parseFloat(Total).toFixed(2),
-            estado: 2,
+            estado: 1,
             id_cuenta: id_cuenta,
             createdAt: new Date(),
             updatedAt: restarHoras(new Date(), 6),
