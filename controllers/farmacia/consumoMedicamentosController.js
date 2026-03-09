@@ -280,7 +280,7 @@ module.exports = {
             total: parseFloat(Total).toFixed(2),
             estado: form.state,
             id_cuenta: id_cuenta,
-            estado: 1,
+            estado: 2,
             createdAt: new Date(),
             updatedAt: restarHoras(new Date(), 6),
             created_by: form.user
@@ -349,7 +349,12 @@ module.exports = {
                         }
                       ] 
                     },
-                    { model: Medicamento, attributes: ['id', 'nombre'] }
+                    { 
+                      model: Medicamento, 
+                      attributes: ['id', 'nombre'],
+                      where: { anestesico: 1 },
+                      required: true          
+                    }
                 ],
                 attributes: ['id', 'descripcion', 'cantidad', 'createdAt', 'created_by', 'updated_by', 'estado'],
                 order: [[Criterio, Order]], // Ordenamos por createdAt DESC
@@ -383,6 +388,91 @@ module.exports = {
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         }
     },
+
+    async listAnestesicos(req, res) {
+      const getPagingData = (data, page, limit) => {
+          const { count: totalItems, rows: referido } = data;
+          const currentPage = page ? +page : 0;
+          const totalPages = Math.ceil(totalItems / limit);
+          return { totalItems, referido, totalPages, currentPage };
+      };
+      const getPagination = (page, size) => {
+          const limit = size ? +size : 2;
+          const offset = page ? page * limit : 0;
+          return { limit, offset };
+      };
+      
+      const { page = 1, size = 20, criterio = 'createdAt', order = 'DESC' , fechaDesde, fechaHasta} = req.query;
+      const Page=req.query.page-1;
+      const Size=req.query.limit;
+      const Criterio = req.query.criterio;
+      const Order = req.query.order;
+      const FechaDesde = req.query.fechaDesde;
+      const FechaHasta = req.query.fechaHasta; 
+      const { limit, offset } = getPagination(Page, Size);
+  
+      try {
+          const whereClause = {};
+
+          if (FechaDesde && FechaHasta) {
+              whereClause.createdAt = {
+                  [Op.between]: [
+                      moment(FechaDesde).startOf('day').toDate(), 
+                      moment(FechaHasta).endOf('day').toDate()
+                  ]
+              };
+          }
+          const data = await Movimiento.findAndCountAll({
+              include: [
+                  { 
+                    model: Cuenta, 
+                    attributes: ['numero'],
+                    include: [
+                      {
+                        model: Expediente, 
+                        attributes: ['nombres', 'apellidos']
+                      }
+                    ] 
+                  },
+                  { 
+                    model: Medicamento, 
+                    attributes: ['id', 'nombre'],
+                    where: { anestesico: 0 },
+                    required: true          
+                  }
+              ],
+              attributes: ['id', 'descripcion', 'cantidad', 'createdAt', 'created_by', 'updated_by', 'estado'],
+              order: [[Criterio, Order]], // Ordenamos por createdAt DESC
+              limit,
+              offset,
+              where: whereClause 
+          }); 
+          const response = getPagingData(data, Page, limit);
+          if (response.referido) {
+              const dataResponse = response.referido.map(item => ({
+                  id: item.id,
+                  medicamento_id: item.medicamento.id,
+                  numero_cuenta: item.cuenta.numero,
+                  nombre_medicamento: item.medicamento.nombre,
+                  cantidad: item.cantidad,
+                  fecha_consumo: item.createdAt,
+                  nombre_completo: item.cuenta.expediente.nombres + ' ' + item.cuenta.expediente.apellidos,
+                  created_by: item.created_by,
+                  updated_by: item.updated_by,
+                  estado: item.estado
+              }));
+  
+              response.referido = dataResponse;
+          } else {
+              // Manejar el caso en que response.referido es undefined
+              response.referido = []; // O enviar una respuesta adecuada al frontend
+          }
+          res.send({total:response.totalItems,last_page:response.totalPages, current_page: Page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
+      } catch (error) {
+          console.log(error);
+          return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+      }
+  },
 
     async deactivate(req, res) {
       const id_consumo = req.body.delete.id

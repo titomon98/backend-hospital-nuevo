@@ -410,6 +410,7 @@ module.exports = (app) => {
     router.get('/detalle_consumo_medicamentos/list/:id/:area', detalle_consumo_medicamentos.get);
     router.get('/detalle_consumo_medicamentos/listAnestesicos/:id/:area', detalle_consumo_medicamentos.getAnestesico);
     router.get('/detalle_consumo_medicamentos/list', detalle_consumo_medicamentos.list);
+    router.get('/detalle_consumo_medicamentos/listAnestesicos', detalle_consumo_medicamentos.listAnestesicos);
     router.put('/detalle_consumo_medicamentos/deactivate', detalle_consumo_medicamentos.deactivate)
 
     //detalle_consumo_quirurgicos
