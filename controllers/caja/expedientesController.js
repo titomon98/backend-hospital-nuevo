@@ -1122,7 +1122,11 @@ module.exports = {
                     attributes: ['id', 'numero'] // Especifica solo los atributos necesarios
                 },
                 {
-                    model: Cuenta
+                    model: Cuenta,
+                    required: true,
+                    where: {
+                        estado: 1
+                    }
                 }
             ],
             where: condition,
@@ -1192,6 +1196,13 @@ module.exports = {
                     as: 'habitacione',
                     attributes: ['id', 'numero'],
                     required: true
+                },
+                {
+                    model: Cuenta,
+                    required: true,
+                    where: {
+                        estado: 1
+                    }
                 }
             ],
             where: condition,
@@ -1259,6 +1270,13 @@ module.exports = {
                     model: Habitaciones,
                     as: 'habitacione', // Usa el alias correcto
                     attributes: ['id', 'numero'] // Especifica solo los atributos necesarios
+                },
+                {
+                    model: Cuenta,
+                    required: true,
+                    where: {
+                        estado: 1
+                    }
                 }
             ],
             where: condition,
@@ -1326,6 +1344,13 @@ module.exports = {
                     model: Habitaciones,
                     as: 'habitacione', // Asegúrate de que el alias coincida
                     attributes: ['id', 'numero']
+                },
+                {
+                    model: Cuenta,
+                    required: true,
+                    where: {
+                        estado: 1
+                    }
                 }
             ],
             where: condition,

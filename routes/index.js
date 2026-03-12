@@ -155,6 +155,8 @@ module.exports = (app) => {
     router.get('/cuentas/pay', cuentasController.onPay);
     router.post('/cuentas/create', cuentasController.create);
     router.put('/cuentas/update', cuentasController.update);
+    router.put('/cuentas/updateMotivoIngreso', cuentasController.updateMotivoIngreso);
+    router.put('/cuentas/updateMotivoEgreso', cuentasController.updateMotivoEgreso);
     router.put('/cuentas/activate', cuentasController.activate);
     router.put('/cuentas/deactivate', cuentasController.deactivate);
     router.get('/cuentas/getSearch', cuentasController.getSearch);
@@ -412,18 +414,21 @@ module.exports = (app) => {
     router.get('/detalle_consumo_medicamentos/list', detalle_consumo_medicamentos.list);
     router.get('/detalle_consumo_medicamentos/listAnestesicos', detalle_consumo_medicamentos.listAnestesicos);
     router.put('/detalle_consumo_medicamentos/deactivate', detalle_consumo_medicamentos.deactivate)
+    router.put('/detalle_consumo_medicamentos/review', detalle_consumo_medicamentos.review)
 
     //detalle_consumo_quirurgicos
     router.post('/detalle_consumo_quirugicos/create', detalle_consumo_quirugicos.create);
     router.get('/detalle_consumo_quirugicos/list/:id/:area', detalle_consumo_quirugicos.get);
     router.get('/detalle_consumo_quirugicos/list', detalle_consumo_quirugicos.list);
     router.put('/detalle_consumo_quirurgicos/deactivate', detalle_consumo_quirugicos.deactivate)
+    router.put('/detalle_consumo_quirurgicos/review', detalle_consumo_quirugicos.review)
 
     //detalle_consumo_comunes
     router.post('/detalle_consumo_comun/create', detalle_consumo_comunes.create);
     router.get('/detalle_consumo_comun/list/:id/:area', detalle_consumo_comunes.get);
     router.get('/detalle_consumo_comun/list', detalle_consumo_comunes.list);
     router.put('/detalle_consumo_comun/deactivate', detalle_consumo_comunes.deactivate)
+    router.put('/detalle_consumo_comun/review', detalle_consumo_comunes.review)
 
     //CARPETA GERENCIA
     //asuetos

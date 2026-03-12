@@ -30,6 +30,10 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: true
     },
+    motivo_egreso: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     descripcion: {
         type: DataTypes.STRING,
     },

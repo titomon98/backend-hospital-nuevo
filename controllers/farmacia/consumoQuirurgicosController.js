@@ -251,7 +251,7 @@ module.exports = {
                     },
                     { model: Quirurgico, attributes: ['id', 'nombre'] }
                 ],
-                attributes: ['id', 'descripcion', 'cantidad', 'createdAt', 'created_by', 'updated_by', 'estado'],
+                attributes: ['id', 'descripcion', 'cantidad', 'createdAt', 'created_by', 'updated_by', 'reviewed_by', 'estado'],
                 order: [[Criterio, Order]], // Ordenamos por createdAt DESC
                 limit,
                 offset,
@@ -270,6 +270,7 @@ module.exports = {
                     nombre_completo: item.cuenta.expediente.nombres + ' ' + item.cuenta.expediente.apellidos,
                     created_by: item.created_by,
                     updated_by: item.updated_by,
+                    reviewed_by: item.reviewed_by,
                     estado: item.estado
                 }));
     
@@ -305,5 +306,16 @@ module.exports = {
       await movimiento.save();
 
       return res.send('Consumo eliminado correctamente')
-    }   
+    },
+
+    async review(req, res) {
+      const id_consumo = req.body.delete.id
+      const responsable = req.body.delete.responsable
+
+      const movimiento = await Movimiento.findByPk(id_consumo);
+      movimiento.reviewed_by = responsable
+      await movimiento.save();
+
+      return res.send('Consumo revisado correctamente')
+    } 
 }

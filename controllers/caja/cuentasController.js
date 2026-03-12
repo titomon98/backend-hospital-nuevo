@@ -138,7 +138,7 @@ module.exports = {
             where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(data => {
 
-        console.log('data: '+JSON.stringify(data.rows[0].expediente.estado))
+        console.log('data: '+JSON.stringify(data.rows))
         const response = getPagingData(data, page, limit);
 
         console.log('response: '+JSON.stringify(response))
@@ -360,6 +360,37 @@ module.exports = {
             } }
         )
         .then(cuenta => res.status(200).send('El registro ha sido actualizado'))
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
+
+    updateMotivoIngreso(req, res) {
+        console.log(req.body)
+        Cuenta.update(
+            { motivo: req.body.motivo },
+            { where: { 
+                id_expediente: req.body.id,
+                estado: 1 
+            } }
+        )
+        .then(cuenta => res.status(200).send('La nota de ingreso ha sido actualizada'))
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
+
+    updateMotivoEgreso(req, res) {
+        Cuenta.update(
+            { motivo_egreso: req.body.motivo_egreso },
+            { where: { 
+                id_expediente: req.body.id,
+                estado: 1
+            } }
+        )
+        .then(cuenta => res.status(200).send('El motivo de egreso ha sido actualizado'))
         .catch(error => {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
