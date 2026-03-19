@@ -220,6 +220,7 @@ module.exports = (app) => {
     router.get('/expedientes/listHospitalizacion', expedientesController.listHospitalizacion);
     router.get('/expedientes/listReingreso', expedientesController.listReingreso);
     router.put('/expedientes/changeStatus', expedientesController.changeStatus);
+    router.delete('/expedientes/delete', expedientesController.delete)
 
     //CARPETA DE ENFERMERIA
     //habitaciones

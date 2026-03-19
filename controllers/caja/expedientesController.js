@@ -1446,5 +1446,27 @@ module.exports = {
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
+
+    delete (req, res) {
+        
+        Cuenta.destroy({
+            where: { id_expediente: req.body.id }
+        })
+        .then(() => {
+            return Expediente.destroy({
+                where: { id: req.body.id }
+            });
+        })
+        .then(() => res.status(200).send('El registro ha sido eliminado'))
+        .catch(error => {
+            console.log(error);
+    
+            if (error.name === 'SequelizeForeignKeyConstraintError') {
+                return res.status(400).json({ msg: 'El expediente no puede ser eliminado permanentemente ya que tiene datos en hospital' });
+            }
+    
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
 };
 
