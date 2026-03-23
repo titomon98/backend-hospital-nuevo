@@ -187,14 +187,12 @@ module.exports = {
                             { nombre: { [Op.like]: `%${busqueda}%` } }
                         ]
                     },
-                    { inventariado: 'INVENTARIADO' },
                     { estado: 1 },
                     { factura: 1 }
                 ]
             };
         } else {
             condition = {
-                inventariado: 'INVENTARIADO',
                 estado: 1,
                 factura: 1
             };
