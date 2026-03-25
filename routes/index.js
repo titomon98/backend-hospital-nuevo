@@ -305,6 +305,7 @@ module.exports = (app) => {
     router.put('/comun/deactivate', comunController.deactivate);
     router.get('/comun/getSearch', comunController.getSearch);
     router.get('/comun/getSearchNo', comunController.getSearchNo);
+    router.get('/comun/getOne', comunController.getOne);
 
     //comun_movimientos
     router.get('/comun_movimientos/list', comunMovimientosController.list);
@@ -341,6 +342,7 @@ module.exports = (app) => {
     router.put('/medicamentos/deactivate', medicamentosController.deactivate);
     router.get('/medicamentos/getSearch', medicamentosController.getSearch);
     router.get('/medicamentos/getSearchNo', medicamentosController.getSearchNo);
+    router.get('/medicamentos/getOne', medicamentosController.getOne);
 
     //medicamentos_movimientos
     router.get('/medicamentos_movimientos/list', medicamentosMovimientosController.list);
@@ -399,6 +401,7 @@ module.exports = (app) => {
     router.put('/quirurgico/deactivate', quirurgicoController.deactivate);
     router.get('/quirurgico/getSearch', quirurgicoController.getSearch);
     router.get('/quirurgico/getSearchNo', quirurgicoController.getSearchNo);
+    router.get('/quirurgico/getOne', quirurgicoController.getOne);
 
     //quirurgico_movimientos
     router.get('/quirurgico_movimientos/list', quirurgicoMovimientosController.list);

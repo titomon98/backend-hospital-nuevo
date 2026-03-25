@@ -135,7 +135,9 @@ module.exports = {
                 updated_by: req.body.user,
                 descuento: 0,
                 solicitud_descuento: 3,
-                subtotal: 0
+                subtotal: 0,
+                fecha_ingreso: restarHoras(new Date(), 6),
+                hora_ingreso: restarHoras(new Date(), 6)
               };
         
               const cuentaCreada = await Cuenta.create(datosCuenta);
@@ -282,6 +284,8 @@ module.exports = {
                 subtotal: 0,
                 created_by: req.body.user,
                 updated_by: req.body.user,
+                fecha_ingreso: restarHoras(new Date(), 6),
+                hora_ingreso: restarHoras(new Date(), 6)
               };
         
               const cuentaCreada = await Cuenta.create(datosCuenta);

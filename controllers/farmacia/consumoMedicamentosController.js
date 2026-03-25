@@ -281,7 +281,7 @@ module.exports = {
             estado: form.state,
             id_cuenta: id_cuenta,
             estado: 1,
-            createdAt: new Date(),
+            createdAt: restarHoras(new Date(), 6),
             updatedAt: restarHoras(new Date(), 6),
             created_by: form.user
         };

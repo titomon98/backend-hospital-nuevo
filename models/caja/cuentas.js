@@ -26,6 +26,16 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.DATEONLY,
         allowNull: false
     },
+    hora_ingreso: {
+      type: DataTypes.TIME,
+      allowNull: true
+    },
+    fecha_egreso: {
+      type: DataTypes.DATEONLY,
+    },
+    hora_egreso: {
+      type: DataTypes.TIME,
+    },
     motivo: {
         type: DataTypes.STRING,
         allowNull: true

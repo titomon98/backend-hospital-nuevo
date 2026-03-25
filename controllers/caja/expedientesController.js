@@ -79,6 +79,7 @@ module.exports = {
             let datos_cuenta = {
                 numero: 1,
                 fecha_ingreso: today,
+                hora_ingreso: form.hora,
                 motivo: form.motivo,
                 descripcion: null,
                 otros: null,
@@ -198,6 +199,7 @@ module.exports = {
             let datos_cuenta = {
                 numero: 1,
                 fecha_ingreso: today,
+                hora_ingreso: form.hora,
                 motivo: form.motivo,
                 descripcion: null,
                 otros: null,
@@ -855,6 +857,7 @@ module.exports = {
         });
     },
     changeState (req, res) {
+        const form = req.body.form
         const dat = [
             'egreso por fallecimiento',
             'Hospitalización',
@@ -979,7 +982,9 @@ module.exports = {
                 if(cuentas.length > 0){
                     Cuenta.update(
                         {
-                            pendiente_de_pago: cuentas[0].total - cuentas[0].total_pagado
+                            pendiente_de_pago: cuentas[0].total - cuentas[0].total_pagado,
+                            fecha_egreso: form.fecha,
+                            hora_egreso: form.hora
                         },
                         {
                             where:{

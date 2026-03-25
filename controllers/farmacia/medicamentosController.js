@@ -254,6 +254,18 @@ module.exports = {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
+    },
+    getOne (req, res) { 
+        Medicamento.findOne({
+            where: {
+                id: req.query.id
+            }
+        })
+        .then(comun => res.status(200).json(comun))
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' })
+        })
     }
 };
 

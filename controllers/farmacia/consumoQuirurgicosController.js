@@ -182,7 +182,7 @@ module.exports = {
             total: parseFloat(Total).toFixed(2),
             estado: 1,
             id_cuenta: id_cuenta,
-            createdAt: new Date(),
+            createdAt: restarHoras(new Date(), 6),
             updatedAt: restarHoras(new Date(), 6),
             created_by: form.user
         };
