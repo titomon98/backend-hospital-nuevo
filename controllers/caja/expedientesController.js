@@ -1009,6 +1009,7 @@ module.exports = {
                 return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
             });
         } else {
+            const expediente_previo = Expediente.findByPk(req.body.id)
             Expediente.update(
                 { 
                     estado: req.body.estado,
@@ -1017,6 +1018,7 @@ module.exports = {
                     contacto_encargado: req.body.contacto_encargado,
                     parentesco_encargado: req.body.parentesco_encargado,
                     edad_encargado: req.body.edad_encargado,
+                    solvencia: 0
                  },
                 { where: { 
                     id: req.body.id 

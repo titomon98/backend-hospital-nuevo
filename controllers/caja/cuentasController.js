@@ -413,7 +413,6 @@ module.exports = {
 
     deactivate (req, res) {
         if (req.body.tipo === 'finiquito'){
-            console.log("HOLA")
             Cuenta.update(
                 { 
                     estado: 0,
@@ -427,7 +426,7 @@ module.exports = {
             .then((cuenta) =>{
                 console.log(cuenta)
                 Expediente.update(
-                    {solvente: 0},
+                    {solvencia: 1},
                     {where: {
                         id: req.body.id_expediente
                     }}
