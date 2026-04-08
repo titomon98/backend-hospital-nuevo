@@ -983,8 +983,8 @@ module.exports = {
                     Cuenta.update(
                         {
                             pendiente_de_pago: cuentas[0].total - cuentas[0].total_pagado,
-                            fecha_egreso: form.fecha || null,
-                            hora_egreso: form.hora || null,
+                            fecha_egreso: req.body.fecha || null,
+                            hora_egreso: req.body.hora || null,
                         },
                         {
                             where:{
