@@ -7,6 +7,7 @@ const Servicio = db.servicios;
 const Cuenta = db.cuentas;
 const Expediente = db.expedientes;
 const Habitaciones = db.habitaciones;
+const DetalleHabitaciones = db.detalle_habitaciones;
 
 const Honorario = db.detalle_honorarios
 const Medico = db.medicos
@@ -511,14 +512,8 @@ module.exports = {
 
     async getDataSumario(req, res) {
         const { id } = req.params;
-      
+
         try {
-
-            const costoHospitalizacion = await Habitaciones.findOne({
-                where: { ocupante: id },
-                attributes: ['costo_ambulatorio','costo_diario','costo_estudio_de_sueno','costo_quimioterapia'],
-            });
-
             let fecha_ingreso = await Expediente.findOne({
                 where: { id: id },
                 order: [['createdAt', 'DESC']],
@@ -531,209 +526,191 @@ module.exports = {
                 attributes: ['id_medico'],
             });
 
-          const cuentaSeleccionada = await Cuenta.findOne({
-            where: { id_expediente: id },
-            order: [['createdAt', 'DESC']],
-          });
-      
-          if (!cuentaSeleccionada) {
-            return res.status(401).json({ msg: 'No se encontró ninguna cuenta activa para este expediente.' });
-          }
-      
-          const id_cuenta = cuentaSeleccionada.id;
-      
-          const cuentaLabSeleccionada = await Cuenta_Lab.findOne({
-            where: { id_expediente: id, estado: 1 },
-            order: [['createdAt', 'DESC']],
-          });
-      
-          const id_cuenta_lab = cuentaLabSeleccionada ? cuentaLabSeleccionada.id : null;
-
-          const [
-            consumos,
-            consumosComunes,
-            consumosMedicamentos,
-            consumosAnestesicos,
-            consumosQuirurgicos,
-            examenes,
-            salaOperaciones,
-            honorarios,
-          ] = await Promise.all([
-
-            Consumo.findAll({
-              where: { id_cuenta },
-              include: [{ model: Servicio, attributes: ['descripcion', 'precio'] }],
-              attributes: ['id', 'cantidad', 'descripcion', 'subtotal', 'estado', 'createdAt', 'updatedAt'],
-            }),
-      
-            MovimientoComun.findAll({
-                where: {
-                    id_cuenta: id_cuenta,
-                    estado: 1
-                  },
-              include: [{ model: Comun, attributes: ['nombre'] }],
-              attributes: ['id', 'descripcion', 'cantidad', 'precio_venta', 'total', 'estado', 'createdAt', 'updatedAt'],
-            }),
-      
-            MovimientoMedicamentos.findAll({
-                where: {
-                    id_cuenta: id_cuenta,
-                    estado: 1
-                  },
-              include: [{ model: Medicamento, attributes: ['nombre'], where: { anestesico: { [Op.eq]: 1 } } }],
-              attributes: ['id', 'descripcion', 'cantidad', 'precio_venta', 'total', 'estado', 'createdAt', 'updatedAt'],
-            }),
-
-            MovimientoMedicamentos.findAll({
-                where: {
-                    id_cuenta: id_cuenta,
-                    estado: 1
-                  },
-              include: [{ model: Medicamento, attributes: ['nombre'], where: { anestesico: { [Op.eq]: 0 } } }],
-              attributes: ['id', 'descripcion', 'cantidad', 'precio_venta', 'total', 'estado', 'createdAt', 'updatedAt'],
-            }),
-      
-            MovimientoQuirurgico.findAll({
-                where: {
-                    id_cuenta: id_cuenta,
-                    estado: 1
-                  },
-              include: [{ model: Quirurgico, attributes: ['nombre'] }],
-              attributes: ['id', 'descripcion', 'cantidad', 'precio_venta', 'total', 'estado', 'createdAt', 'updatedAt'],
-            }),
-      
-            id_cuenta_lab
-              ? Examenes.findAll({
-                  where: { id_cuenta: id_cuenta_lab },
-                  include: [{ model: ExamenAlmacenado, attributes: ['nombre'] }],
-                  attributes: [
-                    'id',
-                    'expediente',
-                    'cui',
-                    'comision',
-                    'total',
-                    'correo',
-                    'whatsapp',
-                    'numero_muestra',
-                    'referido',
-                    'id_encargado',
-                    'pagado',
-                    'por_pagar',
-                    'estado',
-                    'createdAt',
-                    'updatedAt',
-                  ],
-                })
-              : [],
-      
-            SalaOperaciones.findAll({
-              where: { id_cuenta },
-              include: [{ model: Categoria, attributes: ['categoria'] }],
-              attributes: ['id', 'descripcion', 'horas', 'total', 'id_cuenta', 'createdAt', 'updatedAt', 'id_categoria'],
-            }),
-      
-            // Honorarios con estado = 1
-            Honorario.findAll({
-              where: { id_cuenta, estado: 1 },
-              attributes: ['id', 'id_medico', 'descripcion', 'total', 'updatedAt', 'estado'],
-              include: [{ model: Medico, attributes: ['nombre'] }],
-            }),
-          ]);
-
-          //NOMBRE DEL MEDICO
-          let nombremedico = 'NO ASIGNADO'
-          if (idMedico) {
-            const nombreMedico = await Medico.findOne({
-              where: { id: idMedico.id_medico },
-              attributes: ['nombre'],
-            });
-            nombremedico = nombreMedico && nombreMedico.nombre ? nombreMedico.nombre : 'NO ASIGNADO';
-          }
-
-          //NUMERO HABITACION
-          let numerohabitacion = 'NO ASIGNADO'
-          if (id) {
-            const numeroHabitacion = await Habitaciones.findOne({
-                where: { ocupante: id },
+            const cuentaSeleccionada = await Cuenta.findOne({
+                where: { id_expediente: id },
                 order: [['createdAt', 'DESC']],
-                attributes: ['numero'],
             });
-            numerohabitacion = numeroHabitacion && numeroHabitacion.numero ? numeroHabitacion.numero : 'NO ASIGNADO';
-          }
 
-          //fecha a enviar
-          let formato = fecha_ingreso.fecha_ingreso_reciente + 'T' + fecha_ingreso.hora_ingreso_reciente
-          const fechaFormateada = formato
+            if (!cuentaSeleccionada) {
+                return res.status(401).json({ msg: 'No se encontró ninguna cuenta activa para este expediente.' });
+            }
 
-          //COSTOS ESTUDIO DE SUEÑO 
+            const id_cuenta = cuentaSeleccionada.id;
 
-          let costo1 = parseFloat(costoHospitalizacion?.costo_ambulatorio) || 200;
-          const costo2 = parseFloat(costoHospitalizacion?.costo_diario) || 0;
-          const costo3 = parseFloat(costoHospitalizacion?.costo_estudio_de_sueno) || 0;
-          const costo4 = parseFloat(costoHospitalizacion?.costo_quimioterapia) || 0;
+            const cuentaLabSeleccionada = await Cuenta_Lab.findOne({
+                where: { id_expediente: id, estado: 1 },
+                order: [['createdAt', 'DESC']],
+            });
 
-          const costoBase = 200
-          const costoExtraHora = 50
-          const fechaIngreso = new Date(formato);
-          const fechaActual = new Date();
+            const id_cuenta_lab = cuentaLabSeleccionada ? cuentaLabSeleccionada.id : null;
 
-          const diffMs = fechaActual - fechaIngreso;
-    
-          // Convertimos a horas (redondeando hacia arriba después de las 8 horas)
-          const diffHoras = diffMs / (1000 * 60 * 60);
-      
-          if (diffHoras <= 8) {
-            costo1 = 200
-          } else {
-            const horasExtra = Math.ceil(diffHoras - 8);
-            costo1 = costoBase + (horasExtra * costoExtraHora);
-          }
+            const [
+                consumos,
+                consumosComunes,
+                consumosMedicamentos,
+                consumosAnestesicos,
+                consumosQuirurgicos,
+                examenes,
+                salaOperaciones,
+                honorarios,
+                detallesHabitacion,
+            ] = await Promise.all([
 
-          // Crear el reporte agrupado
-          const reporte = {
-            consumos,
-            consumosComunes,
-            consumosMedicamentos,
-            consumosAnestesicos,
-            consumosQuirurgicos,
-            examenes,
-            salaOperaciones,
-            honorarios,
-            nombremedico,
-            numerohabitacion,
-            fechaFormateada,
-            costo1,
-            costo2,
-            costo3,
-            costo4
-          };
-      
-          return res.status(200).json(reporte);
+                Consumo.findAll({
+                    where: { id_cuenta },
+                    include: [{ model: Servicio, attributes: ['descripcion', 'precio'] }],
+                    attributes: ['id', 'cantidad', 'descripcion', 'subtotal', 'estado', 'createdAt', 'updatedAt'],
+                }),
+
+                MovimientoComun.findAll({
+                    where: { id_cuenta: id_cuenta, estado: 1 },
+                    include: [{ model: Comun, attributes: ['nombre'] }],
+                    attributes: ['id', 'descripcion', 'cantidad', 'precio_venta', 'total', 'estado', 'createdAt', 'updatedAt'],
+                }),
+
+                MovimientoMedicamentos.findAll({
+                    where: { id_cuenta: id_cuenta, estado: 1 },
+                    include: [{ model: Medicamento, attributes: ['nombre'], where: { anestesico: { [Op.eq]: 1 } } }],
+                    attributes: ['id', 'descripcion', 'cantidad', 'precio_venta', 'total', 'estado', 'createdAt', 'updatedAt'],
+                }),
+
+                MovimientoMedicamentos.findAll({
+                    where: { id_cuenta: id_cuenta, estado: 1 },
+                    include: [{ model: Medicamento, attributes: ['nombre'], where: { anestesico: { [Op.eq]: 0 } } }],
+                    attributes: ['id', 'descripcion', 'cantidad', 'precio_venta', 'total', 'estado', 'createdAt', 'updatedAt'],
+                }),
+
+                MovimientoQuirurgico.findAll({
+                    where: { id_cuenta: id_cuenta, estado: 1 },
+                    include: [{ model: Quirurgico, attributes: ['nombre'] }],
+                    attributes: ['id', 'descripcion', 'cantidad', 'precio_venta', 'total', 'estado', 'createdAt', 'updatedAt'],
+                }),
+
+                id_cuenta_lab
+                    ? Examenes.findAll({
+                        where: { id_cuenta: id_cuenta_lab },
+                        include: [{ model: ExamenAlmacenado, attributes: ['nombre'] }],
+                        attributes: [
+                            'id', 'expediente', 'cui', 'comision', 'total', 'correo', 'whatsapp',
+                            'numero_muestra', 'referido', 'id_encargado', 'pagado', 'por_pagar',
+                            'estado', 'createdAt', 'updatedAt',
+                        ],
+                    })
+                    : [],
+
+                SalaOperaciones.findAll({
+                    where: { id_cuenta },
+                    include: [{ model: Categoria, attributes: ['categoria'] }],
+                    attributes: ['id', 'descripcion', 'horas', 'total', 'id_cuenta', 'createdAt', 'updatedAt', 'id_categoria'],
+                }),
+
+                Honorario.findAll({
+                    where: { id_cuenta, estado: 1 },
+                    attributes: ['id', 'id_medico', 'descripcion', 'total', 'updatedAt', 'estado'],
+                    include: [{ model: Medico, attributes: ['nombre'] }],
+                }),
+
+                // Historial de habitaciones de esta cuenta
+                DetalleHabitaciones.findAll({
+                    where: { id_cuenta },
+                    attributes: ['tipo_habitacion', 'costo_base', 'ingreso', 'salida'],
+                }),
+            ]);
+
+            // NOMBRE DEL MEDICO
+            let nombremedico = 'NO ASIGNADO';
+            if (idMedico) {
+                const nombreMedico = await Medico.findOne({
+                    where: { id: idMedico.id_medico },
+                    attributes: ['nombre'],
+                });
+                nombremedico = nombreMedico?.nombre ?? 'NO ASIGNADO';
+            }
+
+            // NUMERO HABITACION
+            let numerohabitacion = 'NO ASIGNADO';
+            if (id) {
+                const numeroHabitacion = await Habitaciones.findOne({
+                    where: { ocupante: id },
+                    order: [['createdAt', 'DESC']],
+                    attributes: ['numero'],
+                });
+                numerohabitacion = numeroHabitacion?.numero ?? 'NO ASIGNADO';
+            }
+
+            // FECHA A ENVIAR
+            let formato = fecha_ingreso.fecha_ingreso_reciente + 'T' + fecha_ingreso.hora_ingreso_reciente;
+            const fechaFormateada = formato;
+
+            // Cálculo de días según reglas de corte a las 2PM
+            function calcularDiasHabitacion(ingreso, salida) {
+                const fechaIngreso = new Date(ingreso);
+                const fechaSalida  = salida ? new Date(salida) : new Date();
+
+                const minutosIngreso = fechaIngreso.getHours() * 60 + fechaIngreso.getMinutes();
+                const MIN_7AM = 7  * 60;  // 420
+                const MIN_2PM = 14 * 60;  // 840
+
+                let dias = 0;
+
+                const primerCorte2PM = new Date(fechaIngreso);
+                primerCorte2PM.setHours(14, 0, 0, 0);
+
+                if (minutosIngreso < MIN_7AM) {
+                    // 12:00 AM – 6:59 AM → día extra por madrugada
+                    dias += 1;
+                } else if (minutosIngreso < MIN_2PM) {
+                    // 7:00 AM – 1:59 PM → sin cargo extra
+                } else {
+                    // 2:00 PM – 11:59 PM → cuenta el período actual, siguiente corte es mañana 2PM
+                    dias += 1;
+                    primerCorte2PM.setDate(primerCorte2PM.getDate() + 1);
+                }
+
+                // Períodos completos de 2PM→2PM entre primerCorte y salida
+                if (fechaSalida > primerCorte2PM) {
+                    const diffMs   = fechaSalida - primerCorte2PM;
+                    const periodos = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+                    dias += periodos;
+                }
+
+                return Math.max(dias, 1);
+            }
+
+            let costoTotal = 0.0;
+            let costoIntensivo = 0.0
+            for (const detalle of detallesHabitacion) {
+                const dias       = calcularDiasHabitacion(detalle.ingreso, detalle.salida);
+                const costoTotalInterno = parseFloat(detalle.costo_base) * dias;
+                if (detalle.tipo_habitacion === 'Intensivo') {
+                    costoIntensivo += costoTotalInterno
+                } else {
+                    costoTotal += costoTotalInterno
+                }
+                
+            }
+
+            const reporte = {
+                consumos,
+                consumosComunes,
+                consumosMedicamentos,
+                consumosAnestesicos,
+                consumosQuirurgicos,
+                examenes,
+                salaOperaciones,
+                honorarios,
+                nombremedico,
+                numerohabitacion,
+                fechaFormateada,
+                costoTotal,
+                costoIntensivo
+            };
+
+            return res.status(200).json(reporte);
         } catch (error) {
-          console.error('Error al obtener los datos:', error);
-          return res.status(500).json({ msg: 'Error al obtener los datos', error: error.message });
+            console.error('Error al obtener los datos:', error);
+            return res.status(500).json({ msg: 'Error al obtener los datos', error: error.message });
         }
-    },
-
-    calcularCosto(fechaFormato, costoBase = 200, costoExtraHora = 50) {
-        // Normalizar la fecha en caso venga con espacio
-        const fechaNormalizada = fechaFormato.replace(" ", "T");
-    
-        const fechaIngreso = new Date(fechaNormalizada);
-        const fechaActual = new Date(); // ahora
-    
-        // Diferencia en milisegundos
-        const diffMs = fechaActual - fechaIngreso;
-    
-        // Convertimos a horas (redondeando hacia arriba después de las 8 horas)
-        const diffHoras = diffMs / (1000 * 60 * 60);
-    
-        if (diffHoras <= 8) {
-            return costoBase;
-        }
-    
-        const horasExtra = Math.ceil(diffHoras - 8);
-        return costoBase + (horasExtra * costoExtraHora);
     }
     
 };
