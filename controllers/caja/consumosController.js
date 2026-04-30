@@ -612,7 +612,7 @@ module.exports = {
 
                 // Historial de habitaciones de esta cuenta
                 DetalleHabitaciones.findAll({
-                    where: { id_cuenta },
+                    where: { id_cuenta, estado: 1 },
                     attributes: ['tipo_habitacion', 'costo_base', 'ingreso', 'salida'],
                 }),
             ]);
