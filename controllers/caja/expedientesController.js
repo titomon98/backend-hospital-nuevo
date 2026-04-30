@@ -210,13 +210,21 @@ module.exports = {
                 descuento: 0.0,
                 solicitud_descuento: 3
             }
+            console.log('Aqui vamos bien')
             Cuenta.create(datos_cuenta)
-                .then(res=>{
-                    res.update({ numero: res.id });
-                }) 
-                .catch(err=>
-                    console.log(err)
-                )
+            .then(cuenta => {
+                cuenta.update({ numero: cuenta.id });
+
+                DetalleHabitaciones.create({
+                    id_cuenta: cuenta.id,
+                    tipo_habitacion: "Emergencia",
+                    estado: 1,
+                    costo_base: 250.00,
+                    ingreso: today,
+                    created_by: req.body.user,
+                });
+            })
+            .catch(err => console.log(err))
             //Agregando log inicial de ingreso de paciente
             Logs.create({
                 id_expediente: expediente_id,
