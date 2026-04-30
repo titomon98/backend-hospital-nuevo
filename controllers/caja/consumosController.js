@@ -512,7 +512,7 @@ module.exports = {
 
     async getDataSumario(req, res) {
         const { id } = req.params;
-
+        
         try {
             let fecha_ingreso = await Expediente.findOne({
                 where: { id: id },
@@ -530,7 +530,7 @@ module.exports = {
                 where: { id_expediente: id },
                 order: [['createdAt', 'DESC']],
             });
-
+            
             if (!cuentaSeleccionada) {
                 return res.status(401).json({ msg: 'No se encontró ninguna cuenta activa para este expediente.' });
             }

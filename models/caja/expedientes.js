@@ -90,6 +90,21 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false
     },
+    //Estado 0 - fallecido
+    //Estado 1 - ingresado en hospital
+    //Estado 2 - egresado
+    //Estado 3 - ingresado en quirofano
+    //Estado 4 - ingresado en intensivo
+    //Estado 5 - ingresado en emergencia
+    //Estado 6 - desahuciado
+    //Estado 7 - alta medica
+    //Estado 8 - contraindicado
+    //Estado 9 - referido
+    //Estado 10 - expediente incompleto
+    //Estado 91 - ingresado en hospital, cuenta parcial por pagar
+    //Estado 93 - ingresado en quirofano, cuenta parcial por pagar
+    //Estado 94 - ingresado en intensivo, cuenta parcial por pagar
+    //Estado 95 - ingresado en emergencia, cuenta parcial por pagar
     solvencia: {
       type: DataTypes.INTEGER,
       defaultValue: 0,

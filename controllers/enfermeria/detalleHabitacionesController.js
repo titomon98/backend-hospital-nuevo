@@ -95,7 +95,9 @@ module.exports = {
         honorario.estado = 0
         honorario.updated_by = responsable
         await honorario.save();
-    
+
+        //Tomar habitación para liberarla
+        
         return res.send('Cobro de habitación eliminado correctamente')
       } 
 };

@@ -11,6 +11,7 @@ const MovimientoMedicamento = db.detalle_consumo_medicamentos;
 const MovimientoComun = db.detalle_consumo_comunes;
 const MovimientoQuirurgico = db.detalle_consumo_quirugicos;
 const Medicamento = db.medicamentos;
+const DetalleHabitacion = db.detalle_habitaciones
 
 module.exports = {
     create(req, res) {
@@ -149,6 +150,62 @@ module.exports = {
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
+
+    listNoPayParcial(req, res) {
+        const getPagingData = (data, page, limit) => {
+            const { count: totalItems, rows: referido } = data;
+
+            const currentPage = page ? +page : 0;
+            const totalPages = Math.ceil(totalItems / limit);
+
+            return { totalItems, referido, totalPages, currentPage };
+        };
+
+
+        const getPagination = (page, size) => {
+            const limit = size ? +size : 2;
+            const offset = page ? page * limit : 0;
+
+            return { limit, offset };
+        };
+
+        const busqueda=req.query.search;
+        const page=req.query.page-1;
+        const size=req.query.limit;
+        const criterio=req.query.criterio;
+        const order=req.query.order;
+        const { limit, offset } = getPagination(page, size);
+        var condition = { estado:10}
+
+        const estadosIncluidos = [91, 93, 94, 95];
+
+        Cuenta.findAndCountAll({ 
+            include: [
+                {
+                    model: Expediente,
+                    where: {
+                       estado: {
+                         [Op.in]: estadosIncluidos
+                       }
+                    },
+                    required: true
+                }
+            ],
+            where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+        .then(data => {
+
+        console.log('data: '+JSON.stringify(data.rows))
+        const response = getPagingData(data, page, limit);
+
+        console.log('response: '+JSON.stringify(response))
+        res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
+        })
+        .catch(error => {
+            console.log(error)
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        });
+    },
+
     listCortesPerDate(req, res) {
         const getPagingData = (data, page, limit) => {
             const { count: totalItems, rows: referido } = data;
@@ -762,7 +819,128 @@ module.exports = {
         }
         res.status(400).json({ msg: 'No se encontró ninguna cuenta para este expediente' });
         
-    }
+    },
 
+    async ingresoParcialPago(req, res) {
+        const { id } = req.params;
+
+        try {
+            const expediente = await Expediente.findByPk(id);
+
+            if (!expediente) {
+                return res.status(404).json({ msg: 'Expediente no encontrado' });
+            }
+
+            // Buscar la última cuenta del expediente
+            const ultimaCuenta = await Cuenta.findOne({
+                where: { id_expediente: id },
+                order: [['createdAt', 'DESC']],
+            });
+            await Promise.all([
+                expediente.update({
+                    estado: expediente.estado + 90,
+                    updated_by: req.user?.username ?? expediente.updated_by,
+                }),
+                ultimaCuenta?.update({
+                    estado: 10,
+                    updated_by: req.user?.username ?? ultimaCuenta.updated_by,
+                    pendiente_de_pago: req.body.TotalApagar,
+                    total: req.body.TotalApagar,
+                }),
+            ]);
+
+            return res.status(200).json({ msg: 'Expediente actualizado', data: expediente });
+        } catch (error) {
+            console.log(error);
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        }
+    },
+
+    async pagarCuentaParcial(req, res) {
+        const { id } = req.params;
+
+        try {
+            const cuentaOriginal = await Cuenta.findOne({
+                where: { id },
+                include: [
+                    {
+                        model: Expediente,
+                        required: true,
+                    },
+                    {
+                        model: DetalleHabitacion,
+                        required: false,
+                        order: [['createdAt', 'DESC']],
+                        limit: 1,
+                    }
+                ]
+            });
+
+            if (!cuentaOriginal) {
+                return res.status(404).json({ msg: 'Cuenta no encontrada' });
+            }
+            Cuenta.update(
+                { 
+                    estado: 0,
+                    total_pagado: req.body.total_pagado,
+                    pendiente_de_pago: req.body.pendiente_de_pago
+                },
+                { where: { 
+                    id: id
+                }}
+            )
+
+            const hoy = new Date();
+            const fechaHoy = hoy.toISOString().split('T')[0];
+
+            const nuevaCuenta = await Cuenta.create({
+                numero:              cuentaOriginal.numero,
+                fecha_ingreso:       fechaHoy,
+                hora_ingreso:        '12:00:00',
+                fecha_egreso:        cuentaOriginal.fecha_egreso        ?? null,
+                hora_egreso:         cuentaOriginal.hora_egreso         ?? null,
+                motivo:              cuentaOriginal.motivo              ?? null,
+                motivo_egreso:       cuentaOriginal.motivo_egreso       ?? null,
+                descripcion:         cuentaOriginal.descripcion         ?? null,
+                otros:               cuentaOriginal.otros               ?? null,
+                total:               cuentaOriginal.total,
+                estado:              1,
+                total_pagado:        cuentaOriginal.total_pagado        ?? 0,
+                pendiente_de_pago:   cuentaOriginal.pendiente_de_pago   ?? 0,
+                descuento:           cuentaOriginal.descuento           ?? null,
+                solicitud_descuento: cuentaOriginal.solicitud_descuento ?? null,
+                subtotal:            cuentaOriginal.subtotal            ?? 0,
+                tipo:                cuentaOriginal.tipo,
+                id_expediente:       cuentaOriginal.id_expediente,
+                created_by:          req.user?.username ?? null,
+                updated_by:          req.user?.username ?? null,
+            });
+
+            const detalleOriginal = cuentaOriginal.detalle_habitaciones?.[0];
+
+            // Crear detalle y actualizar expediente en paralelo
+            await Promise.all([
+                DetalleHabitacion.create({
+                    id_cuenta:       nuevaCuenta.id,
+                    tipo_habitacion: detalleOriginal?.tipo_habitacion ?? null,
+                    estado:          detalleOriginal?.estado          ?? 1,
+                    costo_base:      detalleOriginal?.costo_base      ?? 0,
+                    ingreso:         hoy,
+                    salida:          null,
+                    created_by:      req.user?.username ?? null,
+                    updated_by:      req.user?.username ?? null,
+                }),
+                cuentaOriginal.expediente.update({
+                    estado:     cuentaOriginal.expediente.estado - 90,
+                    updated_by: req.user?.username ?? cuentaOriginal.expediente.updated_by,
+                }),
+            ]);
+
+            return res.status(201).json({ msg: 'Pago procesado y nueva cuenta creada', data: nuevaCuenta });
+        } catch (error) {
+            console.log(error);
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        }
+    },
 };
 

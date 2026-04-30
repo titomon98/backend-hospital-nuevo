@@ -15,6 +15,9 @@ module.exports = (sequelize, DataTypes) => {
       cuenta.hasMany(models.detalle_pago_cuentas, {
         foreignKey: "id_cuenta",
       });
+      cuenta.hasMany(models.detalle_habitaciones, {
+        foreignKey: 'id_cuenta',
+      });
     }
   };
   cuenta.init({

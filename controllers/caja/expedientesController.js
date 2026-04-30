@@ -1114,7 +1114,9 @@ module.exports = {
 
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` }, estado: 3 }] } : {estado: 3} ;
+        var condition = busqueda 
+        ? { [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` } }], estado: { [Op.in]: [3, 93] } } 
+        : { estado: { [Op.in]: [3, 93] } };
 
         Expediente.findAndCountAll({
             include: [
@@ -1132,7 +1134,7 @@ module.exports = {
                     model: Cuenta,
                     required: true,
                     where: {
-                        estado: 1
+                        estado: { [Op.in]: [1, 10] }
                     }
                 }
             ],
@@ -1188,7 +1190,9 @@ module.exports = {
 
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` }, estado: 1 }] } : {estado: 1} ;
+        var condition = busqueda 
+        ? { [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` } }], estado: { [Op.in]: [1, 91] } } 
+        : { estado: { [Op.in]: [1, 91] } };
 
         Expediente.findAndCountAll({
             include: [
@@ -1208,7 +1212,7 @@ module.exports = {
                     model: Cuenta,
                     required: true,
                     where: {
-                        estado: 1
+                        estado: { [Op.in]: [1, 10] }
                     }
                 }
             ],
@@ -1264,7 +1268,9 @@ module.exports = {
 
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` }, estado: 4 }] } : {estado: 4} ;
+        var condition = busqueda 
+        ? { [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` } }], estado: { [Op.in]: [4, 94] } } 
+        : { estado: { [Op.in]: [4, 94] } };
 
         Expediente.findAndCountAll({
             include: [
@@ -1282,7 +1288,7 @@ module.exports = {
                     model: Cuenta,
                     required: true,
                     where: {
-                        estado: 1
+                        estado: { [Op.in]: [1, 10] }
                     }
                 }
             ],
@@ -1338,7 +1344,9 @@ module.exports = {
 
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` }, estado: 5 }] } : {estado: 5} ;
+        var condition = busqueda 
+        ? { [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` } }], estado: { [Op.in]: [5, 95] } } 
+        : { estado: { [Op.in]: [5, 95] } };
 
         Expediente.findAndCountAll({
             include: [
@@ -1356,7 +1364,7 @@ module.exports = {
                     model: Cuenta,
                     required: true,
                     where: {
-                        estado: 1
+                        estado: { [Op.in]: [1, 10] }
                     }
                 }
             ],

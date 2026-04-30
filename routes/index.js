@@ -150,6 +150,7 @@ module.exports = (app) => {
     router.get('/cuentas/list', cuentasController.list);
     router.get('/cuentas/payList', cuentasController.listPay);
     router.get('/cuentas/debtList', cuentasController.listNoPay);
+    router.get('/cuentas/debtListParcial', cuentasController.listNoPayParcial);
     router.get('/cuentas/get', cuentasController.get);
     router.get('/cuentas/getByExp', cuentasController.getByExp);
     router.get('/cuentas/pay', cuentasController.onPay);
@@ -161,6 +162,8 @@ module.exports = (app) => {
     router.put('/cuentas/deactivate', cuentasController.deactivate);
     router.get('/cuentas/getSearch', cuentasController.getSearch);
     router.get('/cuentas/getTotales/:area', cuentasController.getTotales);
+    router.patch('/cuentas/:id/ingresoParcialPago', cuentasController.ingresoParcialPago)
+    router.post('/cuentas/:id/pagarCuentaParcial', cuentasController.pagarCuentaParcial)
     
     router.post('/cuentas/requestDiscount', cuentasController.DiscountRequest);
     router.get('/cuentas/listDiscount', cuentasController.listNoPayDiscountRequest);
