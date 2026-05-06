@@ -864,162 +864,133 @@ module.exports = {
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
-    changeState (req, res) {
-        const form = req.body.form
-        const dat = [
-            'egreso por fallecimiento',
-            'Hospitalización',
-            'Egreso por alta médica',
-            'Quirófano',
-            'Cuidados Intensivos',
-            'Emergencias',
-            'Desahuciado',
-            'Alta médica',
-            'Contraindicado',
-            'Referido'
-        ]
-        const restarHoras = (fecha, horas) => {
-            let nuevaFecha = new Date(fecha);
-            nuevaFecha.setHours(nuevaFecha.getHours() - horas);
-            return nuevaFecha;
-          };
-        console.log('DATATAOOOOOO---------------------------' + req.body.habitaciones + 'MAS DATOS COMPLETOPS------------------------')
-        Logs.create({
-            id_expediente: req.body.id,
-            origen: dat[req.body.estado_anterior],
-            destino: dat[req.body.estado],
-            motivo: dat[req.body.motivo],
-            id_habitacionDestino : parseInt(req.body.habitaciones),
-            createdAt: new Date(),
-            updatedAt: restarHoras(new Date(), 6),
-            created_by: req.body.user,
-        })
+    async changeState(req, res) {
+        try {
+            const form = req.body.form;
 
-        const moment = require('moment');
-        if (dat[req.body.estado] === 'Alta médica' || dat[req.body.estado] === 'egreso por fallecimiento' || dat[req.body.estado] === 'Contraindicado' || dat[req.body.estado] === 'Referido' || dat[req.body.estado] === 'Desahuciado') {
-          console.log('-----------------------------------------------------------------------------INGRESO PARA COBRAR---------------------------------------------');
-        
-          Logs.findAll({
-            where: {
-              id_expediente: req.body.id,
-              destino: dat[req.body.estado_anterior],
-            },
-            order: [['createdAt', 'DESC']],
-            limit: 1,
-          })
-          .then(async logs => {
-            if (logs.length > 0) {
-              const registroMasReciente = logs[0];
-        
+            const dat = [
+                'egreso por fallecimiento',
+                'Hospitalización',
+                'Egreso por alta médica',
+                'Quirófano',
+                'Cuidados Intensivos',
+                'Emergencias',
+                'Desahuciado',
+                'Alta médica',
+                'Contraindicado',
+                'Referido'
+            ];
 
-                // SELECCIONAR HABITACIÓN
-                let habitacionSeleccionada = 0
-                if (registroMasReciente.id_habitacionDestino) {
-                    habitacionSeleccionada = await Habitaciones.findOne({
+            const restarHoras = (fecha, horas) => {
+                let nuevaFecha = new Date(fecha);
+                nuevaFecha.setHours(nuevaFecha.getHours() - horas);
+                return nuevaFecha;
+            };
 
-                        where: { id: registroMasReciente.id_habitacionDestino },
-                      });
-                }
-                
-        console.log("----------------------------------------HABITACION SELECCIONADA---------------------------------------" + habitacionSeleccionada);
-                if (habitacionSeleccionada === 0) {
-                  console.log("----------------------------------------No se encontró habitación---------------------------------------");
-                  return res.status(200).json({ msg: 'No se encontró habitación' })
-                }
-                const precioAmbulatorio = parseFloat(habitacionSeleccionada.costo_ambulatorio)
-                const precioDiario = parseFloat(habitacionSeleccionada.costo_diario)
-                const cuentas = await Cuenta.findAll({
-                  where: { id_expediente: req.body.id, estado: 1 },
-                  order: [['createdAt', 'DESC']],
+            // 🔹 Crear log (esperado)
+            await Logs.create({
+                id_expediente: req.body.id,
+                origen: dat[req.body.estado_anterior],
+                destino: dat[req.body.estado],
+                motivo: dat[req.body.motivo],
+                id_habitacionDestino: parseInt(req.body.habitaciones),
+                createdAt: new Date(),
+                updatedAt: restarHoras(new Date(), 6),
+                created_by: req.body.user,
+            });
+
+            const moment = require('moment');
+
+            // 🔹 PROCESO DE COBRO
+            if (
+                ['Alta médica', 'egreso por fallecimiento', 'Contraindicado', 'Referido', 'Desahuciado']
+                .includes(dat[req.body.estado])
+            ) {
+                const logs = await Logs.findAll({
+                    where: {
+                        id_expediente: req.body.id,
+                        destino: dat[req.body.estado_anterior],
+                    },
+                    order: [['createdAt', 'DESC']],
+                    limit: 1,
                 });
-        
-                if (cuentas.length === 0) {
-                  return res.status(4002).json({ msg: 'No se encontró ninguna cuenta activa para este expediente' });
-                }
-                const cuentaSeleccionada = cuentas[0]
-                console.log("Cuenta encontrada: ------------------------", cuentaSeleccionada);
-        
-                // CALCULAR EL TOTAL A PAGAR POR UTILIZAR LA HABITACIÓN
-                const fechaHora1 = moment(registroMasReciente.createdAt)
-                const fechaHora2 = moment()
-                const diferenciaEnMilisegundos = fechaHora2.diff(fechaHora1)
-                const diferenciaEnHoras = moment.duration(diferenciaEnMilisegundos).asHours()
-                console.log(" ------------------------ FECHA INGRESO " + fechaHora1 + " ----------------FECHA EGRESO------------------ " +fechaHora2);
-                
-                console.log(" ------------------------ TOTAL HORAS " + diferenciaEnHoras.toFixed(2) + "----------------------------------");
-                if (diferenciaEnHoras.toFixed(2) <= 6) {
-                    console.log(" ------------------------ENTRANDO AL IF ---------------------------");
-                  await DetalleCuentas.create({
-                    id_cuenta: cuentaSeleccionada.id,
-                    tipo: "Pago por servicio de habitación",
-                    id_externo: parseInt(registroMasReciente.id_habitacionDestino),
-                    subtotal: precioAmbulatorio,
-                  });
-                  await cuentaSeleccionada.update({ total: precioAmbulatorio});
 
-                } else {
-                    console.log(" ------------------------ENTRANDO AL ELSE ---------------------------");
-                    const diasCompletos = Math.ceil(diferenciaEnHoras / 24)
-                    const subtotal = precioDiario * diasCompletos
+                if (logs.length > 0) {
+                    const registroMasReciente = logs[0];
+
+                    let habitacionSeleccionada = null;
+
+                    if (registroMasReciente.id_habitacionDestino) {
+                        habitacionSeleccionada = await Habitaciones.findOne({
+                            where: { id: registroMasReciente.id_habitacionDestino },
+                        });
+                    }
+
+                    if (!habitacionSeleccionada) {
+                        return res.status(200).json({ msg: 'No se encontró habitación' });
+                    }
+
+                    const cuentas = await Cuenta.findAll({
+                        where: { id_expediente: req.body.id, estado: 1 },
+                        order: [['createdAt', 'DESC']],
+                    });
+
+                    if (cuentas.length === 0) {
+                        return res.status(400).json({
+                            msg: 'No se encontró ninguna cuenta activa'
+                        });
+                    }
+
+                    const cuentaSeleccionada = cuentas[0];
+
+                    const fechaHora1 = moment(registroMasReciente.createdAt);
+                    const fechaHora2 = moment();
+
+                    const horas = moment.duration(fechaHora2.diff(fechaHora1)).asHours();
+
+                    let subtotal = 0;
+
+                    if (horas <= 6) {
+                        subtotal = parseFloat(habitacionSeleccionada.costo_ambulatorio);
+                    } else {
+                        const dias = Math.ceil(horas / 24);
+                        subtotal = parseFloat(habitacionSeleccionada.costo_diario) * dias;
+                    }
+
                     await DetalleCuentas.create({
                         id_cuenta: cuentaSeleccionada.id,
                         tipo: "Pago por servicio de habitación",
                         id_externo: parseInt(registroMasReciente.id_habitacionDestino),
-                        subtotal: subtotal,
+                        subtotal
                     });
-                    await cuentaSeleccionada.update({ total: subtotal});
+
+                    await cuentaSeleccionada.update({ total: subtotal });
                 }
-
-            } else {
-              console.log('----------------------------------No se encontró un log que coincida con los datos-------------------------------------');
             }
-          })
-          .catch(err => {
-            console.error('Error al obtener logs:', err);
-            return res.status(403).json({ msg: 'No se encontró un log que coincida con los datos' });
-          });
-        }
-        
-        Cuenta.findAll({
-            where: { 
-                id_expediente:req.body.id,
-                estado: 1
-                
-        }})
-            .then((cuentas)=>{
-                if(cuentas.length > 0){
-                    Cuenta.update(
-                        {
-                            pendiente_de_pago: cuentas[0].total - cuentas[0].total_pagado,
-                            fecha_egreso: req.body.fecha || null,
-                            hora_egreso: req.body.hora || null,
-                        },
-                        {
-                            where:{
-                                id: cuentas[0].id
-                            }
-                        }
-                    )
-                }}
 
-            ) 
-
-        if (typeof req.body.nombre_encargado === 'undefined'){
-            Expediente.update(
-                { estado: req.body.estado },
-                { where: { 
-                    id: req.body.id 
-                } }
-            )
-            .then(marca => res.status(200).send('El registro ha sido modificado'))
-            .catch(error => {
-                console.log(error)
-                return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+            // 🔹 ACTUALIZAR CUENTA
+            const cuentas = await Cuenta.findAll({
+                where: { id_expediente: req.body.id, estado: 1 }
             });
-        } else {
-            const expediente_previo = Expediente.findByPk(req.body.id)
-            Expediente.update(
-                { 
+
+            if (cuentas.length > 0) {
+                await Cuenta.update({
+                    pendiente_de_pago: cuentas[0].total - cuentas[0].total_pagado,
+                    fecha_egreso: req.body.fecha || null,
+                    hora_egreso: req.body.hora || null,
+                }, {
+                    where: { id: cuentas[0].id }
+                });
+            }
+
+            // 🔹 ACTUALIZAR EXPEDIENTE
+            if (typeof req.body.nombre_encargado === 'undefined') {
+                await Expediente.update(
+                    { estado: req.body.estado },
+                    { where: { id: req.body.id } }
+                );
+            } else {
+                await Expediente.update({
                     estado: req.body.estado,
                     nombre_encargado: req.body.nombre_encargado,
                     cui_encargado: req.body.cui_encargado,
@@ -1027,15 +998,21 @@ module.exports = {
                     parentesco_encargado: req.body.parentesco_encargado,
                     edad_encargado: req.body.edad_encargado,
                     solvencia: 0
-                 },
-                { where: { 
-                    id: req.body.id 
-                } }
-            )
-            .then(marca => res.status(200).send('El registro ha sido modificado'))
-            .catch(error => {
-                console.log(error)
-                return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+                }, {
+                    where: { id: req.body.id }
+                });
+            }
+
+            // ✅ UNA SOLA RESPUESTA
+            return res.status(200).json({
+                msg: 'Estado actualizado correctamente'
+            });
+
+        } catch (error) {
+            console.error(error);
+
+            return res.status(500).json({
+                msg: 'Ha ocurrido un error, por favor intente más tarde'
             });
         }
     },
@@ -1171,70 +1148,67 @@ module.exports = {
         });
     },
 
-    listHospitalizacion (req, res) {
-        const getPagingData = (data, page, limit) => {
-            const { count: totalItems, rows: referido } = data;
+    async listHospitalizacion(req, res) {
+        try {
+            const getPagingData = (data, page, limit) => {
+                const { count: totalItems, rows: referido } = data;
+                const currentPage = page ? +page : 0;
+                const totalPages = Math.ceil(totalItems / limit);
+                return { totalItems, referido, totalPages, currentPage };
+            };
 
-            const currentPage = page ? +page : 0;
-            const totalPages = Math.ceil(totalItems / limit);
+            const getPagination = (page, size) => {
+                const limit = size ? +size : 2;
+                const offset = page ? page * limit : 0;
+                return { limit, offset };
+            };
 
-            return { totalItems, referido, totalPages, currentPage };
-        };
+            const busqueda = req.query.search;
+            const page = req.query.page - 1;
+            const size = req.query.limit;
+            const criterio = req.query.criterio;
+            const order = req.query.order;
 
+            const { limit, offset } = getPagination(page, size);
 
-        const getPagination = (page, size) => {
-            const limit = size ? +size : 2;
-            const offset = page ? page * limit : 0;
-
-            return { limit, offset };
-        };
-
-        const busqueda=req.query.search;
-        const page=req.query.page-1;
-        const size=req.query.limit;
-        const criterio=req.query.criterio;
-        const order=req.query.order;
-
-
-        const { limit, offset } = getPagination(page, size);
-
-        var condition = busqueda 
-        ? { [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` } }], estado: { [Op.in]: [1, 91] } } 
-        : { estado: { [Op.in]: [1, 91] } };
-
-        Expediente.findAndCountAll({
-            include: [
-                {
-                    model: Medicos,
-                    as: 'medico',
-                    attributes: ['id', 'nombre'],
-                    required: true
-                },
-                {
-                    model: Habitaciones,
-                    as: 'habitacione',
-                    attributes: ['id', 'numero'],
-                    required: true
-                },
-                {
-                    model: Cuenta,
-                    required: true,
-                    where: {
-                        estado: { [Op.in]: [1, 10] }
-                    }
+            const condition = busqueda
+                ? {
+                    [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` } }],
+                    estado: { [Op.in]: [1, 91] }
                 }
-            ],
-            where: condition,
-            order: [[criterio || 'id', order || 'ASC']],
-            limit,
-            offset
-        })
-        .then(data => {
-            console.log('data: ', JSON.stringify(data, null, 2));
+                : { estado: { [Op.in]: [1, 91] } };
+
+            const data = await Expediente.findAndCountAll({
+                include: [
+                    {
+                        model: Medicos,
+                        as: 'medico',
+                        attributes: ['id', 'nombre'],
+                        required: true
+                    },
+                    {
+                        model: Habitaciones,
+                        as: 'habitacione',
+                        attributes: ['id', 'numero'],
+                        required: true
+                    },
+                    {
+                        model: Cuenta,
+                        required: true,
+                        where: {
+                            estado: { [Op.in]: [1, 10] }
+                        }
+                    }
+                ],
+                where: condition,
+                order: [[criterio || 'id', order || 'ASC']],
+                limit,
+                offset
+            });
+
             const response = getPagingData(data, page, limit);
-        
-            console.log('response: ', JSON.stringify(response, null, 2));
-            res.send({
+
+            return res.json({
                 total: response.totalItems,
                 last_page: response.totalPages,
                 current_page: page + 1,
@@ -1242,11 +1216,13 @@ module.exports = {
                 to: response.totalPages,
                 data: response.referido
             });
-        })
-        .catch(error => {
+
+        } catch (error) {
             console.error('Error en la consulta:', error);
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
+            return res.status(400).json({
+                msg: 'Ha ocurrido un error, por favor intente más tarde'
+            });
+        }
     },
 
     listIntensivo (req, res) {

@@ -163,20 +163,24 @@ module.exports = {
         });
     },
 
-    available (req, res) {
-        Habitaciones.update(
+    available(req, res) {
+        return Habitaciones.update(
             { 
                 estado: 1,
                 ocupante: null
             },
-            { where: { 
-                ocupante: req.body.ocupante}
+            { 
+                where: { ocupante: req.body.ocupante }
             }
         )
-        .then(marca => res.status(200).send('El registro ha sido activado'))
+        .then(() => {
+            return res.status(200).send('El registro ha sido activado');
+        })
         .catch(error => {
-            console.log(error)
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+            console.log(error);
+            return res.status(400).json({
+                msg: 'Ha ocurrido un error, por favor intente más tarde'
+            });
         });
     },
 
