@@ -864,6 +864,7 @@ module.exports = {
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
+
     async changeState(req, res) {
         try {
             const form = req.body.form;
@@ -887,25 +888,11 @@ module.exports = {
                 return nuevaFecha;
             };
 
-            // 🔹 Crear log (esperado)
-            await Logs.create({
-                id_expediente: req.body.id,
-                origen: dat[req.body.estado_anterior],
-                destino: dat[req.body.estado],
-                motivo: dat[req.body.motivo],
-                id_habitacionDestino: parseInt(req.body.habitaciones),
-                createdAt: new Date(),
-                updatedAt: restarHoras(new Date(), 6),
-                created_by: req.body.user,
-            });
-
             const moment = require('moment');
 
             // 🔹 PROCESO DE COBRO
-            if (
-                ['Alta médica', 'egreso por fallecimiento', 'Contraindicado', 'Referido', 'Desahuciado']
-                .includes(dat[req.body.estado])
-            ) {
+            if (req.body.estado)
+            {
                 const logs = await Logs.findAll({
                     where: {
                         id_expediente: req.body.id,
@@ -984,6 +971,8 @@ module.exports = {
             }
 
             // 🔹 ACTUALIZAR EXPEDIENTE
+            console.log('por favor ya sueltame')
+            console.log(req.body.estado)
             if (typeof req.body.nombre_encargado === 'undefined') {
                 await Expediente.update(
                     { estado: req.body.estado },

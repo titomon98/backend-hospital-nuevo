@@ -146,7 +146,6 @@ module.exports = {
 
     let Total = (parseFloat(TotalCateg) + parseFloat(PrecioServicios));
     let nuevoTotal = (parseFloat(totalCuenta) + parseFloat(Total))
-
     const datos = {
       descripcion: `Se le sumo el total del uso de la sala de operaciones a la cuenta (${numero_cuenta})`,
       id_categoria: categoriaselect.dataValues.id,
@@ -155,7 +154,7 @@ module.exports = {
       id_cuenta: id_cuenta,
       createdAt: new Date(),
       updatedAt: restarHoras(new Date(), 6),
-      created_by: req.body.user
+      created_by: req.body.user.user
     };
 
     console.log(datos)
