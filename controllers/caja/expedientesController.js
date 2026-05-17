@@ -10,6 +10,28 @@ const DetalleCuentas = db.detalle_cuentas;
 const Op = db.Sequelize.Op;
 const DetalleHabitaciones = db.detalle_habitaciones;
 
+const Honorario = db.detalle_honorarios
+const Medico = db.medicos
+
+const MovimientoComun = db.detalle_consumo_comunes;
+const Comun = db.comunes;
+
+const MovimientoMedicamentos = db.detalle_consumo_medicamentos;
+const Medicamento = db.medicamentos;
+
+const MovimientoQuirurgico = db.detalle_consumo_quirugicos;
+const Quirurgico = db.quirurgicos;
+
+const Consumo = db.consumos;
+const Servicio = db.servicios;
+
+const Examenes = db.examenes_realizados;
+const ExamenAlmacenado = db.examenes_almacenados;
+const Cuenta_Lab = db.lab_cuentas;
+
+const SalaOperaciones = db.servicio_sala_operaciones;
+const Categoria = db.categoria_sala_operaciones;
+
 module.exports = {
     create(req, res) {
         const restarHoras = (fecha, horas) => {
@@ -1061,7 +1083,7 @@ module.exports = {
         });
       },      
 
-    listQuirofano (req, res) {
+    async listQuirofano (req, res) {
         const getPagingData = (data, page, limit) => {
             const { count: totalItems, rows: referido } = data;
 
@@ -1214,7 +1236,7 @@ module.exports = {
         }
     },
 
-    listIntensivo (req, res) {
+    async listIntensivo (req, res) {
         const getPagingData = (data, page, limit) => {
             const { count: totalItems, rows: referido } = data;
 
@@ -1290,7 +1312,7 @@ module.exports = {
         });
     },
 
-    listEmergencia (req, res) {
+    async listEmergencia (req, res) {
         const getPagingData = (data, page, limit) => {
             const { count: totalItems, rows: referido } = data;
 
@@ -1359,7 +1381,7 @@ module.exports = {
         });
     },
     
-    listReingreso (req, res) {
+    async listReingreso (req, res) {
         const getPagingData = (data, page, limit) => {
             const { count: totalItems, rows: referido } = data;
 
@@ -1456,5 +1478,148 @@ module.exports = {
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },
+
+    async egresoNormal(req, res) {
+        const form = req.body.form;
+
+        function calcularDiasHabitacion(ingreso, salida) {
+            const fechaIngreso = new Date(ingreso);
+            const fechaSalida  = salida ? new Date(salida) : new Date();
+
+            const minutosIngreso = fechaIngreso.getHours() * 60 + fechaIngreso.getMinutes();
+            const MIN_7AM = 7  * 60;
+            const MIN_2PM = 14 * 60;
+
+            let dias = 0;
+            const primerCorte2PM = new Date(fechaIngreso);
+            primerCorte2PM.setHours(14, 0, 0, 0);
+
+            if (minutosIngreso < MIN_7AM) {
+                dias += 1;
+            } else if (minutosIngreso < MIN_2PM) {
+                // sin cargo extra
+            } else {
+                dias += 1;
+                primerCorte2PM.setDate(primerCorte2PM.getDate() + 1);
+            }
+
+            if (fechaSalida > primerCorte2PM) {
+                const diffMs   = fechaSalida - primerCorte2PM;
+                const periodos = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+                dias += periodos;
+            }
+
+            return Math.max(dias, 1);
+        }
+
+        const cuentas = await Cuenta.findAll({
+            where: { id_expediente: req.body.id, estado: 1 },
+            order: [['createdAt', 'DESC']],
+        });
+
+        if (cuentas.length > 0) {
+            const id_cuenta = cuentas[0].id;
+
+            const cuentaLabSeleccionada = await Cuenta_Lab.findOne({
+                where: { id_expediente: req.body.id, estado: 1 },
+                order: [['createdAt', 'DESC']],
+            });
+            const id_cuenta_lab = cuentaLabSeleccionada ? cuentaLabSeleccionada.id : null;
+
+            const [
+                consumos,
+                consumosComunes,
+                consumosMedicamentos,
+                consumosAnestesicos,
+                consumosQuirurgicos,
+                examenes,
+                salaOperaciones,
+                honorarios,
+                detallesHabitacion,
+            ] = await Promise.all([
+                Consumo.findAll({
+                    where: { id_cuenta },
+                    attributes: ['subtotal'],
+                }),
+                MovimientoComun.findAll({
+                    where: { id_cuenta, estado: 1 },
+                    attributes: ['total'],
+                }),
+                MovimientoMedicamentos.findAll({
+                    where: { id_cuenta, estado: 1 },
+                    include: [{ model: Medicamento, attributes: [], where: { anestesico: { [Op.eq]: 1 } } }],
+                    attributes: ['total'],
+                }),
+                MovimientoMedicamentos.findAll({
+                    where: { id_cuenta, estado: 1 },
+                    include: [{ model: Medicamento, attributes: [], where: { anestesico: { [Op.eq]: 0 } } }],
+                    attributes: ['total'],
+                }),
+                MovimientoQuirurgico.findAll({
+                    where: { id_cuenta, estado: 1 },
+                    attributes: ['total'],
+                }),
+                id_cuenta_lab
+                    ? Examenes.findAll({
+                        where: { id_cuenta: id_cuenta_lab },
+                        attributes: ['total'],
+                    })
+                    : [],
+                SalaOperaciones.findAll({
+                    where: { id_cuenta },
+                    attributes: ['total'],
+                }),
+                Honorario.findAll({
+                    where: { id_cuenta, estado: 1 },
+                    attributes: ['total'],
+                }),
+                DetalleHabitaciones.findAll({
+                    where: { id_cuenta, estado: 1 },
+                    attributes: ['tipo_habitacion', 'costo_base', 'ingreso', 'salida'],
+                }),
+            ]);
+
+            // ─── Sumatoria ────────────────────────────────────────────────────────
+            const sumar = (arr, campo) =>
+                arr.reduce((acc, item) => acc + parseFloat(item[campo] || 0), 0);
+
+            const costoHabitacion = detallesHabitacion.reduce((acc, detalle) => {
+                const dias = calcularDiasHabitacion(detalle.ingreso, detalle.salida);
+                return acc + parseFloat(detalle.costo_base) * dias;
+            }, 0);
+
+            const costoTotal =
+                sumar(consumos,            'subtotal') +
+                sumar(consumosComunes,     'total')    +
+                sumar(consumosMedicamentos,'total')    +
+                sumar(consumosAnestesicos, 'total')    +
+                sumar(consumosQuirurgicos, 'total')    +
+                sumar(examenes,            'total')    +
+                sumar(salaOperaciones,     'total')    +
+                sumar(honorarios,          'total')    +
+                costoHabitacion;
+
+            await Cuenta.update({
+                total: costoTotal,
+                pendiente_de_pago: costoTotal,
+                fecha_egreso: req.body.fecha || null,
+                hora_egreso: req.body.hora || null,
+            }, {
+                where: { id: id_cuenta }
+            });
+        }
+        console.log('ESTADO PUTO')
+        console.log(form.estado)
+        await Expediente.update({
+            estado: req.body.estado,
+            solvencia: 0
+        }, {
+            where: { id: req.body.id }
+        });
+
+        return res.status(200).json({
+            msg: 'Estado actualizado correctamente'
+        });
+    }
 };
 

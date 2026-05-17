@@ -2,7 +2,9 @@
 const Sequelize     = require('sequelize');
 const db = require("../../models");
 const Habitaciones = db.habitaciones;
+const DetalleHabitaciones = db.detalle_habitaciones;
 const Op = db.Sequelize.Op;
+const Cuenta = db.cuentas;
 
 module.exports = {
     create(req, res) {
@@ -146,15 +148,45 @@ module.exports = {
         });
     },
     
-    inUse (req, res) {
-        Habitaciones.update(
+    async inUse (req, res) {
+        const restarHoras = (fecha, horas) => {
+            let nuevaFecha = new Date(fecha); // Crear una nueva instancia de fecha
+            nuevaFecha.setHours(nuevaFecha.getHours() - horas);
+            return nuevaFecha;
+        };
+
+        const habitacion = await Habitaciones.findOne({
+            where: {
+              id: req.body.id
+            }
+          });
+
+        const cuenta = await Cuenta.findOne({
+            where: { id_expediente: req.body.ocupante, estado: 1 },
+            order: [['createdAt', 'DESC']],
+        });
+
+        const createHabitacion = {
+            id_cuenta: cuenta.id,
+            tipo_habitacion: habitacion.tipo,
+            estado: 1,
+            costo_base: habitacion.costo_diario,
+            ingreso: restarHoras(new Date(), 6),
+            salida: null,
+            createdAt: new Date(),
+            updatedAt: restarHoras(new Date(), 6),
+            created_by: req.body.user
+        }
+        await DetalleHabitaciones.create(createHabitacion)
+
+        await Habitaciones.update(
             { 
                 estado: 2,
                 ocupante: req.body.ocupante
             },
             { where: { 
                 id: req.body.id
-            } }
+            }}
         )
         .then(marca => res.status(200).send('El registro ha sido activado'))
         .catch(error => {
@@ -167,6 +199,7 @@ module.exports = {
         return Habitaciones.update(
             { 
                 estado: 1,
+                ocupante_previo: req.body.ocupante,
                 ocupante: null
             },
             { 

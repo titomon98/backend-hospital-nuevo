@@ -224,6 +224,7 @@ module.exports = (app) => {
     router.get('/expedientes/listReingreso', expedientesController.listReingreso);
     router.put('/expedientes/changeStatus', expedientesController.changeStatus);
     router.delete('/expedientes/delete', expedientesController.delete)
+    router.put('/expedientes/egresoNormal', expedientesController.egresoNormal);
 
     //CARPETA DE ENFERMERIA
     //habitaciones

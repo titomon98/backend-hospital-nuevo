@@ -44,6 +44,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: true
     },
+    ocupante_previo: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
     created_by: {
       type: DataTypes.STRING,
     },
