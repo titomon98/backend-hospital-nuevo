@@ -213,7 +213,7 @@ module.exports = {
     const responsable = req.body.delete.responsable
 
     const honorario = await DetalleHonorarios.findByPk(id_honorario);
-    honorario.estado = 0
+    honorario.estado = 100
     honorario.updated_by = responsable
     await honorario.save();
 

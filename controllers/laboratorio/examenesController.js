@@ -831,5 +831,33 @@ module.exports = {
           console.log(error)
           return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
       });
-    }
+    },
+
+    async getExamenesPorCuenta(req, res) {
+      const { id } = req.params; // id del expediente
+
+      try {
+          const cuentaLab = await Cuenta_Lab.findOne({
+              where: { id_expediente: id, estado: 1 },
+              order: [['createdAt', 'DESC']],
+          });
+
+          if (!cuentaLab) {
+              return res.status(200).json({ total: 0, examenes: [] });
+          }
+
+          const examenes = await Examenes.findAll({
+              where: { id_lab_cuentas: cuentaLab.id },
+              include: [{ model: ExamenAlmacenado, attributes: ['nombre'] }],
+              attributes: ['id', 'total', 'estado'],
+          });
+
+          const total = examenes.reduce((acc, item) => acc + parseFloat(item.total || 0), 0);
+
+          return res.status(200).json({ total, examenes });
+      } catch (error) {
+          console.error('Error al obtener exámenes:', error);
+          return res.status(500).json({ msg: 'Error al obtener los exámenes' });
+      }
+  }
 }

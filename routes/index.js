@@ -117,6 +117,7 @@ const reportesEnfermeriaController = require('../controllers/reportes/reportesEn
 const reportesExamenesController = require('../controllers/reportes/reportesExamenesController')
 const reportesMedicosController = require('../controllers/reportes/reportesMedicosController')
 const reportesPacientesController = require('../controllers/reportes/reportesPacientesController');
+const trasladosController = require('../controllers/caja/trasladosController.js');
 
 
 //RUTAS
@@ -707,6 +708,9 @@ module.exports = (app) => {
     router.get('/reporte/laboratio/examenesDiarios', reportesExamenesController.getReporteExamenesDiarios)
     router.get('/reporte/laboratio/porMedico', reportesExamenesController.getReporteExamenesPorMedico)
     router.get('/reporte/laboratio/comisiones', reportesExamenesController.getAllExamenesPorMedico)
+
+    //traslados
+    router.put('/traslados/emergencia/hospital', trasladosController.trasladarEmergenciaAHospital)
 
     //AUTH
     router.post('/login', authController.login);

@@ -32,6 +32,8 @@ const Cuenta_Lab = db.lab_cuentas;
 const SalaOperaciones = db.servicio_sala_operaciones;
 const Categoria = db.categoria_sala_operaciones;
 
+const DetalleHonorarios = db.detalle_honorarios;
+
 module.exports = {
     create(req, res) {
         const restarHoras = (fecha, horas) => {
@@ -1208,7 +1210,16 @@ module.exports = {
                         required: true,
                         where: {
                             estado: { [Op.in]: [1, 10] }
-                        }
+                        },
+                        include: [
+                            {
+                                model: DetalleHonorarios,
+                                as: 'detalle_honorarios',
+                                attributes: ['id'],
+                                required: false,
+                                where: { estado: 1 }
+                            }
+                        ]
                     }
                 ],
                 where: condition,
@@ -1284,7 +1295,16 @@ module.exports = {
                     required: true,
                     where: {
                         estado: { [Op.in]: [1, 10] }
-                    }
+                    },
+                    include: [
+                        {
+                            model: DetalleHonorarios,
+                            as: 'detalle_honorarios',
+                            attributes: ['id'],
+                            required: false,
+                            where: { estado: 1 }
+                        }
+                    ]
                 }
             ],
             where: condition,
@@ -1360,7 +1380,16 @@ module.exports = {
                     required: true,
                     where: {
                         estado: { [Op.in]: [1, 10] }
-                    }
+                    },
+                    include: [
+                        {
+                            model: DetalleHonorarios,
+                            as: 'detalle_honorarios',
+                            attributes: ['id'],
+                            required: false,
+                            where: { estado: 1 }
+                        }
+                    ]
                 }
             ],
             where: condition,
@@ -1459,22 +1488,34 @@ module.exports = {
 
     delete (req, res) {
         
-        Cuenta.destroy({
-            where: { id_expediente: req.body.id }
+        Cuenta.findAll({
+            where: { id_expediente: req.body.id },
+            attributes: ['id']
+        })
+        .then(cuentas => {
+            const idsCuentas = cuentas.map(c => c.id);
+
+            if (idsCuentas.length === 0) return Promise.resolve();
+
+            // Eliminamos en paralelo todos los hijos de las cuentas
+            return Promise.all([
+                DetalleHabitaciones.destroy({ where: { id_cuenta: idsCuentas } }),
+                Consumo.destroy({ where: { id_cuenta: idsCuentas } }),
+                DetalleCuentas.destroy({ where: { id_cuenta: idsCuentas } }),
+                MovimientoComun.destroy({ where: { id_cuenta: idsCuentas } }),
+                MovimientoMedicamentos.destroy({ where: { id_cuenta: idsCuentas } }),
+                MovimientoQuirurgico.destroy({ where: { id_cuenta: idsCuentas } }),
+            ]);
         })
         .then(() => {
-            return Expediente.destroy({
-                where: { id: req.body.id }
-            });
+            return Cuenta.destroy({ where: { id_expediente: req.body.id } });
+        })
+        .then(() => {
+            return Expediente.destroy({ where: { id: req.body.id } });
         })
         .then(() => res.status(200).send('El registro ha sido eliminado'))
         .catch(error => {
             console.log(error);
-    
-            if (error.name === 'SequelizeForeignKeyConstraintError') {
-                return res.status(400).json({ msg: 'El expediente no puede ser eliminado permanentemente ya que tiene datos en hospital' });
-            }
-    
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
     },

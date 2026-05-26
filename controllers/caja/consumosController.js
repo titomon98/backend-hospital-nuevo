@@ -610,12 +610,16 @@ module.exports = {
                     include: [{ model: Medico, attributes: ['nombre'] }],
                 }),
 
-                // Historial de habitaciones de esta cuenta
                 DetalleHabitaciones.findAll({
                     where: { id_cuenta, estado: 1 },
                     attributes: ['tipo_habitacion', 'costo_base', 'ingreso', 'salida'],
                 }),
             ]);
+
+            // SEPARAR HONORARIOS NORMALES DE EMERGENCIA MÉDICO INTERNO
+            const honorariosNormales = honorarios.filter(h => h.descripcion !== 'pago a medico interno por emergencia');
+            const emergenciaMedicoInterno = honorarios.filter(h => h.descripcion === 'pago a medico interno por emergencia');
+            const EmergenciasMedicoInterno = emergenciaMedicoInterno.reduce((acc, item) => acc + parseFloat(item.total), 0);
 
             // NOMBRE DEL MEDICO
             let nombremedico = 'NO ASIGNADO';
@@ -648,8 +652,8 @@ module.exports = {
                 const fechaSalida  = salida ? new Date(salida) : new Date();
 
                 const minutosIngreso = fechaIngreso.getHours() * 60 + fechaIngreso.getMinutes();
-                const MIN_7AM = 7  * 60;  // 420
-                const MIN_2PM = 14 * 60;  // 840
+                const MIN_7AM = 7  * 60;
+                const MIN_2PM = 14 * 60;
 
                 let dias = 0;
 
@@ -657,17 +661,14 @@ module.exports = {
                 primerCorte2PM.setHours(14, 0, 0, 0);
 
                 if (minutosIngreso < MIN_7AM) {
-                    // 12:00 AM – 6:59 AM → día extra por madrugada
                     dias += 1;
                 } else if (minutosIngreso < MIN_2PM) {
-                    // 7:00 AM – 1:59 PM → sin cargo extra
+                    // sin cargo extra
                 } else {
-                    // 2:00 PM – 11:59 PM → cuenta el período actual, siguiente corte es mañana 2PM
                     dias += 1;
                     primerCorte2PM.setDate(primerCorte2PM.getDate() + 1);
                 }
 
-                // Períodos completos de 2PM→2PM entre primerCorte y salida
                 if (fechaSalida > primerCorte2PM) {
                     const diffMs   = fechaSalida - primerCorte2PM;
                     const periodos = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
@@ -678,16 +679,15 @@ module.exports = {
             }
 
             let costoTotal = 0.0;
-            let costoIntensivo = 0.0
+            let costoIntensivo = 0.0;
             for (const detalle of detallesHabitacion) {
-                const dias       = calcularDiasHabitacion(detalle.ingreso, detalle.salida);
+                const dias = calcularDiasHabitacion(detalle.ingreso, detalle.salida);
                 const costoTotalInterno = parseFloat(detalle.costo_base) * dias;
                 if (detalle.tipo_habitacion === 'Intensivo') {
-                    costoIntensivo += costoTotalInterno
+                    costoIntensivo += costoTotalInterno;
                 } else {
-                    costoTotal += costoTotalInterno
+                    costoTotal += costoTotalInterno;
                 }
-                
             }
 
             const reporte = {
@@ -698,7 +698,8 @@ module.exports = {
                 consumosQuirurgicos,
                 examenes,
                 salaOperaciones,
-                honorarios,
+                honorarios: honorariosNormales,
+                EmergenciasMedicoInterno,
                 nombremedico,
                 numerohabitacion,
                 fechaFormateada,
@@ -711,7 +712,7 @@ module.exports = {
             console.error('Error al obtener los datos:', error);
             return res.status(500).json({ msg: 'Error al obtener los datos', error: error.message });
         }
-    }
+    },
     
 };
 

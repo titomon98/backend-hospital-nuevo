@@ -29,7 +29,7 @@ module.exports = (sequelize, DataTypes) => {
         key: 'id'
       }
     },
-    estado: {
+    estado: { //1 no estan pagados. 0 ya estan pagados, 100 eliminado logico
       type: DataTypes.INTEGER,
       allowNull: false
     },
