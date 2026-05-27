@@ -941,10 +941,6 @@ module.exports = {
                         });
                     }
 
-                    if (!habitacionSeleccionada) {
-                        return res.status(200).json({ msg: 'No se encontró habitación' });
-                    }
-
                     const cuentas = await Cuenta.findAll({
                         where: { id_expediente: req.body.id, estado: 1 },
                         order: [['createdAt', 'DESC']],
@@ -998,9 +994,6 @@ module.exports = {
                 });
             }
 
-            // 🔹 ACTUALIZAR EXPEDIENTE
-            console.log('por favor ya sueltame')
-            console.log(req.body.estado)
             if (typeof req.body.nombre_encargado === 'undefined') {
                 await Expediente.update(
                     { estado: req.body.estado },
