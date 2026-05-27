@@ -937,7 +937,7 @@ module.exports = {
 
                     if (registroMasReciente.id_habitacionDestino) {
                         habitacionSeleccionada = await Habitaciones.findOne({
-                            where: { id: registroMasReciente.id_habitacionDestino },
+                            where: { ocupante: req.body.id },
                         });
                     }
 
