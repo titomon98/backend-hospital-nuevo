@@ -935,11 +935,10 @@ module.exports = {
 
                     let habitacionSeleccionada = null;
 
-                    if (registroMasReciente.id_habitacionDestino) {
-                        habitacionSeleccionada = await Habitaciones.findOne({
-                            where: { ocupante: req.body.id },
-                        });
-                    }
+                    habitacionSeleccionada = await Habitaciones.findOne({
+                        where: { ocupante: req.body.id },
+                    });
+
 
                     const cuentas = await Cuenta.findAll({
                         where: { id_expediente: req.body.id, estado: 1 },
