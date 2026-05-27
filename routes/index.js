@@ -455,6 +455,7 @@ module.exports = (app) => {
     router.get('/detalle_honorarios/getSearch', detalleHonorariosController.getSearch);
     router.get('/detalle_honorarios/list', detalleHonorariosController.list);
     router.put('/detalle_honorarios/deactivate', detalleHonorariosController.deactivate)
+    router.patch('/detalle_honorarios/updateTotal', detalleHonorariosController.updateTotal)
 
     //CARPETA DE INVENTARIO
     //alimentacion

@@ -218,5 +218,48 @@ module.exports = {
     await honorario.save();
 
     return res.send('Honorario eliminado correctamente')
-  }    
+  },
+
+  async updateTotal(req, res) {
+    const { id, total, updated_by } = req.body;
+
+    if (!id || total === undefined || total === null) {
+      return res.status(400).json({ msg: 'Se requiere el id y el nuevo total' });
+    }
+
+    const nuevoTotal = parseFloat(total);
+    if (isNaN(nuevoTotal) || nuevoTotal < 0) {
+      return res.status(400).json({ msg: 'El total debe ser un número válido mayor o igual a cero' });
+    }
+
+    try {
+      const detalle = await DetalleHonorarios.findByPk(id, {
+        include: [{ model: Cuenta }]
+      });
+
+      if (!detalle) {
+        return res.status(404).json({ msg: 'Detalle de honorario no encontrado' });
+      }
+
+      const totalAnterior = parseFloat(detalle.total);
+      const diferencia = nuevoTotal - totalAnterior;
+
+      const cuenta = await Cuenta.findByPk(detalle.id_cuenta);
+      if (!cuenta) {
+        return res.status(404).json({ msg: 'Cuenta asociada no encontrada' });
+      }
+
+      const totalCuentaActualizado = parseFloat(cuenta.total) + diferencia;
+
+      await Promise.all([
+        detalle.update({ total: nuevoTotal, updated_by: updated_by || null }),
+        cuenta.update({ total: totalCuentaActualizado })
+      ]);
+
+      return res.status(200).json({ msg: 'Honorario actualizado correctamente', total: nuevoTotal });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+    }
+  },
 };
