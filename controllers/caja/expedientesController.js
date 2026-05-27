@@ -62,6 +62,8 @@ module.exports = {
             nombres: form.nombre,
             apellidos: form.apellidos,
             expediente: 'EXPEDIENTE INCOMPLETO',
+            nombre_factura: form.nombre_factura ?? null,
+            nit_factura:    form.nit_factura    ?? null,
             primer_ingreso: today,
             casada: form.casada,
             nacimiento: form.nacimiento,
@@ -209,6 +211,8 @@ module.exports = {
             telefono_conyuge: form.telefono_conyuge,
             fecha_ingreso_reciente: restarHoras(new Date(), 6),
             created_by: req.body.user,
+            nombre_factura: form.nombre_factura ?? null,
+            nit_factura:    form.nit_factura    ?? null,
         };
 
         if (form.selectedOption == 'emergencia') {

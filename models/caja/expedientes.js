@@ -160,7 +160,13 @@ module.exports = (sequelize, DataTypes) => {
     },
     updated_by: {
       type: DataTypes.STRING,
-    }
+    },
+    nit_factura: {
+      type: DataTypes.STRING,
+    },
+    nombre_factura: {
+      type: DataTypes.STRING,
+    },
   }, {
     sequelize,
     modelName: 'expedientes',
