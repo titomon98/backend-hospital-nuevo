@@ -52,19 +52,28 @@ module.exports = {
         });
     },
 
-    async getSearch (req, res) {
+    async getSearch(req, res) {
         const restarHoras = (fecha, horas) => {
             let nuevaFecha = new Date(fecha);
             nuevaFecha.setHours(nuevaFecha.getHours() - horas);
             return nuevaFecha;
         };
+
         const busqueda = req.query.search;
         const condition = busqueda
             ? { [Op.or]: [{ nombre: { [Op.like]: `%${busqueda}%` } }], [Op.and]: [{ estado: 1 }] }
             : { estado: 1 };
-    
+
         try {
-            const fechaActual = restarHoras(new Date(), 6)
+            // Si viene fecha del query la usa, si no usa el día actual
+            const fechaBase = req.query.fecha ? new Date(req.query.fecha) : restarHoras(new Date(), 6);
+
+            const inicioDia = new Date(fechaBase);
+            inicioDia.setHours(0, 0, 0, 0);
+
+            const finDia = new Date(fechaBase);
+            finDia.setHours(23, 59, 59, 999);
+
             const [Medicos, ultimo_id] = await Promise.all([
                 Medico.findAll({ where: condition }),
                 VoucherHonorarios.findOne({
@@ -72,41 +81,51 @@ module.exports = {
                     order: [['id', 'DESC']],
                 }),
             ]);
-            const numero = ultimo_id? ultimo_id.id + 1 : 1;
-            res.json({ Medicos, numero, fechaActual });
+
+            const numero = ultimo_id ? ultimo_id.id + 1 : 1;
+            res.json({ Medicos, numero, fechaActual: fechaBase, inicioDia, finDia });
         } catch (error) {
             console.error(error);
-            res.status(500).json({ error: 'Error al generar el reporte de pacientes fallecidos' });
+            res.status(500).json({ error: 'Error en getSearch' });
         }
     },
 
-    async getPacientesHonorarios (req, res) {
+    async getPacientesHonorarios(req, res) {
         const idMedico = req.query.idMedico;
+        const fecha = req.query.fecha;
+
+        const [yyyy, mm, dd] = fecha
+            ? fecha.split('-').map(Number)
+            : [new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate()];
+
+        const inicioDia = new Date(Date.UTC(yyyy, mm - 1, dd, 6, 0, 0, 0));
+        const finDia    = new Date(Date.UTC(yyyy, mm - 1, dd + 1, 5, 59, 59, 999));
+
         try {
             const pacientes = await Honorarios.findAll({
-                where: {id_medico : idMedico , estado : 1},
+                where: {
+                    id_medico: idMedico,
+                    estado: 1,
+                    createdAt: { [Op.between]: [inicioDia, finDia] }
+                },
                 attributes: ['id', 'id_cuenta', 'total', 'lugar', 'createdAt'],
                 raw: true,
-            })
+            });
+
+            if (pacientes.length === 0) {
+                return res.json({ pacientes: [], Total: 0 });
+            }
 
             const idsCuentas = pacientes.map((item) => item.id_cuenta);
             const cuentas = await Cuentas.findAll({
-                where: {
-                    id: {
-                        [Op.in]: idsCuentas,
-                    },
-                },
+                where: { id: { [Op.in]: idsCuentas } },
                 attributes: ['id', 'id_expediente'],
                 raw: true,
             });
 
             const idsExpedientes = cuentas.map((cuenta) => cuenta.id_expediente);
             const expedientes = await Expedientes.findAll({
-                where: {
-                    id: {
-                        [Op.in]: idsExpedientes,
-                    },
-                },
+                where: { id: { [Op.in]: idsExpedientes } },
                 attributes: ['id', 'nombres', 'apellidos', 'expediente'],
                 raw: true,
             });
@@ -120,11 +139,12 @@ module.exports = {
                 group: ['id_cuenta'],
                 raw: true,
             });
+
             const idsFechas = idsMasRecientes.map(item => ({
                 id_cuenta: item.id_cuenta,
                 updatedAt: item.ultimoPago,
             }));
-            
+
             const ultimoPagos = await tipoPago.findAll({
                 where: {
                     [Op.or]: idsFechas.map(item => ({
@@ -136,7 +156,6 @@ module.exports = {
                 raw: true,
             });
 
-            // Crear un mapa de expedientes para acceso rápido
             const expedientesMap = expedientes.reduce((map, expediente) => {
                 map[expediente.id] = expediente;
                 return map;
@@ -147,15 +166,13 @@ module.exports = {
                 return map;
             }, {});
 
-            // Generar el reporte consolidado
             const pacientesMedico = pacientes.map(detalle => {
-                const cuenta = cuentas.find(cuenta => cuenta.id === detalle.id_cuenta);
+                const cuenta = cuentas.find(c => c.id === detalle.id_cuenta);
                 const expediente = cuenta ? expedientesMap[cuenta.id_expediente] : null;
-                const tipoPago = tipoPagoMap[detalle.id_cuenta] || {};
-    
-                // Determinar tipo de pago con dinero
-                const tipoConDinero = ['efectivo', 'tarjeta', 'deposito', 'cheque', 'seguro', 'transferencia'].find(tipo => tipoPago[tipo] > 0) || 'Ninguno';
-    
+                const pago = tipoPagoMap[detalle.id_cuenta] || {};
+                const tipoConDinero = ['efectivo', 'tarjeta', 'deposito', 'cheque', 'seguro', 'transferencia']
+                    .find(tipo => pago[tipo] > 0) || 'Ninguno';
+
                 return {
                     id: detalle.id,
                     paciente: expediente ? `${expediente.nombres} ${expediente.apellidos}` : 'Desconocido',
@@ -166,13 +183,13 @@ module.exports = {
                     tipoPago: tipoConDinero
                 };
             });
-    
-            const totalHonorarios = pacientes.reduce((sum, paciente) => sum + parseFloat(paciente.total || 0), 0);
-    
+
+            const totalHonorarios = pacientesMedico.reduce((sum, p) => sum + p.total, 0);
+
             res.json({ pacientes: pacientesMedico, Total: totalHonorarios });
         } catch (error) {
             console.error(error);
-            res.status(500).json({ error: 'Error al generar el reporte de pacientes fallecidos' });
+            res.status(500).json({ error: 'Error al obtener pacientes' });
         }
     }
 };

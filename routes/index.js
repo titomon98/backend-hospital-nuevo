@@ -554,6 +554,7 @@ module.exports = (app) => {
     //voucherPagoHonorarios
     router.post('/voucher/create', voucherHonorariosController.create);
     router.get('/voucher/getSearch', voucherHonorariosController.getSearch);
+    router.get('/voucher/getPacientesHonorarios', voucherHonorariosController.getPacientesHonorarios)
 
     //personal
     router.get('/personal/list', personalController.list);
