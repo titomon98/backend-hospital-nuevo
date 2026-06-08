@@ -890,5 +890,182 @@ module.exports = {
             return res.status(500).json({ msg: 'Error al obtener datos de hoja de emergencia', error: error.message });
         }
     },
+
+    async getCuentaParcial(req, res) {
+        const { id } = req.params;
+
+        try {
+            const expediente = await Expediente.findOne({
+                where: { id },
+                attributes: ['id', 'nombres', 'apellidos', 'fecha_ingreso_reciente', 'hora_ingreso_reciente', 'id_medico'],
+            });
+
+            if (!expediente) {
+                return res.status(404).json({ msg: 'Expediente no encontrado' });
+            }
+
+            const cuenta = await Cuenta.findOne({
+                where: { id_expediente: id },
+                order: [['createdAt', 'DESC']],
+            });
+
+            if (!cuenta) {
+                return res.status(404).json({ msg: 'No se encontró cuenta para este expediente' });
+            }
+
+            const id_cuenta = cuenta.id;
+
+            const cuentaLab = await Cuenta_Lab.findOne({
+                where: { id_expediente: id, estado: 1 },
+                order: [['createdAt', 'DESC']],
+            });
+            const id_cuenta_lab = cuentaLab ? cuentaLab.id : null;
+
+            // Nombre del médico tratante
+            let nombremedico = 'NO ASIGNADO';
+            if (expediente.id_medico) {
+                const medico = await Medico.findOne({
+                    where: { id: expediente.id_medico },
+                    attributes: ['nombre'],
+                });
+                nombremedico = medico?.nombre ?? 'NO ASIGNADO';
+            }
+
+            // Número de habitación
+            let numerohabitacion = 'NO ASIGNADO';
+            const habitacion = await Habitaciones.findOne({
+                where: { ocupante: id },
+                order: [['createdAt', 'DESC']],
+                attributes: ['numero'],
+            });
+            numerohabitacion = habitacion?.numero ?? 'NO ASIGNADO';
+
+            const [
+                consumos,
+                consumosComunes,
+                consumosMedicamentos,
+                consumosAnestesicos,
+                consumosQuirurgicos,
+                examenes,
+                salaOperaciones,
+                honorarios,
+                detallesHabitacion,
+            ] = await Promise.all([
+                Consumo.findAll({
+                    where: { id_cuenta },
+                    include: [{ model: Servicio, attributes: ['descripcion', 'precio'] }],
+                    attributes: ['id', 'cantidad', 'descripcion', 'subtotal', 'estado'],
+                }),
+                MovimientoComun.findAll({
+                    where: { id_cuenta, estado: 1 },
+                    include: [{ model: Comun, attributes: ['nombre'] }],
+                    attributes: ['id', 'descripcion', 'cantidad', 'precio_venta', 'total', 'estado'],
+                }),
+                MovimientoMedicamentos.findAll({
+                    where: { id_cuenta, estado: 1 },
+                    include: [{ model: Medicamento, attributes: ['nombre'], where: { anestesico: { [Op.eq]: 0 } }, required: true }],
+                    attributes: ['id', 'descripcion', 'cantidad', 'precio_venta', 'total', 'estado'],
+                }),
+                MovimientoMedicamentos.findAll({
+                    where: { id_cuenta, estado: 1 },
+                    include: [{ model: Medicamento, attributes: ['nombre'], where: { anestesico: { [Op.eq]: 1 } }, required: true }],
+                    attributes: ['id', 'descripcion', 'cantidad', 'precio_venta', 'total', 'estado'],
+                }),
+                MovimientoQuirurgico.findAll({
+                    where: { id_cuenta, estado: 1 },
+                    include: [{ model: Quirurgico, attributes: ['nombre'] }],
+                    attributes: ['id', 'descripcion', 'cantidad', 'precio_venta', 'total', 'estado'],
+                }),
+                id_cuenta_lab
+                    ? Examenes.findAll({
+                        where: { id_cuenta: id_cuenta_lab },
+                        include: [{ model: ExamenAlmacenado, attributes: ['nombre'] }],
+                        attributes: ['id', 'total', 'estado'],
+                    })
+                    : [],
+                SalaOperaciones.findAll({
+                    where: { id_cuenta },
+                    include: [{ model: Categoria, attributes: ['categoria'] }],
+                    attributes: ['id', 'descripcion', 'horas', 'total'],
+                }),
+                Honorario.findAll({
+                    where: { id_cuenta, estado: 1 },
+                    attributes: ['id', 'id_medico', 'descripcion', 'total'],
+                    include: [{ model: Medico, attributes: ['nombre'] }],
+                }),
+                DetalleHabitaciones.findAll({
+                    where: { id_cuenta, estado: 1 },
+                    attributes: ['tipo_habitacion', 'costo_base', 'ingreso', 'salida'],
+                }),
+            ]);
+
+            // Calcular costo de habitaciones (misma lógica de corte 2PM)
+            function calcularDiasHabitacion(ingreso, salida) {
+                const fechaIngreso = new Date(ingreso);
+                const fechaSalida  = salida ? new Date(salida) : new Date();
+                const minutosIngreso = fechaIngreso.getHours() * 60 + fechaIngreso.getMinutes();
+                const MIN_7AM = 7  * 60;
+                const MIN_2PM = 14 * 60;
+                let dias = 0;
+                const primerCorte2PM = new Date(fechaIngreso);
+                primerCorte2PM.setHours(14, 0, 0, 0);
+                if (minutosIngreso < MIN_7AM) {
+                    dias += 1;
+                } else if (minutosIngreso >= MIN_2PM) {
+                    dias += 1;
+                    primerCorte2PM.setDate(primerCorte2PM.getDate() + 1);
+                }
+                if (fechaSalida > primerCorte2PM) {
+                    const diffMs   = fechaSalida - primerCorte2PM;
+                    const periodos = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+                    dias += periodos;
+                }
+                return Math.max(dias, 1);
+            }
+
+            let costoTotal = 0.0;
+            let costoIntensivo = 0.0;
+            for (const detalle of detallesHabitacion) {
+                const dias = calcularDiasHabitacion(detalle.ingreso, detalle.salida);
+                const costo = parseFloat(detalle.costo_base || 0) * dias;
+                if (detalle.tipo_habitacion === 'Intensivo') {
+                    costoIntensivo += costo;
+                } else {
+                    costoTotal += costo;
+                }
+            }
+
+            // Suma segura contra null/undefined/NaN
+            const sumar = (arr, campo) =>
+                arr.reduce((acc, item) => {
+                    const val = parseFloat(item[campo]);
+                    return acc + (isNaN(val) ? 0 : val);
+                }, 0);
+
+            const fechaFormateada = expediente.fecha_ingreso_reciente
+                ? `${expediente.fecha_ingreso_reciente}T${expediente.hora_ingreso_reciente || '00:00:00'}`
+                : null;
+
+            return res.status(200).json({
+                nombremedico,
+                numerohabitacion,
+                fechaFormateada,
+                costoTotal:    parseFloat(costoTotal.toFixed(2)),
+                costoIntensivo: parseFloat(costoIntensivo.toFixed(2)),
+                consumos:               consumos.map(i => ({ ...i.toJSON(), subtotal: parseFloat(i.subtotal || 0) || 0 })),
+                consumosComunes:        consumosComunes.map(i => ({ ...i.toJSON(), total: parseFloat(i.total || 0) || 0 })),
+                consumosMedicamentos:   consumosMedicamentos.map(i => ({ ...i.toJSON(), total: parseFloat(i.total || 0) || 0 })),
+                consumosAnestesicos:    consumosAnestesicos.map(i => ({ ...i.toJSON(), total: parseFloat(i.total || 0) || 0 })),
+                consumosQuirurgicos:    consumosQuirurgicos.map(i => ({ ...i.toJSON(), total: parseFloat(i.total || 0) || 0 })),
+                examenes:               examenes.map(i => ({ ...i.toJSON(), total: parseFloat(i.total || 0) || 0 })),
+                salaOperaciones:        salaOperaciones.map(i => ({ ...i.toJSON(), total: parseFloat(i.total || 0) || 0 })),
+                honorarios:             honorarios.map(i => ({ ...i.toJSON(), total: parseFloat(i.total || 0) || 0 })),
+            });
+
+        } catch (error) {
+            console.error('Error al obtener cuenta parcial:', error);
+            return res.status(500).json({ msg: 'Error al obtener datos de cuenta parcial', error: error.message });
+        }
+    },
 };
 
