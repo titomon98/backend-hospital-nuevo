@@ -714,5 +714,181 @@ module.exports = {
         }
     },
     
+    async getHojaEmergencia(req, res) {
+        const { id } = req.params;
+
+        try {
+            const expediente = await Expediente.findOne({
+                where: { id },
+                attributes: [
+                    'id', 'nombres', 'apellidos', 'nacimiento', 'telefono',
+                    'direccion', 'fecha_ingreso_reciente', 'hora_ingreso_reciente',
+                    'id_medico'
+                ],
+            });
+
+            if (!expediente) {
+                return res.status(404).json({ msg: 'Expediente no encontrado' });
+            }
+
+            const cuenta = await Cuenta.findOne({
+                where: { id_expediente: id },
+                order: [['createdAt', 'DESC']],
+                attributes: ['id', 'motivo', 'motivo_egreso', 'descripcion', 'otros', 'fecha_ingreso', 'hora_ingreso'],
+            });
+
+            if (!cuenta) {
+                return res.status(404).json({ msg: 'No se encontró cuenta para este expediente' });
+            }
+
+            const id_cuenta = cuenta.id;
+
+            const cuentaLab = await Cuenta_Lab.findOne({
+                where: { id_expediente: id, estado: 1 },
+                order: [['createdAt', 'DESC']],
+            });
+            const id_cuenta_lab = cuentaLab ? cuentaLab.id : null;
+
+            let nombreMedico = 'NO ASIGNADO';
+            if (expediente.id_medico) {
+                const medico = await Medico.findOne({
+                    where: { id: expediente.id_medico },
+                    attributes: ['nombre'],
+                });
+                nombreMedico = medico?.nombre ?? 'NO ASIGNADO';
+            }
+
+            const [
+                consumosMedicamentos,
+                consumosAnestesicos,
+                consumosQuirurgicos,
+                consumosComunes,
+                consumosServicios,
+                examenes,
+                honorarios,
+                honorariosEmergencia,
+            ] = await Promise.all([
+                MovimientoMedicamentos.findAll({
+                    where: { id_cuenta, estado: 1 },
+                    include: [{ 
+                        model: Medicamento, 
+                        attributes: ['nombre'], 
+                        where: { anestesico: { [Op.eq]: 0 } },
+                        required: true   // ← fuerza INNER JOIN limpio, sin filas null
+                    }],
+                    attributes: ['total'],
+                }),
+                MovimientoMedicamentos.findAll({
+                    where: { id_cuenta, estado: 1 },
+                    include: [{ 
+                        model: Medicamento, 
+                        attributes: ['nombre'], 
+                        where: { anestesico: { [Op.eq]: 1 } },
+                        required: true   // ← igual aquí
+                    }],
+                    attributes: ['total'],
+                }),
+                MovimientoQuirurgico.findAll({
+                    where: { id_cuenta, estado: 1 },
+                    attributes: ['total'],
+                }),
+                MovimientoComun.findAll({
+                    where: { id_cuenta, estado: 1 },
+                    attributes: ['total'],
+                }),
+                Consumo.findAll({
+                    where: { id_cuenta },
+                    attributes: ['subtotal'],
+                }),
+                id_cuenta_lab
+                    ? Examenes.findAll({
+                        where: { id_cuenta: id_cuenta_lab },
+                        include: [{ model: ExamenAlmacenado, attributes: ['nombre'] }],
+                        attributes: ['id', 'total'],
+                    })
+                    : [],
+                Honorario.findAll({
+                    where: {
+                        id_cuenta,
+                        estado: 1,
+                        descripcion: { [Op.ne]: 'pago a medico interno por emergencia' }
+                    },
+                    attributes: ['total'],
+                }),
+                Honorario.findAll({
+                    where: {
+                        id_cuenta,
+                        estado: 1,
+                        descripcion: 'pago a medico interno por emergencia'
+                    },
+                    attributes: ['total'],
+                }),
+            ]);
+
+            // Suma segura: null, undefined y NaN se tratan como 0
+            const sumar = (arr, campo) =>
+                arr.reduce((acc, item) => {
+                    const val = parseFloat(item[campo]);
+                    return acc + (isNaN(val) ? 0 : val);
+                }, 0);
+
+            const totalMedicamentos      = sumar(consumosMedicamentos,  'total');
+            const totalAnestesicos       = sumar(consumosAnestesicos,   'total');
+            const totalQuirurgico        = sumar(consumosQuirurgicos,   'total');
+            const totalComun             = sumar(consumosComunes,       'total');
+            const totalOtros             = sumar(consumosServicios,     'subtotal');
+            const totalExamenes          = sumar(examenes,              'total');
+            const totalHonorarios        = sumar(honorarios,            'total');
+            const totalDerechoEmergencia = sumar(honorariosEmergencia,  'total');
+
+            const nombresExamenes = examenes
+                .map(e => e.examenes_almacenado?.nombre)
+                .filter(Boolean)
+                .join(', ');
+
+            const nacimiento = new Date(expediente.nacimiento);
+            const hoy = new Date();
+            let edad = hoy.getFullYear() - nacimiento.getFullYear();
+            const m = hoy.getMonth() - nacimiento.getMonth();
+            if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) edad--;
+
+            const toFixed2 = (n) => parseFloat((isNaN(n) ? 0 : n).toFixed(2));
+
+            const subtotalConsumos = totalMedicamentos + totalQuirurgico + totalAnestesicos + totalComun + totalOtros;
+            const totalAPagar      = subtotalConsumos + totalDerechoEmergencia + totalExamenes + totalHonorarios;
+
+            return res.status(200).json({
+                nombre:       `${expediente.nombres ?? ''} ${expediente.apellidos ?? ''}`.trim(),
+                edad:         isNaN(edad) ? 0 : edad,
+                direccion:    expediente.direccion  ?? '',
+                telefono:     expediente.telefono   ?? '',
+                fechaIngreso: expediente.fecha_ingreso_reciente ?? cuenta.fecha_ingreso ?? '',
+                horaIngreso:  expediente.hora_ingreso_reciente  ?? cuenta.hora_ingreso  ?? '',
+
+                motivo:        cuenta.motivo        ?? '',
+                diagnostico:   cuenta.descripcion   ?? '',
+                tratamiento:   cuenta.otros         ?? '',
+                observaciones: cuenta.motivo_egreso ?? '',
+                medico:        nombreMedico,
+                seHospitaliza: false,
+
+                examenes: nombresExamenes,
+
+                totalMedicamentos:       toFixed2(totalMedicamentos),
+                totalQuirurgico:         toFixed2(totalQuirurgico),
+                totalAnestesicos:        toFixed2(totalAnestesicos),
+                totalComun:              toFixed2(totalComun),
+                totalOtros:              toFixed2(totalOtros),
+                totalExamenes:           toFixed2(totalExamenes),
+                totalHonorarios:         toFixed2(totalHonorarios),
+                totalDerechoEmergencia:  toFixed2(totalDerechoEmergencia),
+                totalAPagar:             toFixed2(totalAPagar),
+            });
+
+        } catch (error) {
+            console.error('Error al obtener hoja de emergencia:', error);
+            return res.status(500).json({ msg: 'Error al obtener datos de hoja de emergencia', error: error.message });
+        }
+    },
 };
 
