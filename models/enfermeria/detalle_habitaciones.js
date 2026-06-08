@@ -9,6 +9,9 @@ module.exports = (sequelize, DataTypes) => {
       detalle_habitaciones.belongsTo(models.cuentas, {
         foreignKey: 'id_cuenta',
       });
+      detalle_habitaciones.belongsTo(models.habitaciones, {
+        foreignKey: 'id_habitacion',
+      });
     }
   };
   detalle_habitaciones.init({
@@ -52,7 +55,15 @@ module.exports = (sequelize, DataTypes) => {
     },
     updated_by: {
       type: DataTypes.STRING,
-    }
+    },
+    id_habitacion: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'habitaciones',
+        key: 'id'
+      }
+    },
   }, {
     sequelize,
     modelName: 'detalle_habitaciones',

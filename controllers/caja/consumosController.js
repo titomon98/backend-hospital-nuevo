@@ -921,7 +921,6 @@ module.exports = {
             });
             const id_cuenta_lab = cuentaLab ? cuentaLab.id : null;
 
-            // Nombre del médico tratante
             let nombremedico = 'NO ASIGNADO';
             if (expediente.id_medico) {
                 const medico = await Medico.findOne({
@@ -931,7 +930,6 @@ module.exports = {
                 nombremedico = medico?.nombre ?? 'NO ASIGNADO';
             }
 
-            // Número de habitación
             let numerohabitacion = 'NO ASIGNADO';
             const habitacion = await Habitaciones.findOne({
                 where: { ocupante: id },
@@ -995,11 +993,21 @@ module.exports = {
                 }),
                 DetalleHabitaciones.findAll({
                     where: { id_cuenta, estado: 1 },
-                    attributes: ['tipo_habitacion', 'costo_base', 'ingreso', 'salida'],
+                    attributes: ['tipo_habitacion', 'costo_base', 'ingreso', 'salida', 'id_habitacion'], // ← id_habitacion agregado
                 }),
             ]);
 
-            // Calcular costo de habitaciones (misma lógica de corte 2PM)
+            // Cargar habitaciones para saber cuáles son ambulatorias
+            const idsHabitacion = [...new Set(detallesHabitacion.map(d => d.id_habitacion).filter(Boolean))];
+            const habitacionesMap = {};
+            if (idsHabitacion.length > 0) {
+                const habs = await Habitaciones.findAll({
+                    where: { id: idsHabitacion },
+                    attributes: ['id', 'costo_ambulatorio'],
+                });
+                habs.forEach(h => { habitacionesMap[h.id] = h; });
+            }
+
             function calcularDiasHabitacion(ingreso, salida) {
                 const fechaIngreso = new Date(ingreso);
                 const fechaSalida  = salida ? new Date(salida) : new Date();
@@ -1026,21 +1034,28 @@ module.exports = {
             let costoTotal = 0.0;
             let costoIntensivo = 0.0;
             for (const detalle of detallesHabitacion) {
-                const dias = calcularDiasHabitacion(detalle.ingreso, detalle.salida);
-                const costo = parseFloat(detalle.costo_base || 0) * dias;
+                const costoBase = parseFloat(detalle.costo_base || 0);
+                const hab = habitacionesMap[detalle.id_habitacion];
+                const esAmbulatorio = hab && Math.abs(parseFloat(hab.costo_ambulatorio) - costoBase) < 0.01;
+
+                let costo;
+                if (esAmbulatorio) {
+                    const salida  = detalle.salida ? new Date(detalle.salida) : new Date();
+                    const ingreso = new Date(detalle.ingreso);
+                    const diffHoras  = (salida - ingreso) / (1000 * 60 * 60);
+                    const horasExtra = Math.max(0, Math.floor(diffHoras) - 6);
+                    costo = costoBase + (horasExtra * 50);
+                } else {
+                    const dias = calcularDiasHabitacion(detalle.ingreso, detalle.salida);
+                    costo = costoBase * dias;
+                }
+
                 if (detalle.tipo_habitacion === 'Intensivo') {
                     costoIntensivo += costo;
                 } else {
                     costoTotal += costo;
                 }
             }
-
-            // Suma segura contra null/undefined/NaN
-            const sumar = (arr, campo) =>
-                arr.reduce((acc, item) => {
-                    const val = parseFloat(item[campo]);
-                    return acc + (isNaN(val) ? 0 : val);
-                }, 0);
 
             const fechaFormateada = expediente.fecha_ingreso_reciente
                 ? `${expediente.fecha_ingreso_reciente}T${expediente.hora_ingreso_reciente || '00:00:00'}`
@@ -1050,7 +1065,7 @@ module.exports = {
                 nombremedico,
                 numerohabitacion,
                 fechaFormateada,
-                costoTotal:    parseFloat(costoTotal.toFixed(2)),
+                costoTotal:     parseFloat(costoTotal.toFixed(2)),
                 costoIntensivo: parseFloat(costoIntensivo.toFixed(2)),
                 consumos:               consumos.map(i => ({ ...i.toJSON(), subtotal: parseFloat(i.subtotal || 0) || 0 })),
                 consumosComunes:        consumosComunes.map(i => ({ ...i.toJSON(), total: parseFloat(i.total || 0) || 0 })),

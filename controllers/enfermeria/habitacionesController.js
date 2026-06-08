@@ -169,6 +169,7 @@ module.exports = {
         const createHabitacion = {
             id_cuenta: cuenta.id,
             tipo_habitacion: habitacion.tipo,
+            id_habitacion: habitacion.id,
             estado: 1,
             costo_base: habitacion.costo_diario,
             ingreso: restarHoras(new Date(), 6),

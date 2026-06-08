@@ -315,6 +315,7 @@ module.exports = {
         const createHabitacion = {
             id_cuenta: form.cuenta,
             tipo_habitacion: habitacion.tipo,
+            id_habitacion: habitacion.id,
             estado: 1,
             costo_base: costo,
             ingreso: fecha,
@@ -1519,35 +1520,59 @@ module.exports = {
     async egresoNormal(req, res) {
         const form = req.body.form;
 
-        function calcularDiasHabitacion(ingreso, salida) {
-            const fechaIngreso = new Date(ingreso);
-            const fechaSalida  = salida ? new Date(salida) : new Date();
-
-            const minutosIngreso = fechaIngreso.getHours() * 60 + fechaIngreso.getMinutes();
-            const MIN_7AM = 7  * 60;
-            const MIN_2PM = 14 * 60;
-
-            let dias = 0;
-            const primerCorte2PM = new Date(fechaIngreso);
-            primerCorte2PM.setHours(14, 0, 0, 0);
-
-            if (minutosIngreso < MIN_7AM) {
-                dias += 1;
-            } else if (minutosIngreso < MIN_2PM) {
-                // sin cargo extra
-            } else {
-                dias += 1;
-                primerCorte2PM.setDate(primerCorte2PM.getDate() + 1);
-            }
-
-            if (fechaSalida > primerCorte2PM) {
-                const diffMs   = fechaSalida - primerCorte2PM;
-                const periodos = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
-                dias += periodos;
-            }
-
-            return Math.max(dias, 1);
+        // Construir fecha/hora de egreso como un solo Date
+        function toGMTMinus6(date) {
+            const d = new Date(date);
+            d.setHours(d.getHours() - 6);
+            return d;
         }
+
+        function buildFechaEgreso(fecha, hora) {
+            if (fecha && hora) return new Date(`${fecha}T${hora}:00`);
+            if (fecha)         return new Date(`${fecha}T14:00:00`);
+            return toGMTMinus6(new Date()); // now en GMT-6
+        }
+
+        function calcularCostoHabitacion(detalle, fechaEgreso, habitacion) {
+            const fechaIngreso = toGMTMinus6(new Date(detalle.ingreso));
+            const salida       = new Date(fechaEgreso);
+
+            const costoBase    = parseFloat(detalle.costo_base);
+            const esAmbulatorio = habitacion &&
+                parseFloat(habitacion.costo_ambulatorio) === costoBase;
+
+            if (esAmbulatorio) {
+                const diffMs    = salida - fechaIngreso;
+                const diffHoras = diffMs / (1000 * 60 * 60);
+                const horasExtra = Math.max(0, Math.floor(diffHoras) - 6);
+                return costoBase + (horasExtra * 50);
+            } else {
+                const minutosIngreso = fechaIngreso.getHours() * 60 + fechaIngreso.getMinutes();
+                const MIN_7AM = 7  * 60;
+                const MIN_2PM = 14 * 60;
+
+                let dias = 0;
+                const primerCorte2PM = new Date(fechaIngreso);
+                primerCorte2PM.setHours(14, 0, 0, 0);
+
+                if (minutosIngreso < MIN_7AM) {
+                    dias += 1;
+                } else if (minutosIngreso >= MIN_2PM) {
+                    dias += 1;
+                    primerCorte2PM.setDate(primerCorte2PM.getDate() + 1);
+                }
+
+                if (salida > primerCorte2PM) {
+                    const diffMs   = salida - primerCorte2PM;
+                    const periodos = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+                    dias += periodos;
+                }
+
+                return costoBase * Math.max(dias, 1);  // ← fix: mínimo 1 día
+            }
+        }
+
+        const fechaEgreso = buildFechaEgreso(req.body.fecha, req.body.hora);
 
         const cuentas = await Cuenta.findAll({
             where: { id_expediente: req.body.id, estado: 1 },
@@ -1563,6 +1588,32 @@ module.exports = {
             });
             const id_cuenta_lab = cuentaLabSeleccionada ? cuentaLabSeleccionada.id : null;
 
+            // Obtener detalles de habitación incluyendo la habitación para saber el tipo de costo
+            const detallesHabitacion = await DetalleHabitaciones.findAll({
+                where: { id_cuenta, estado: 1 },
+                attributes: ['id', 'tipo_habitacion', 'costo_base', 'ingreso', 'salida', 'id_habitacion'],
+            });
+
+            // Actualizar salida en cada detalle_habitacion
+            await Promise.all(
+                detallesHabitacion.map(d =>
+                    d.update({ salida: fechaEgreso })
+                )
+            );
+
+            // Cargar habitaciones relacionadas para saber si es ambulatorio
+            const idsHabitacion = [...new Set(
+                detallesHabitacion.map(d => d.id_habitacion).filter(Boolean)
+            )];
+            const habitacionesMap = {};
+            if (idsHabitacion.length > 0) {
+                const habitacionesData = await Habitaciones.findAll({
+                    where: { id: idsHabitacion },
+                    attributes: ['id', 'costo_ambulatorio', 'costo_diario'],
+                });
+                habitacionesData.forEach(h => { habitacionesMap[h.id] = h; });
+            }
+
             const [
                 consumos,
                 consumosComunes,
@@ -1572,16 +1623,9 @@ module.exports = {
                 examenes,
                 salaOperaciones,
                 honorarios,
-                detallesHabitacion,
             ] = await Promise.all([
-                Consumo.findAll({
-                    where: { id_cuenta },
-                    attributes: ['subtotal'],
-                }),
-                MovimientoComun.findAll({
-                    where: { id_cuenta, estado: 1 },
-                    attributes: ['total'],
-                }),
+                Consumo.findAll({ where: { id_cuenta }, attributes: ['subtotal'] }),
+                MovimientoComun.findAll({ where: { id_cuenta, estado: 1 }, attributes: ['total'] }),
                 MovimientoMedicamentos.findAll({
                     where: { id_cuenta, estado: 1 },
                     include: [{ model: Medicamento, attributes: [], where: { anestesico: { [Op.eq]: 1 } } }],
@@ -1592,71 +1636,107 @@ module.exports = {
                     include: [{ model: Medicamento, attributes: [], where: { anestesico: { [Op.eq]: 0 } } }],
                     attributes: ['total'],
                 }),
-                MovimientoQuirurgico.findAll({
-                    where: { id_cuenta, estado: 1 },
-                    attributes: ['total'],
-                }),
+                MovimientoQuirurgico.findAll({ where: { id_cuenta, estado: 1 }, attributes: ['total'] }),
                 id_cuenta_lab
-                    ? Examenes.findAll({
-                        where: { id_cuenta: id_cuenta_lab },
-                        attributes: ['total'],
-                    })
+                    ? Examenes.findAll({ where: { id_cuenta: id_cuenta_lab }, attributes: ['total'] })
                     : [],
-                SalaOperaciones.findAll({
-                    where: { id_cuenta },
-                    attributes: ['total'],
-                }),
-                Honorario.findAll({
-                    where: { id_cuenta, estado: 1 },
-                    attributes: ['total'],
-                }),
-                DetalleHabitaciones.findAll({
-                    where: { id_cuenta, estado: 1 },
-                    attributes: ['tipo_habitacion', 'costo_base', 'ingreso', 'salida'],
-                }),
+                SalaOperaciones.findAll({ where: { id_cuenta }, attributes: ['total'] }),
+                Honorario.findAll({ where: { id_cuenta, estado: 1 }, attributes: ['total'] }),
             ]);
 
-            // ─── Sumatoria ────────────────────────────────────────────────────────
             const sumar = (arr, campo) =>
                 arr.reduce((acc, item) => acc + parseFloat(item[campo] || 0), 0);
 
             const costoHabitacion = detallesHabitacion.reduce((acc, detalle) => {
-                const dias = calcularDiasHabitacion(detalle.ingreso, detalle.salida);
-                return acc + parseFloat(detalle.costo_base) * dias;
+                const habitacion = habitacionesMap[detalle.id_habitacion] || null;
+                return acc + calcularCostoHabitacion(detalle, fechaEgreso, habitacion);
             }, 0);
 
             const costoTotal =
-                sumar(consumos,            'subtotal') +
-                sumar(consumosComunes,     'total')    +
-                sumar(consumosMedicamentos,'total')    +
-                sumar(consumosAnestesicos, 'total')    +
-                sumar(consumosQuirurgicos, 'total')    +
-                sumar(examenes,            'total')    +
-                sumar(salaOperaciones,     'total')    +
-                sumar(honorarios,          'total')    +
+                sumar(consumos,             'subtotal') +
+                sumar(consumosComunes,      'total')    +
+                sumar(consumosMedicamentos, 'total')    +
+                sumar(consumosAnestesicos,  'total')    +
+                sumar(consumosQuirurgicos,  'total')    +
+                sumar(examenes,             'total')    +
+                sumar(salaOperaciones,      'total')    +
+                sumar(honorarios,           'total')    +
                 costoHabitacion;
 
             await Cuenta.update({
                 total: costoTotal,
                 pendiente_de_pago: costoTotal,
                 fecha_egreso: req.body.fecha || null,
-                hora_egreso: req.body.hora || null,
+                hora_egreso:  req.body.hora  || null,
             }, {
                 where: { id: id_cuenta }
             });
         }
-        console.log('ESTADO PUTO')
-        console.log(form.estado)
+
         await Expediente.update({
-            estado: req.body.estado,
+            estado:    req.body.estado,
             solvencia: 0
         }, {
             where: { id: req.body.id }
         });
 
-        return res.status(200).json({
-            msg: 'Estado actualizado correctamente'
-        });
-    }
+        return res.status(200).json({ msg: 'Estado actualizado correctamente' });
+    },
+
+    async reingresoNormal(req, res) {
+        try {
+            const restarHoras = (fecha, horas) => {
+                let nuevaFecha = new Date(fecha);
+                nuevaFecha.setHours(nuevaFecha.getHours() - horas);
+                return nuevaFecha;
+            };
+
+            const today = restarHoras(new Date(), 6);
+            const id_expediente = req.body.id;
+
+            // Reactivar expediente
+            await Expediente.update(
+                { estado: 1, solvencia: 0, fecha_ingreso_reciente: today },
+                { where: { id: id_expediente } }
+            );
+
+            // Obtener la última cuenta (la que ya existe)
+            const cuenta = await Cuenta.findOne({
+                where: { id_expediente },
+                order: [['createdAt', 'DESC']],
+            });
+
+            // Buscar la habitación que tenía este paciente
+            const habitacion = await Habitaciones.findOne({
+                where: { ocupante_previo: id_expediente }
+            });
+
+            if (habitacion) {
+
+                // Reasignar la habitación al paciente y limpiar ocupante_previo
+                await Habitaciones.update(
+                    { estado: 2, ocupante: id_expediente, ocupante_previo: null },
+                    { where: { id: habitacion.id } }
+                );
+            }
+
+            // Log del reingreso
+            await Logs.create({
+                id_expediente,
+                origen: 'Egresado',
+                destino: 'Hospitalización',
+                motivo: 'Reingreso',
+                id_habitacionDestino: habitacion ? habitacion.id : null,
+                createdAt: new Date(),
+                updatedAt: today,
+                created_by: req.body.user,
+            });
+
+            return res.status(200).json({ msg: 'El paciente ha sido reingresado correctamente' });
+        } catch (error) {
+            console.error(error);
+            return res.status(400).json({ msg: 'Ha ocurrido un error al reingresar al paciente' });
+        }
+    },
 };
 
