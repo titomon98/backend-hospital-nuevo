@@ -960,7 +960,7 @@ module.exports = {
                     attributes: ['id', 'descripcion', 'cantidad', 'precio_venta', 'total', 'estado'],
                 }),
                 MovimientoMedicamentos.findAll({
-                    where: { id_cuenta, estado: 1 },
+                    where: { id_cuenta, estado: 0 },
                     include: [{ model: Medicamento, attributes: ['nombre'], where: { anestesico: { [Op.eq]: 0 } }, required: true }],
                     attributes: ['id', 'descripcion', 'cantidad', 'precio_venta', 'total', 'estado'],
                 }),
@@ -1044,7 +1044,7 @@ module.exports = {
                     const ingreso = new Date(detalle.ingreso);
                     const diffHoras  = (salida - ingreso) / (1000 * 60 * 60);
                     const horasExtra = Math.max(0, Math.floor(diffHoras) - 6);
-                    costo = costoBase + (horasExtra * 50);
+                    costo = costoBase + (horasExtra * 25);
                 } else {
                     const dias = calcularDiasHabitacion(detalle.ingreso, detalle.salida);
                     costo = costoBase * dias;
