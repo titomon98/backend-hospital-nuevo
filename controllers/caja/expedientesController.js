@@ -1738,5 +1738,134 @@ module.exports = {
             return res.status(400).json({ msg: 'Ha ocurrido un error al reingresar al paciente' });
         }
     },
+
+    async egresoEmergencia(req, res) {
+        const { id, fecha, hora, user } = req.body;
+        const { motivo, diagnostico, tratamiento, observaciones } = req.body.egreso;
+ 
+        try {
+            // 1. Obtener la cuenta activa del expediente
+            const cuenta = await Cuenta.findOne({
+                where: { id_expediente: id, estado: 1 },
+                order: [['createdAt', 'DESC']],
+            });
+ 
+            if (!cuenta) {
+                return res.status(404).json({ msg: 'No se encontró cuenta activa para este expediente' });
+            }
+ 
+            const id_cuenta = cuenta.id;
+ 
+            // 2. Obtener cuenta de lab (para exámenes)
+            const cuentaLab = await Cuenta_Lab.findOne({
+                where: { id_expediente: id, estado: 1 },
+                order: [['createdAt', 'DESC']],
+            });
+            const id_cuenta_lab = cuentaLab ? cuentaLab.id : null;
+ 
+            // 3. Calcular costo de habitación tipo Emergencia: costo_base + Q25 por hora extra (luego de 2 horas)
+            const detallesHabitacion = await DetalleHabitaciones.findAll({
+                where: { id_cuenta, estado: 1 },
+                attributes: ['tipo_habitacion', 'costo_base', 'ingreso', 'salida'],
+            });
+ 
+            let costoEmergencia = 0;
+            const salidaDatetime = fecha && hora ? new Date(`${fecha}T${hora}`) : new Date();
+ 
+            for (const detalle of detallesHabitacion) {
+                if (detalle.tipo_habitacion === 'Emergencia') {
+                    const fechaIngreso = new Date(detalle.ingreso);
+                    const fechaSalida  = detalle.salida ? new Date(detalle.salida) : salidaDatetime;
+ 
+                    const diffMs       = fechaSalida - fechaIngreso;
+                    const horasTotales = diffMs / (1000 * 60 * 60);
+                    const horasExtra   = Math.floor(Math.max(horasTotales - 2, 0));
+ 
+                    costoEmergencia += parseFloat(detalle.costo_base) + (horasExtra * 25);
+                }
+            }
+ 
+            // 4. Recolectar todos los consumos en paralelo
+            const [
+                consumos,
+                consumosComunes,
+                consumosMedicamentos,
+                consumosAnestesicos,
+                consumosQuirurgicos,
+                examenes,
+                honorarios,
+            ] = await Promise.all([
+                Consumo.findAll({ where: { id_cuenta }, attributes: ['subtotal'] }),
+                MovimientoComun.findAll({ where: { id_cuenta, estado: 1 }, attributes: ['total'] }),
+                MovimientoMedicamentos.findAll({
+                    where: { id_cuenta, estado: 1 },
+                    include: [{ model: Medicamento, attributes: [], where: { anestesico: { [Op.eq]: 1 } }, required: true }],
+                    attributes: ['total'],
+                }),
+                MovimientoMedicamentos.findAll({
+                    where: { id_cuenta, estado: 1 },
+                    include: [{ model: Medicamento, attributes: [], where: { anestesico: { [Op.eq]: 0 } }, required: true }],
+                    attributes: ['total'],
+                }),
+                MovimientoQuirurgico.findAll({ where: { id_cuenta, estado: 1 }, attributes: ['total'] }),
+                id_cuenta_lab
+                    ? Examenes.findAll({ where: { id_cuenta: id_cuenta_lab }, attributes: ['total'] })
+                    : [],
+                Honorario.findAll({ where: { id_cuenta, estado: 1 }, attributes: ['total'] }),
+            ]);
+ 
+            const sumar = (arr, campo) =>
+                arr.reduce((acc, item) => {
+                    const val = parseFloat(item[campo]);
+                    return acc + (isNaN(val) ? 0 : val);
+                }, 0);
+ 
+            const costoTotal =
+                costoEmergencia                         +
+                sumar(consumos,             'subtotal') +
+                sumar(consumosComunes,      'total')    +
+                sumar(consumosMedicamentos, 'total')    +
+                sumar(consumosAnestesicos,  'total')    +
+                sumar(consumosQuirurgicos,  'total')    +
+                sumar(examenes,             'total')    +
+                sumar(honorarios,           'total');
+ 
+            // 5. Actualizar Cuenta: totales + campos clínicos del egreso + fecha/hora de salida
+            await Cuenta.update({
+                total:             costoTotal,
+                pendiente_de_pago: costoTotal,
+                fecha_egreso:      fecha ?? null,
+                hora_egreso:       hora  ?? null,
+                motivo:            motivo        ?? cuenta.motivo,
+                descripcion:       diagnostico   ?? cuenta.descripcion,
+                otros:             tratamiento   ?? cuenta.otros,
+                motivo_egreso:     observaciones ?? cuenta.motivo_egreso,
+                updated_by:        user,
+            }, {
+                where: { id: id_cuenta }
+            });
+ 
+            // 6. Registrar salida en detalle_habitaciones si aún no tiene
+            await DetalleHabitaciones.update(
+                { salida: salidaDatetime, updated_by: user },
+                { where: { id_cuenta, estado: 1, salida: null } }
+            );
+ 
+            // 7. Actualizar Expediente: estado 7 (alta médica) y solvencia 0
+            await Expediente.update({
+                estado:     7,
+                solvencia:  0,
+                updated_by: user,
+            }, {
+                where: { id }
+            });
+ 
+            return res.status(200).json({ msg: 'Egreso de emergencia registrado correctamente' });
+ 
+        } catch (error) {
+            console.error('Error en egresoEmergencia:', error);
+            return res.status(500).json({ msg: 'Error al procesar el egreso de emergencia', error: error.message });
+        }
+    },
 };
 
