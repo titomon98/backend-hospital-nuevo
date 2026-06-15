@@ -771,12 +771,12 @@ module.exports = {
             ] = await Promise.all([
                 MovimientoMedicamentos.findAll({
                     where: { id_cuenta, estado: 1 },
-                    include: [{ model: Medicamento, attributes: ['nombre'], where: { anestesico: { [Op.eq]: 0 } }, required: true }],
+                    include: [{ model: Medicamento, attributes: ['nombre'], where: { anestesico: { [Op.eq]: 1 } }, required: true }],
                     attributes: ['total'],
                 }),
                 MovimientoMedicamentos.findAll({
                     where: { id_cuenta, estado: 1 },
-                    include: [{ model: Medicamento, attributes: ['nombre'], where: { anestesico: { [Op.eq]: 1 } }, required: true }],
+                    include: [{ model: Medicamento, attributes: ['nombre'], where: { anestesico: { [Op.eq]: 0 } }, required: true }],
                     attributes: ['total'],
                 }),
                 MovimientoQuirurgico.findAll({
@@ -837,15 +837,28 @@ module.exports = {
                     if (detalle.salida) {
                         fechaSalida = new Date(detalle.salida);
                     } else {
-                        // Hora actual ajustada a GMT-6
-                        fechaSalida = new Date(new Date().getTime() - (6 * 60 * 60 * 1000));
+                        // Hora actual en GMT-6, igual que como se almacena ingreso
+                        const ahora = new Date();
+                        fechaSalida = new Date(ahora.toLocaleString('en-US', { timeZone: 'America/Guatemala' }));
                     }
 
                     const diffMs = fechaSalida - fechaIngreso;
                     const horasTotales = diffMs / (1000 * 60 * 60);
                     const horasExtra = Math.floor(Math.max(horasTotales - 2, 0));
 
-                    costoEmergencia += parseFloat(detalle.costo_base || 0) + (horasExtra * 25);
+                    console.log("Estas son horas extra: " + horasExtra)
+
+                    console.log({
+                        ingreso: detalle.ingreso,
+                        fechaIngreso: fechaIngreso.toISOString(),
+                        fechaSalida: fechaSalida.toISOString(),
+                        horasTotales,
+                        horasExtra,
+                        costo_base: detalle.costo_base,
+                        costoCalculado: parseFloat(detalle.costo_base) + (horasExtra * 25)
+                    });
+
+                    costoEmergencia += parseFloat(detalle.costo_base) + (horasExtra * 25);
                 }
             }
 

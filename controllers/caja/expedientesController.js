@@ -226,7 +226,7 @@ module.exports = {
             const expediente_id = expediente.id
             let datos_cuenta = {
                 numero: 1,
-                fecha_ingreso: today,
+                fecha_ingreso: form.fecha,
                 hora_ingreso: form.hora,
                 motivo: form.motivo,
                 descripcion: null,
@@ -248,7 +248,7 @@ module.exports = {
                     tipo_habitacion: "Emergencia",
                     estado: 1,
                     costo_base: 250.00,
-                    ingreso: today,
+                    ingreso: `${form.fecha}T${form.hora}`,
                     created_by: req.body.user,
                 });
             })
