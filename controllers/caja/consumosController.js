@@ -827,36 +827,25 @@ module.exports = {
                     return acc + (isNaN(val) ? 0 : val);
                 }, 0);
 
-            // Cálculo de días con reglas de corte a las 2PM
-            function calcularDiasHabitacion(ingreso, salida) {
-                const fechaIngreso = new Date(ingreso);
-                const fechaSalida  = salida ? new Date(salida) : new Date();
-                const minutosIngreso = fechaIngreso.getHours() * 60 + fechaIngreso.getMinutes();
-                const MIN_7AM = 7  * 60;
-                const MIN_2PM = 14 * 60;
-                let dias = 0;
-                const primerCorte2PM = new Date(fechaIngreso);
-                primerCorte2PM.setHours(14, 0, 0, 0);
-                if (minutosIngreso < MIN_7AM) {
-                    dias += 1;
-                } else if (minutosIngreso >= MIN_2PM) {
-                    dias += 1;
-                    primerCorte2PM.setDate(primerCorte2PM.getDate() + 1);
-                }
-                if (fechaSalida > primerCorte2PM) {
-                    const diffMs   = fechaSalida - primerCorte2PM;
-                    const periodos = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
-                    dias += periodos;
-                }
-                return Math.max(dias, 1);
-            }
-
-            // Separar costo de habitación tipo Emergencia del resto
+            // Costo de habitación tipo Emergencia: costo_base cubre 2 horas, luego Q25/hora extra
             let costoEmergencia = 0.0;
             for (const detalle of detallesHabitacion) {
                 if (detalle.tipo_habitacion === 'Emergencia') {
-                    const dias = calcularDiasHabitacion(detalle.ingreso, detalle.salida);
-                    costoEmergencia += parseFloat(detalle.costo_base || 0) * dias;
+                    const fechaIngreso = new Date(detalle.ingreso);
+
+                    let fechaSalida;
+                    if (detalle.salida) {
+                        fechaSalida = new Date(detalle.salida);
+                    } else {
+                        // Hora actual ajustada a GMT-6
+                        fechaSalida = new Date(new Date().getTime() - (6 * 60 * 60 * 1000));
+                    }
+
+                    const diffMs = fechaSalida - fechaIngreso;
+                    const horasTotales = diffMs / (1000 * 60 * 60);
+                    const horasExtra = Math.floor(Math.max(horasTotales - 2, 0));
+
+                    costoEmergencia += parseFloat(detalle.costo_base || 0) + (horasExtra * 25);
                 }
             }
 
