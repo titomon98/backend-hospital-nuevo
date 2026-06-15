@@ -767,25 +767,16 @@ module.exports = {
                 examenes,
                 honorarios,
                 honorariosEmergencia,
+                detallesHabitacion,
             ] = await Promise.all([
                 MovimientoMedicamentos.findAll({
                     where: { id_cuenta, estado: 1 },
-                    include: [{ 
-                        model: Medicamento, 
-                        attributes: ['nombre'], 
-                        where: { anestesico: { [Op.eq]: 0 } },
-                        required: true   // ← fuerza INNER JOIN limpio, sin filas null
-                    }],
+                    include: [{ model: Medicamento, attributes: ['nombre'], where: { anestesico: { [Op.eq]: 0 } }, required: true }],
                     attributes: ['total'],
                 }),
                 MovimientoMedicamentos.findAll({
                     where: { id_cuenta, estado: 1 },
-                    include: [{ 
-                        model: Medicamento, 
-                        attributes: ['nombre'], 
-                        where: { anestesico: { [Op.eq]: 1 } },
-                        required: true   // ← igual aquí
-                    }],
+                    include: [{ model: Medicamento, attributes: ['nombre'], where: { anestesico: { [Op.eq]: 1 } }, required: true }],
                     attributes: ['total'],
                 }),
                 MovimientoQuirurgico.findAll({
@@ -823,14 +814,51 @@ module.exports = {
                     },
                     attributes: ['total'],
                 }),
+                DetalleHabitaciones.findAll({
+                    where: { id_cuenta, estado: 1 },
+                    attributes: ['tipo_habitacion', 'costo_base', 'ingreso', 'salida'],
+                }),
             ]);
 
-            // Suma segura: null, undefined y NaN se tratan como 0
+            // Suma segura contra null/undefined/NaN
             const sumar = (arr, campo) =>
                 arr.reduce((acc, item) => {
                     const val = parseFloat(item[campo]);
                     return acc + (isNaN(val) ? 0 : val);
                 }, 0);
+
+            // Cálculo de días con reglas de corte a las 2PM
+            function calcularDiasHabitacion(ingreso, salida) {
+                const fechaIngreso = new Date(ingreso);
+                const fechaSalida  = salida ? new Date(salida) : new Date();
+                const minutosIngreso = fechaIngreso.getHours() * 60 + fechaIngreso.getMinutes();
+                const MIN_7AM = 7  * 60;
+                const MIN_2PM = 14 * 60;
+                let dias = 0;
+                const primerCorte2PM = new Date(fechaIngreso);
+                primerCorte2PM.setHours(14, 0, 0, 0);
+                if (minutosIngreso < MIN_7AM) {
+                    dias += 1;
+                } else if (minutosIngreso >= MIN_2PM) {
+                    dias += 1;
+                    primerCorte2PM.setDate(primerCorte2PM.getDate() + 1);
+                }
+                if (fechaSalida > primerCorte2PM) {
+                    const diffMs   = fechaSalida - primerCorte2PM;
+                    const periodos = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+                    dias += periodos;
+                }
+                return Math.max(dias, 1);
+            }
+
+            // Separar costo de habitación tipo Emergencia del resto
+            let costoEmergencia = 0.0;
+            for (const detalle of detallesHabitacion) {
+                if (detalle.tipo_habitacion === 'Emergencia') {
+                    const dias = calcularDiasHabitacion(detalle.ingreso, detalle.salida);
+                    costoEmergencia += parseFloat(detalle.costo_base || 0) * dias;
+                }
+            }
 
             const totalMedicamentos      = sumar(consumosMedicamentos,  'total');
             const totalAnestesicos       = sumar(consumosAnestesicos,   'total');
@@ -839,7 +867,7 @@ module.exports = {
             const totalOtros             = sumar(consumosServicios,     'subtotal');
             const totalExamenes          = sumar(examenes,              'total');
             const totalHonorarios        = sumar(honorarios,            'total');
-            const totalDerechoEmergencia = sumar(honorariosEmergencia,  'total');
+            const totalDerechoEmergencia = sumar(honorariosEmergencia,  'total') + costoEmergencia;
 
             const nombresExamenes = examenes
                 .map(e => e.examenes_almacenado?.nombre)
@@ -993,7 +1021,7 @@ module.exports = {
                 }),
                 DetalleHabitaciones.findAll({
                     where: { id_cuenta, estado: 1 },
-                    attributes: ['tipo_habitacion', 'costo_base', 'ingreso', 'salida', 'id_habitacion'], // ← id_habitacion agregado
+                    attributes: ['tipo_habitacion', 'costo_base', 'ingreso', 'salida', 'id_habitacion'],
                 }),
             ]);
 
