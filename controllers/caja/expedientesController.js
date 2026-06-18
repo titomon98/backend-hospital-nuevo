@@ -34,6 +34,117 @@ const Categoria = db.categoria_sala_operaciones;
 
 const DetalleHonorarios = db.detalle_honorarios;
 
+// ESTADOS ACTIVOS (paciente sigue en el hospital, no aplica para historial):
+// 1 - hospitalizacion, 3 - quirofano, 4 - intensivo, 5 - emergencia
+// 91, 93, 94, 95 - mismos anteriores con cuenta parcial por pagar
+const ESTADOS_ACTIVOS_HISTORIAL = [1000]
+async function clasificarHistorial(req, res, soloEmergencia) {
+    const getPagingData = (data, page, limit) => {
+        const { count: totalItems, rows: referido } = data;
+        const currentPage = page ? +page : 0;
+        const totalPages = Math.ceil(totalItems / limit);
+        return { totalItems, referido, totalPages, currentPage };
+    };
+
+    const getPagination = (page, size) => {
+        const limit = size ? +size : 10;
+        const offset = page ? page * limit : 0;
+        return { limit, offset };
+    };
+
+    const busqueda = req.query.search;
+    const page = req.query.page - 1;
+    const size = req.query.limit;
+    const criterio = req.query.criterio;
+    const order = req.query.order;
+    const { limit, offset } = getPagination(page, size);
+
+    try {
+        const whereExpediente = busqueda
+            ? { [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` } }], estado: { [Op.notIn]: ESTADOS_ACTIVOS_HISTORIAL } }
+            : { estado: { [Op.notIn]: ESTADOS_ACTIVOS_HISTORIAL } };
+
+        // Traemos todos los expedientes históricos que cumplan la búsqueda
+        const expedientesCandidatos = await Expediente.findAll({
+            where: whereExpediente,
+            attributes: ['id'],
+        });
+
+        const idsExpedientes = expedientesCandidatos.map(e => e.id);
+
+        if (idsExpedientes.length === 0) {
+            return res.send({ total: 0, last_page: 0, current_page: page + 1, from: 0, to: 0, data: [] });
+        }
+
+        // Cuentas de todos esos expedientes, junto a su detalle de habitaciones
+        const cuentas = await Cuenta.findAll({
+            where: { id_expediente: { [Op.in]: idsExpedientes } },
+            attributes: ['id', 'id_expediente'],
+        });
+
+        const idsCuentas = cuentas.map(c => c.id);
+
+        const detalles = await DetalleHabitaciones.findAll({
+            where: { id_cuenta: { [Op.in]: idsCuentas } },
+            attributes: ['id_cuenta', 'tipo_habitacion'],
+        });
+
+        // Mapear id_cuenta -> id_expediente
+        const cuentaToExpediente = {};
+        cuentas.forEach(c => { cuentaToExpediente[c.id] = c.id_expediente; });
+
+        // Acumular, por expediente, si tiene habitaciones de Emergencia y/o de otro tipo
+        const resumenPorExpediente = {};
+        idsExpedientes.forEach(id => {
+            resumenPorExpediente[id] = { totalHabitaciones: 0, soloEmergencia: true };
+        });
+
+        detalles.forEach(d => {
+            const idExp = cuentaToExpediente[d.id_cuenta];
+            if (idExp === undefined || !resumenPorExpediente[idExp]) return;
+            resumenPorExpediente[idExp].totalHabitaciones += 1;
+            if (d.tipo_habitacion !== 'Emergencia') {
+                resumenPorExpediente[idExp].soloEmergencia = false;
+            }
+        });
+
+        // Un expediente sin ningún registro de detalle_habitaciones se considera "otro caso" (no exclusivo de emergencia)
+        const idsFiltrados = idsExpedientes.filter(id => {
+            const resumen = resumenPorExpediente[id];
+            const esSoloEmergencia = resumen.totalHabitaciones > 0 && resumen.soloEmergencia;
+            return soloEmergencia ? esSoloEmergencia : !esSoloEmergencia;
+        });
+
+        const { count, rows } = await Expediente.findAndCountAll({
+            where: { id: { [Op.in]: idsFiltrados } },
+            include: [
+                {
+                    model: Medicos,
+                    as: 'medico',
+                    attributes: ['id', 'nombre']
+                }
+            ],
+            order: [[criterio || 'id', order || 'DESC']],
+            limit,
+            offset
+        });
+
+        const response = getPagingData({ count, rows }, page, limit);
+
+        res.send({
+            total: response.totalItems,
+            last_page: response.totalPages,
+            current_page: page + 1,
+            from: response.currentPage,
+            to: response.totalPages,
+            data: response.referido
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+    }
+}
+
 module.exports = {
     create(req, res) {
         const restarHoras = (fecha, horas) => {
@@ -1867,5 +1978,36 @@ module.exports = {
             return res.status(500).json({ msg: 'Error al procesar el egreso de emergencia', error: error.message });
         }
     },
+
+    async listEmergenciaHistorial(req, res) {
+        return clasificarHistorial(req, res, true);
+    },
+
+    async listPacientesHistorial(req, res) {
+        return clasificarHistorial(req, res, false);
+    },
+
+    async getCuentasExpediente(req, res) {
+        const { id } = req.params; // id_expediente
+
+        try {
+            const cuentas = await Cuenta.findAll({
+                where: { id_expediente: id },
+                attributes: ['id', 'numero', 'tipo', 'fecha_ingreso', 'fecha_egreso', 'estado'],
+                order: [['createdAt', 'ASC']],
+            });
+
+            const cuentasLab = await Cuenta_Lab.findAll({
+                where: { id_expediente: id },
+                attributes: ['id', 'numero', 'estado'],
+                order: [['createdAt', 'ASC']],
+            });
+
+            return res.status(200).json({ cuentas, cuentasLab });
+        } catch (error) {
+            console.error('Error al obtener las cuentas del expediente:', error);
+            return res.status(500).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        }
+    }
 };
 

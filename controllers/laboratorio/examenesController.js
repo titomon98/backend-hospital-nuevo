@@ -859,5 +859,42 @@ module.exports = {
           console.error('Error al obtener exámenes:', error);
           return res.status(500).json({ msg: 'Error al obtener los exámenes' });
       }
+  },
+
+  async eliminarExamen(req, res) {
+    const { id, id_cuenta } = req.body;
+
+    if (!id || !id_cuenta) {
+      return res.status(400).json({ msg: 'Los parámetros id e id_cuenta son requeridos.' });
+    }
+
+    try {
+      const examen = await Examenes.findOne({ where: { id } });
+
+      if (!examen) {
+        return res.status(404).json({ msg: 'No se encontró el examen a eliminar.' });
+      }
+
+      if (parseFloat(examen.pagado) != 0) {
+        return res.status(400).json({ msg: 'No se puede eliminar el estudio porque ya tiene un pago registrado.' });
+      }
+
+      await examen.destroy();
+
+      const examenesRestantes = await Examenes.count({
+        where: { id_cuenta: id_cuenta }
+      });
+
+      let cuentaEliminada = false;
+      if (examenesRestantes === 0) {
+        await Cuenta.destroy({ where: { id: id_cuenta } });
+        cuentaEliminada = true;
+      }
+
+      res.send({ msg: 'Estudio eliminado correctamente', cuentaEliminada });
+    } catch (error) {
+      console.error('Error al eliminar el examen:', error);
+      return res.status(500).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+    }
   }
 }
