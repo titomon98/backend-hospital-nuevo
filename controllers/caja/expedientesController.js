@@ -37,7 +37,7 @@ const DetalleHonorarios = db.detalle_honorarios;
 // ESTADOS ACTIVOS (paciente sigue en el hospital, no aplica para historial):
 // 1 - hospitalizacion, 3 - quirofano, 4 - intensivo, 5 - emergencia
 // 91, 93, 94, 95 - mismos anteriores con cuenta parcial por pagar
-const ESTADOS_ACTIVOS_HISTORIAL = [1000]
+const ESTADOS_ACTIVOS_HISTORIAL = [1, 3, 4, 5, 91, 93, 94, 95];
 async function clasificarHistorial(req, res, soloEmergencia) {
     const getPagingData = (data, page, limit) => {
         const { count: totalItems, rows: referido } = data;
@@ -1985,6 +1985,62 @@ module.exports = {
 
     async listPacientesHistorial(req, res) {
         return clasificarHistorial(req, res, false);
+    },
+
+    async listPacientesActivos(req, res) {
+        const getPagingData = (data, page, limit) => {
+            const { count: totalItems, rows: referido } = data;
+            const currentPage = page ? +page : 0;
+            const totalPages = Math.ceil(totalItems / limit);
+            return { totalItems, referido, totalPages, currentPage };
+        };
+
+        const getPagination = (page, size) => {
+            const limit = size ? +size : 10;
+            const offset = page ? page * limit : 0;
+            return { limit, offset };
+        };
+
+        const busqueda = req.query.search;
+        const page = req.query.page - 1;
+        const size = req.query.limit;
+        const criterio = req.query.criterio;
+        const order = req.query.order;
+        const { limit, offset } = getPagination(page, size);
+
+        try {
+            const whereExpediente = busqueda
+                ? { [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` } }], estado: { [Op.in]: ESTADOS_ACTIVOS_HISTORIAL } }
+                : { estado: { [Op.in]: ESTADOS_ACTIVOS_HISTORIAL } };
+
+            const { count, rows } = await Expediente.findAndCountAll({
+                where: whereExpediente,
+                include: [
+                    {
+                        model: Medicos,
+                        as: 'medico',
+                        attributes: ['id', 'nombre']
+                    }
+                ],
+                order: [[criterio || 'id', order || 'DESC']],
+                limit,
+                offset
+            });
+
+            const response = getPagingData({ count, rows }, page, limit);
+
+            res.send({
+                total: response.totalItems,
+                last_page: response.totalPages,
+                current_page: page + 1,
+                from: response.currentPage,
+                to: response.totalPages,
+                data: response.referido
+            });
+        } catch (error) {
+            console.log(error);
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        }
     },
 
     async getCuentasExpediente(req, res) {

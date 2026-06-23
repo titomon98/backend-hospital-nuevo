@@ -232,6 +232,7 @@ module.exports = (app) => {
     router.put('/expedientes/egresoEmergencia', expedientesController.egresoEmergencia)
     router.get('/expedientes/listEmergenciaHistorial', expedientesController.listEmergenciaHistorial);
     router.get('/expedientes/listPacientesHistorial', expedientesController.listPacientesHistorial);
+    router.get('/expedientes/listPacientesActivos', expedientesController.listPacientesActivos);
     router.get('/expedientes/getCuentasExpediente/:id', expedientesController.getCuentasExpediente);
 
     //CARPETA DE ENFERMERIA
