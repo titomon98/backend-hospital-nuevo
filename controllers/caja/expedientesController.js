@@ -1152,8 +1152,9 @@ module.exports = {
         });
     },
     get (req, res) {
-        Expediente.findAll({attributes: ['id', 'nombres']})
+        Expediente.findAll({attributes: ['id', 'nombres', 'apellidos']})
         .then(data => {
+            console.log(data)
             res.send(data);
         })
         .catch(error => {
