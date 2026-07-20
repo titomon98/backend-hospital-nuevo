@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express       = require('express');
 const cors          = require('cors');
 const logger        = require('morgan');
@@ -24,6 +26,13 @@ app.use(express.static('./public'));
 app.get('*', (req, res) => res.status(200).send({
      message: 'Index.',
 }));
+
+// Sin secreto no se pueden firmar ni verificar tokens: es mejor fallar al
+// arrancar que hasta que alguien intente iniciar sesión.
+if (!process.env.JWT_SECRET) {
+    console.error('Falta JWT_SECRET. Copie .env.example a .env y complételo.');
+    process.exit(1);
+}
 
 const port = parseInt(process.env.PORT, 10) || 3000;
 app.set('port', port);

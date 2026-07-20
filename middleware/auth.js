@@ -10,7 +10,7 @@ const verifyToken = (req, res, next) => {
     return res.status(403).send("No está autenticado, vuelva a iniciar sesión");
   }
   try {
-    const decoded = jwt.verify(token, 'Centro_Galo');
+    const decoded = jwt.verify(token, config.JWT_SECRET);
     req.user = decoded;
   } catch (err) {
     return res.status(401).send("Token vencido o inválido");

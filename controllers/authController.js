@@ -23,12 +23,16 @@ module.exports = {
             //El bcrypt en npm tiene 10 rondas
             if (usuario && (await bcrypt.compare(password, usuario.password))) {
                 
+                // Solo lo mínimo para identificar y autorizar. La instancia
+                // completa incluía el hash de la contraseña, y el payload de un
+                // JWT viaja legible hacia el cliente.
                 const token = jwt.sign(
                     {
-                        user_id: usuario.id, 
-                        usuario: usuario 
+                        user_id: usuario.id,
+                        user: usuario.user,
+                        id_tipo_usuario: usuario.id_tipo_usuario
                     },
-                    'Centro_Galo',
+                    process.env.JWT_SECRET,
                     {
                         expiresIn: "2h",
                     }
@@ -55,7 +59,7 @@ module.exports = {
 
     refresh (req, res) {
         const token = req.body.token;
-        jwt.verify(token, "centro_galo", (err, user) => {
+        jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
             if (err) {
                 return res.sendStatus(404);
             }
