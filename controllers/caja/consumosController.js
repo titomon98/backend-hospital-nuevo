@@ -537,12 +537,15 @@ module.exports = {
 
             const id_cuenta = cuentaSeleccionada.id;
 
-            const cuentaLabSeleccionada = await Cuenta_Lab.findOne({
+            // Un expediente puede tener varias cuentas de laboratorio activas a la vez,
+            // hay que tomarlas todas y no solo la mas reciente.
+            const cuentasLabSeleccionadas = await Cuenta_Lab.findAll({
                 where: { id_expediente: id, estado: 1 },
                 order: [['createdAt', 'DESC']],
+                attributes: ['id'],
             });
 
-            const id_cuenta_lab = cuentaLabSeleccionada ? cuentaLabSeleccionada.id : null;
+            const ids_cuenta_lab = cuentasLabSeleccionadas.map(c => c.id);
 
             const [
                 consumos,
@@ -586,9 +589,9 @@ module.exports = {
                     attributes: ['id', 'descripcion', 'cantidad', 'precio_venta', 'total', 'estado', 'createdAt', 'updatedAt'],
                 }),
 
-                id_cuenta_lab
+                ids_cuenta_lab.length
                     ? Examenes.findAll({
-                        where: { id_cuenta: id_cuenta_lab },
+                        where: { id_cuenta: { [Op.in]: ids_cuenta_lab } },
                         include: [{ model: ExamenAlmacenado, attributes: ['nombre'] }],
                         attributes: [
                             'id', 'expediente', 'cui', 'comision', 'total', 'correo', 'whatsapp',
@@ -743,11 +746,14 @@ module.exports = {
 
             const id_cuenta = cuenta.id;
 
-            const cuentaLab = await Cuenta_Lab.findOne({
+            // Un expediente puede tener varias cuentas de laboratorio activas a la vez,
+            // hay que tomarlas todas y no solo la mas reciente.
+            const cuentasLab = await Cuenta_Lab.findAll({
                 where: { id_expediente: id, estado: 1 },
                 order: [['createdAt', 'DESC']],
+                attributes: ['id'],
             });
-            const id_cuenta_lab = cuentaLab ? cuentaLab.id : null;
+            const ids_cuenta_lab = cuentasLab.map(c => c.id);
 
             let nombreMedico = 'NO ASIGNADO';
             if (expediente.id_medico) {
@@ -791,9 +797,9 @@ module.exports = {
                     where: { id_cuenta },
                     attributes: ['subtotal'],
                 }),
-                id_cuenta_lab
+                ids_cuenta_lab.length
                     ? Examenes.findAll({
-                        where: { id_cuenta: id_cuenta_lab },
+                        where: { id_cuenta: { [Op.in]: ids_cuenta_lab } },
                         include: [{ model: ExamenAlmacenado, attributes: ['nombre'] }],
                         attributes: ['id', 'total'],
                     })
@@ -945,11 +951,14 @@ module.exports = {
 
             const id_cuenta = cuenta.id;
 
-            const cuentaLab = await Cuenta_Lab.findOne({
+            // Un expediente puede tener varias cuentas de laboratorio activas a la vez,
+            // hay que tomarlas todas y no solo la mas reciente.
+            const cuentasLab = await Cuenta_Lab.findAll({
                 where: { id_expediente: id, estado: 1 },
                 order: [['createdAt', 'DESC']],
+                attributes: ['id'],
             });
-            const id_cuenta_lab = cuentaLab ? cuentaLab.id : null;
+            const ids_cuenta_lab = cuentasLab.map(c => c.id);
 
             let nombremedico = 'NO ASIGNADO';
             if (expediente.id_medico) {
@@ -1004,9 +1013,9 @@ module.exports = {
                     include: [{ model: Quirurgico, attributes: ['nombre'] }],
                     attributes: ['id', 'descripcion', 'cantidad', 'precio_venta', 'total', 'estado'],
                 }),
-                id_cuenta_lab
+                ids_cuenta_lab.length
                     ? Examenes.findAll({
-                        where: { id_cuenta: id_cuenta_lab },
+                        where: { id_cuenta: { [Op.in]: ids_cuenta_lab } },
                         include: [{ model: ExamenAlmacenado, attributes: ['nombre'] }],
                         attributes: ['id', 'total', 'estado'],
                     })
