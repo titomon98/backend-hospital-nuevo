@@ -23,7 +23,7 @@ module.exports = {
                     id_tipo_encargado: form.id_tipo_encargado,
                     usuario: form.usuario,
                     estado: 1,
-                    created_by: req.body.user
+                    created_by: req.user?.user ?? req.body.user
                 };
 
                 Encargado.create(datos)
@@ -121,7 +121,7 @@ module.exports = {
                         apellidos: form.apellidos,
                         id_tipo_encargado: form.id_tipo_encargado,
                         usuario: form.usuario,
-                        updated_by: req.body.user
+                        updated_by: req.user?.user ?? req.body.user
                     },
                     { where: { 
                         id: form.id 

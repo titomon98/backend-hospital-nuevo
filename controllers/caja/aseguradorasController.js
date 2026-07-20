@@ -12,7 +12,7 @@ module.exports = {
         const datos = {
             telefono: form.telefono,
             nombre: form.nombre,
-            created_by: req.body.user
+            created_by: req.user?.user ?? req.body.user
         };
 
         Aseguradora.create(datos)

@@ -68,7 +68,7 @@ module.exports = {
                 estado: 1,
                 id_servicio: form.servicio.id,
                 id_cuenta: id_cuenta,
-                created_by: req.body.user
+                created_by: req.user?.user ?? req.body.user
             };
 
             await cuentaSeleccionada.update({ total: parseFloat(nuevoTotal), pendiente_de_pago: parseFloat(pendientePago) });
@@ -144,7 +144,7 @@ module.exports = {
                 estado: 1,
                 id_servicio: form.servicio.id,
                 id_cuenta: form.id_cuenta,
-                updated_by: req.body.user,
+                updated_by: req.user?.user ?? req.body.user,
             },
             { where: { 
                 id: form.id 

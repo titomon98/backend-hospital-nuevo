@@ -21,7 +21,7 @@ module.exports = {
             numero: form.numero, 
             serie: form.serie,
             referencia_factura: form.referencia_factura,
-            created_by: req.body.user,
+            created_by: req.user?.user ?? req.body.user,
         };
         Facturas.create(datos)
         .then(tipo => {
@@ -42,7 +42,7 @@ module.exports = {
             numero: form.numero, 
             serie: form.serie,
             referencia_factura: form.referencia_factura,
-            updated_by: req.body.user,
+            updated_by: req.user?.user ?? req.body.user,
         };
         Facturas.update(datos,
             { where: { 

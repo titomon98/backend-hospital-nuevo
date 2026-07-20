@@ -11,7 +11,7 @@ module.exports = {
         let form = req.body.form
         const datos = {
             nombre: form.nombre,
-            created_by: req.body.user,
+            created_by: req.user?.user ?? req.body.user,
             estado: 1
         };
 
@@ -106,7 +106,7 @@ module.exports = {
                 costo_diario: form.costo_diario,
                 costo_estudio_de_sueno: form.costo_estudio_de_sueno,
                 costo_quimioterapia: form.costo_quimioterapia,
-                updated_by: req.body.user,
+                updated_by: req.user?.user ?? req.body.user,
             },
             { 
                 where: { 
@@ -176,7 +176,7 @@ module.exports = {
             salida: null,
             createdAt: new Date(),
             updatedAt: restarHoras(new Date(), 6),
-            created_by: req.body.user
+            created_by: req.user?.user ?? req.body.user
         }
         await DetalleHabitaciones.create(createHabitacion)
 

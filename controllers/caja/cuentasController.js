@@ -25,7 +25,7 @@ module.exports = {
             total: form.total,
             estado: 1,
             id_expediente: form.id_expediente,
-            created_by: req.body.user,
+            created_by: req.user?.user ?? req.body.user,
             descuento: 0.0,
             solicitud_descuento: 3,
             tipo: form.tipo_cuenta
@@ -410,7 +410,7 @@ module.exports = {
                 otros: form.otros,
                 total: form.total,
                 estado: form.estado,
-                updated_by: req.body.user
+                updated_by: req.user?.user ?? req.body.user
             },
             { where: { 
                 id: form.id 
@@ -839,11 +839,11 @@ module.exports = {
             await Promise.all([
                 expediente.update({
                     estado: expediente.estado + 90,
-                    updated_by: req.user?.username ?? expediente.updated_by,
+                    updated_by: req.user?.user ?? expediente.updated_by,
                 }),
                 ultimaCuenta?.update({
                     estado: 10,
-                    updated_by: req.user?.username ?? ultimaCuenta.updated_by,
+                    updated_by: req.user?.user ?? ultimaCuenta.updated_by,
                     pendiente_de_pago: req.body.TotalApagar,
                     total: req.body.TotalApagar,
                 }),
@@ -912,8 +912,8 @@ module.exports = {
                 subtotal:            cuentaOriginal.subtotal            ?? 0,
                 tipo:                cuentaOriginal.tipo,
                 id_expediente:       cuentaOriginal.id_expediente,
-                created_by:          req.user?.username ?? null,
-                updated_by:          req.user?.username ?? null,
+                created_by:          req.user?.user ?? null,
+                updated_by:          req.user?.user ?? null,
             });
 
             const detalleOriginal = cuentaOriginal.detalle_habitaciones?.[0];
@@ -927,12 +927,12 @@ module.exports = {
                     costo_base:      detalleOriginal?.costo_base      ?? 0,
                     ingreso:         hoy,
                     salida:          null,
-                    created_by:      req.user?.username ?? null,
-                    updated_by:      req.user?.username ?? null,
+                    created_by:      req.user?.user ?? null,
+                    updated_by:      req.user?.user ?? null,
                 }),
                 cuentaOriginal.expediente.update({
                     estado:     cuentaOriginal.expediente.estado - 90,
-                    updated_by: req.user?.username ?? cuentaOriginal.expediente.updated_by,
+                    updated_by: req.user?.user ?? cuentaOriginal.expediente.updated_by,
                 }),
             ]);
 

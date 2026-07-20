@@ -143,7 +143,7 @@ module.exports = {
                     total: 25.00,
                     createdAt: new Date(),
                     updatedAt: new Date(),
-                    created_by: req.body.user
+                    created_by: req.user?.user ?? req.body.user
                 });
             }
 

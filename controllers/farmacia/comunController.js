@@ -28,7 +28,7 @@ module.exports = {
             id_marca: form.marca.id,
             factura: form.factura,
             estado: 1,
-            created_by: req.body.user
+            created_by: req.user?.user ?? req.body.user
         };
 
         let descripcion = 'Existencia inicial de ' + form.existencia_actual + ' unidades'
@@ -42,13 +42,13 @@ module.exports = {
             const existencias_farmacia = {
                 descripcion: descripcion,
                 accion: 'Ingreso de producto con identificador ' + tipo.id,
-                created_by: req.body.user
+                created_by: req.user?.user ?? req.body.user
             }
     
             const precios_farmacia = {
                 descripcion: 'Precio costo inicial de ' + form.precio_costo + ' y precio venta inicial de ' + form.precio_venta,
                 accion: 'Ingreso de producto con identificador ' + tipo.id,
-                created_by: req.body.user
+                created_by: req.user?.user ?? req.body.user
             }
     
             ExistenciasFarmacia.create(existencias_farmacia)
@@ -139,13 +139,13 @@ module.exports = {
         const existencias_farmacia = {
             descripcion: descripcion,
             accion: 'Actualización de producto con identificador ' + form.id,
-            created_by: req.body.user
+            created_by: req.user?.user ?? req.body.user
         }
 
         const precios_farmacia = {
             descripcion: 'Actualización a precio costo de ' + form.precio_costo + ' y precio venta de ' + form.precio_venta,
             accion: 'Actualización de producto con identificador ' + form.id,
-            created_by: req.body.user
+            created_by: req.user?.user ?? req.body.user
         }
 
         ExistenciasFarmacia.create(existencias_farmacia)
@@ -166,7 +166,7 @@ module.exports = {
                 id_presentacion: form.presentacion.id,
                 id_proveedor: form.proveedor.id,
                 id_marca: form.marca.id,
-                updated_by: req.body.user,
+                updated_by: req.user?.user ?? req.body.user,
             },
             { where: { 
                 id: form.id 

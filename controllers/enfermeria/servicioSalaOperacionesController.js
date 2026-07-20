@@ -154,7 +154,7 @@ module.exports = {
       id_cuenta: id_cuenta,
       createdAt: new Date(),
       updatedAt: restarHoras(new Date(), 6),
-      created_by: req.body.user.user
+      created_by: req.user?.user ?? req.body.user.user
     };
 
     console.log(datos)

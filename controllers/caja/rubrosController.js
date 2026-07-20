@@ -11,7 +11,7 @@ module.exports = {
         const datos = {
             nombre: form.nombre,
             estado: 1,
-            created_by: req.body.user
+            created_by: req.user?.user ?? req.body.user
         };
 
         Rubro.create(datos)
@@ -84,7 +84,7 @@ module.exports = {
         Rubro.update(
             {
                 nombre: form.name,
-                updated_by: req.body.user
+                updated_by: req.user?.user ?? req.body.user
             },
             { where: { 
                 id: form.id 

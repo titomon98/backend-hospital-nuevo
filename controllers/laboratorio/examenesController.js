@@ -51,8 +51,8 @@ module.exports = {
                 descuento: 0,
                 solicitud_descuento: 3,
                 subtotal: 0,
-                created_by: req.body.user,
-                updated_by: req.body.user,
+                created_by: req.user?.user ?? req.body.user,
+                updated_by: req.user?.user ?? req.body.user,
               };
         
               const cuentaCreada = await Cuenta.create(datosCuenta);
@@ -80,8 +80,8 @@ module.exports = {
                     estado: 1,
                     id_cuenta: cuentaCreada.id,
                     id_lab_cuentas: cuentaCreada.id,
-                    created_by: req.body.user,
-                    updated_by: req.body.user,
+                    created_by: req.user?.user ?? req.body.user,
+                    updated_by: req.user?.user ?? req.body.user,
                     createdAt: new Date(),
                     updatedAt: restarHoras(new Date(), 6),
                   };
@@ -111,8 +111,8 @@ module.exports = {
                 cui_encargado: 'INGRESO EN LABORATORIO',
                 direccion_encargado: 'INGRESO EN LABORATORIO',
                 estado: 11,
-                created_by: req.body.user,
-                updated_by: req.body.user,
+                created_by: req.user?.user ?? req.body.user,
+                updated_by: req.user?.user ?? req.body.user,
               };
         
               const expediente = await Expediente.create(datos_expediente);
@@ -131,8 +131,8 @@ module.exports = {
                 createdAt: new Date(),
                 updatedAt: restarHoras(new Date(), 6),
                 fecha_corte: null,
-                created_by: req.body.user,
-                updated_by: req.body.user,
+                created_by: req.user?.user ?? req.body.user,
+                updated_by: req.user?.user ?? req.body.user,
                 descuento: 0,
                 solicitud_descuento: 3,
                 subtotal: 0,
@@ -167,8 +167,8 @@ module.exports = {
                     id_lab_cuentas: cuentaCreada.id,
                     createdAt: new Date(),
                     updatedAt: restarHoras(new Date(), 6),
-                    created_by: req.body.user,
-                    updated_by: req.body.user,
+                    created_by: req.user?.user ?? req.body.user,
+                    updated_by: req.user?.user ?? req.body.user,
                   };
                   return Examenes.create(datosExamen);
                 })
@@ -197,8 +197,8 @@ module.exports = {
                 createdAt: new Date(),
                 updatedAt: restarHoras(new Date(), 6),
                 fecha_corte: null,
-                created_by: req.body.user,
-                updated_by: req.body.user,
+                created_by: req.user?.user ?? req.body.user,
+                updated_by: req.user?.user ?? req.body.user,
                 descuento: 0,
                 solicitud_descuento: 3,
                 subtotal: 0
@@ -229,8 +229,8 @@ module.exports = {
                     estado: 2,
                     id_cuenta: cuentaCreada.id,
                     id_lab_cuentas: cuentaCreada.id,
-                    created_by: req.body.user,
-                    updated_by: req.body.user,
+                    created_by: req.user?.user ?? req.body.user,
+                    updated_by: req.user?.user ?? req.body.user,
                     createdAt: new Date(),
                     updatedAt: restarHoras(new Date(), 6),
                   };
@@ -259,8 +259,8 @@ module.exports = {
                 cui_encargado: 'INGRESO EN LABORATORIO',
                 direccion_encargado: 'INGRESO EN LABORATORIO',
                 estado: 11,
-                created_by: req.body.user,
-                updated_by: req.body.user,
+                created_by: req.user?.user ?? req.body.user,
+                updated_by: req.user?.user ?? req.body.user,
               };
         
               const expediente = await Expediente.create(datos_expediente);
@@ -282,8 +282,8 @@ module.exports = {
                 descuento: 0,
                 solicitud_descuento: 3,
                 subtotal: 0,
-                created_by: req.body.user,
-                updated_by: req.body.user,
+                created_by: req.user?.user ?? req.body.user,
+                updated_by: req.user?.user ?? req.body.user,
                 fecha_ingreso: restarHoras(new Date(), 6),
                 hora_ingreso: restarHoras(new Date(), 6)
               };
@@ -313,8 +313,8 @@ module.exports = {
                     estado: 2,
                     id_cuenta: cuentaCreada.id,
                     id_lab_cuentas: cuentaCreada.id,
-                    created_by: req.body.user,
-                    updated_by: req.body.user,
+                    created_by: req.user?.user ?? req.body.user,
+                    updated_by: req.user?.user ?? req.body.user,
                     createdAt: new Date(),
                     updatedAt: restarHoras(new Date(), 6),
                   };
@@ -823,7 +823,7 @@ module.exports = {
       if (!examenSeleccionado) {
         return res.status(300).json({ msg: 'No se encontró el examen a actualizar' });
       }
-      await examenSeleccionado.update({estado: 4, updated_by: req.body.user})
+      await examenSeleccionado.update({estado: 4, updated_by: req.user?.user ?? req.body.user})
       .then(tipo => {
           res.send(tipo);
       })

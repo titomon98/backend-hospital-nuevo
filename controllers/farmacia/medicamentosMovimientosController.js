@@ -29,7 +29,7 @@ module.exports = {
             id_medicamento: form.medicamento.id,
             descripcion: descripcion,
             estado: 1,
-            created_by: req.body.user,
+            created_by: req.user?.user ?? req.body.user,
         };
         Medicamento.update({ 
             existencia_actual: existencia_nueva
@@ -114,7 +114,7 @@ module.exports = {
                 precio_venta: form.precio_venta,
                 movimiento: form.movimiento,
                 id_medicamento: form.medicamento.id,
-                updated_by: req.body.user,
+                updated_by: req.user?.user ?? req.body.user,
             },
             { where: { 
                 id: form.id 

@@ -16,7 +16,7 @@ module.exports = {
             id_usuario: form.id_usuario,
             total: form.total,
             estado: 2,
-            created_by: req.body.user,
+            created_by: req.user?.user ?? req.body.user,
         };
 
         Ingreso.create(datos)
@@ -150,7 +150,7 @@ module.exports = {
                 factura: form.factura,
                 fecha: form.fecha,
                 descripcion: form.descripcion,
-                updated_by: req.body.user,
+                updated_by: req.user?.user ?? req.body.user,
             },
             { where: { 
                 id: form.id 

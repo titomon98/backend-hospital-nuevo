@@ -27,7 +27,7 @@ module.exports = {
             id_marca: form.marca.id,
             estado: 1,
             factura: form.factura,
-            created_by: req.body.user,
+            created_by: req.user?.user ?? req.body.user,
         };
 
         Medicamento.create(datos)
@@ -122,7 +122,7 @@ module.exports = {
                 id_presentacion: form.presentacion.id,
                 id_proveedor: form.proveedor.id,
                 id_marca: form.marca.id,
-                updated_by: req.body.user,
+                updated_by: req.user?.user ?? req.body.user,
             },
             { where: { 
                 id: form.id 

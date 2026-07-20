@@ -11,7 +11,7 @@ module.exports = {
             contrato: form.contrato,
             nombre: form.nombre,
             estado: 1,
-            created_by: req.body.user,
+            created_by: req.user?.user ?? req.body.user,
         };
 
         Contrato.create(datos)
@@ -85,7 +85,7 @@ module.exports = {
             { 
                 contrato: form.contrato,
                 nombre: form.nombre,
-                updated_by: req.body.user
+                updated_by: req.user?.user ?? req.body.user
             },
             { where: { 
                 id: form.id 

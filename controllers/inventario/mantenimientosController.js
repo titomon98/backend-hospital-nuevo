@@ -13,7 +13,7 @@ module.exports = {
             costo: form.costo,
             siguiente: form.siguiente, 
             estado: 1,
-            created_by: req.body.user, 
+            created_by: req.user?.user ?? req.body.user, 
             id_equipo: form.id_equipo
         };
 
@@ -121,7 +121,7 @@ module.exports = {
                 costo: form.costo,
                 siguiente: form.siguiente,
                 estado: form.estado, // Se puede actualizar el estado directamente
-                updated_by: req.body.user,
+                updated_by: req.user?.user ?? req.body.user,
                 id_equipo: form.id_equipo // Se puede actualizar el equipo asociado
             },
             {
@@ -145,7 +145,7 @@ module.exports = {
 
     activate(req, res) {
         Mantenimiento.update(
-            { estado: 1, updated_by: req.body.user },
+            { estado: 1, updated_by: req.user?.user ?? req.body.user },
             { where: { id: req.body.id } }
         )
             .then(num => {
@@ -163,7 +163,7 @@ module.exports = {
 
     deactivate(req, res) {
         Mantenimiento.update(
-            { estado: 0, updated_by: req.body.user },
+            { estado: 0, updated_by: req.user?.user ?? req.body.user },
             { where: { id: req.body.id } }
         )
             .then(num => {

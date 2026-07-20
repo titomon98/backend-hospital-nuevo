@@ -15,7 +15,7 @@ module.exports = {
             fecha_adquisicion: form.fecha_adquisicion,
             existencia: form.existencia,
             estado: 1,
-            created_by: req.body.user
+            created_by: req.user?.user ?? req.body.user
         };
 
         Equipo.create(datos)
@@ -93,7 +93,7 @@ module.exports = {
                 gasto_unico: form.gasto_unico,
                 fecha_adquisicion: form.fecha_adquisicion,
                 existencia: form.existencia,
-                updated_by: req.body.user
+                updated_by: req.user?.user ?? req.body.user
             },
             { where: { 
                 id: form.id 

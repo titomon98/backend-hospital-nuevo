@@ -11,7 +11,7 @@ module.exports = {
             nombre: form.nombre,
             precio_costo: form.precio_costo,
             precio_venta: form.precio_venta,
-            created_by: req.body.user,
+            created_by: req.user?.user ?? req.body.user,
             estado: 1
         };
 
@@ -86,7 +86,7 @@ module.exports = {
             {   nombre: form.nombre,
                 precio_costo: form.precio_costo,
                 precio_venta: form.precio_venta,
-                updated_by: req.body.user,
+                updated_by: req.user?.user ?? req.body.user,
             },
             { where: { 
                 id: form.id 

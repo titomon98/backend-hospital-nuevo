@@ -201,7 +201,7 @@ module.exports = {
             direccion_conyuge: form.direccion_conyuge,
             telefono_conyuge: form.telefono_conyuge,
             fecha_ingreso_reciente: restarHoras(new Date(), 6),
-            created_by: req.body.user,
+            created_by: req.user?.user ?? req.body.user,
         };
 
         if (form.selectedOption == 'emergencia') {
@@ -223,7 +223,7 @@ module.exports = {
                 total: 0.0,
                 id_expediente: expediente_id,
                 estado: 1,
-                created_by: req.body.user,
+                created_by: req.user?.user ?? req.body.user,
                 descuento: 0.0,
                 solicitud_descuento: 3
             }
@@ -243,7 +243,7 @@ module.exports = {
                 id_habitacionDestino : null,
                 createdAt: new Date(),
                 updatedAt: restarHoras(new Date(), 6),
-                created_by: req.body.user,
+                created_by: req.user?.user ?? req.body.user,
             })
 
             //Actualizar expediente
@@ -321,7 +321,7 @@ module.exports = {
             direccion_conyuge: form.direccion_conyuge,
             telefono_conyuge: form.telefono_conyuge,
             fecha_ingreso_reciente: restarHoras(new Date(), 6),
-            created_by: req.body.user,
+            created_by: req.user?.user ?? req.body.user,
             nombre_factura: form.nombre_factura ?? null,
             nit_factura:    form.nit_factura    ?? null,
         };
@@ -345,7 +345,7 @@ module.exports = {
                 total: 0.0,
                 id_expediente: expediente_id,
                 estado: 1,
-                created_by: req.body.user,
+                created_by: req.user?.user ?? req.body.user,
                 descuento: 0.0,
                 solicitud_descuento: 3
             }
@@ -360,7 +360,7 @@ module.exports = {
                     estado: 1,
                     costo_base: 250.00,
                     ingreso: `${form.fecha}T${form.hora}`,
-                    created_by: req.body.user,
+                    created_by: req.user?.user ?? req.body.user,
                 });
             })
             .catch(err => console.log(err))
@@ -373,7 +373,7 @@ module.exports = {
                 id_habitacionDestino : null,
                 createdAt: new Date(),
                 updatedAt: restarHoras(new Date(), 6),
-                created_by: req.body.user,
+                created_by: req.user?.user ?? req.body.user,
             })
 
             //Actualizar expediente
@@ -433,7 +433,7 @@ module.exports = {
             salida: null,
             createdAt: new Date(),
             updatedAt: restarHoras(new Date(), 6),
-            created_by: req.body.user
+            created_by: req.user?.user ?? req.body.user
         }
         await DetalleHabitaciones.create(createHabitacion)
         await Habitaciones.update(
@@ -497,7 +497,7 @@ module.exports = {
             cui_encargado: 'PENDIENTE',
             direccion_encargado: 'PENDIENTE',
             estado: status,
-            created_by: req.body.user,
+            created_by: req.user?.user ?? req.body.user,
         };
 
         datos.id_medico = form.assignedDoctor
@@ -514,7 +514,7 @@ module.exports = {
                 total: 0.0,
                 id_expediente: expediente_id,
                 estado: 1,
-                created_by: req.body.user,
+                created_by: req.user?.user ?? req.body.user,
                 descuento: 0.0,
                 solicitud_descuento: 3
             }
@@ -846,7 +846,7 @@ module.exports = {
                         nombre_conyuge: form.nombre_conyuge,
                         direccion_conyuge: form.direccion_conyuge,
                         telefono_conyuge: form.telefono_conyuge,
-                        updated_by: req.body.user,
+                        updated_by: req.user?.user ?? req.body.user,
                     },
                     { where: { 
                         id: result.rows[0].dataValues.id
@@ -890,7 +890,7 @@ module.exports = {
                         nombre_conyuge: form.nombre_conyuge,
                         direccion_conyuge: form.direccion_conyuge,
                         telefono_conyuge: form.telefono_conyuge,
-                        updated_by: req.body.user,
+                        updated_by: req.user?.user ?? req.body.user,
                     },
                     { where: { 
                         id: form.id 
@@ -916,7 +916,7 @@ module.exports = {
                                 total: 0.0,
                                 id_expediente: form.id,
                                 estado: 1,
-                                created_by: req.body.user,
+                                created_by: req.user?.user ?? req.body.user,
                             }
                             Cuenta.create(datos_cuenta)
                             .then((resultCuenta_create)=>{
@@ -1840,7 +1840,7 @@ module.exports = {
                 id_habitacionDestino: habitacion ? habitacion.id : null,
                 createdAt: new Date(),
                 updatedAt: today,
-                created_by: req.body.user,
+                created_by: req.user?.user ?? req.body.user,
             });
 
             return res.status(200).json({ msg: 'El paciente ha sido reingresado correctamente' });

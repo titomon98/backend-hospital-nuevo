@@ -12,8 +12,8 @@ module.exports = {
             contenido: form.orden,
             estado: 1,
             id_expediente: form.id,
-            created_by: req.body.user,
-            updated_by: req.body.user,
+            created_by: req.user?.user ?? req.body.user,
+            updated_by: req.user?.user ?? req.body.user,
         };
 
         Orden.create(datos)

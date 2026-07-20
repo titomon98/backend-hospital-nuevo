@@ -15,7 +15,7 @@ module.exports = {
             proveedor: form.proveedorNombre,
             estado: 1,
             id_rubro: form.selectedRubro.id,
-            created_by: req.body.user
+            created_by: req.user?.user ?? req.body.user
         };
 
         Caja_chicas.create(datos)
@@ -95,7 +95,7 @@ module.exports = {
             { 
                 Caja_chicas: form.Caja_chicas,
                 nombre: form.nombre,
-                updated_by: req.body.user
+                updated_by: req.user?.user ?? req.body.user
             },
             { where: { 
                 id: form.id 

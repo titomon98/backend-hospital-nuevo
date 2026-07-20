@@ -10,7 +10,7 @@ module.exports = {
         const datos = {
             nombre: form.nombre,
             estado: 1,
-            created_by: req.body.user
+            created_by: req.user?.user ?? req.body.user
         };
 
         Especialidad.create(datos)
@@ -83,7 +83,7 @@ module.exports = {
         Especialidad.update(
             { 
                 nombre: form.nombre,
-                updated_by: req.body.user,
+                updated_by: req.user?.user ?? req.body.user,
             },
             { where: { 
                 id: form.id 

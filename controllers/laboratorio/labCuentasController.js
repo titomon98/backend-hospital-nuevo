@@ -22,7 +22,7 @@ module.exports = {
             total: form.total,
             estado: 1,
             id_expediente: form.id_expediente,
-            created_by: req.body.user,
+            created_by: req.user?.user ?? req.body.user,
             descuento: 0.0,
             solicitud_descuento: 3
         };
@@ -334,7 +334,7 @@ module.exports = {
                 otros: form.otros,
                 total: form.total,
                 estado: form.estado,
-                updated_by: req.body.user,
+                updated_by: req.user?.user ?? req.body.user,
             },
             { where: { 
                 id: form.id 
@@ -397,7 +397,7 @@ module.exports = {
                         total: req.body.total,
                         tipo: req.body.tipo,
                         id_lab_cuenta: req.body.id,
-                        created_by: req.body.user,
+                        created_by: req.user?.user ?? req.body.user,
                     })
                 .then(detalle_cuenta =>{
                     console.log(detalle_cuenta)
@@ -499,7 +499,7 @@ module.exports = {
                         total: req.body.total,
                         tipo: req.body.tipo,
                         id_lab_cuenta: req.body.id,
-                        created_by: req.body.user,
+                        created_by: req.user?.user ?? req.body.user,
                     })
                 .then(detalle_cuenta =>res.status(200).send('El registro ha sido desactivado'))
                 .catch(error=>{

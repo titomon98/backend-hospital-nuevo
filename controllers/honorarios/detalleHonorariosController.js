@@ -71,7 +71,7 @@ module.exports = {
       total: req.body.total,
       createdAt: restarHoras(new Date(), 0),
       updatedAt: restarHoras(new Date(), 0),
-      created_by: req.body.user
+      created_by: req.user?.user ?? req.body.user
     };
 
     try {

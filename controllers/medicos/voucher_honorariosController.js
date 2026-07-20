@@ -26,7 +26,7 @@ module.exports = {
             fecha_creacion: restarHoras(new Date(), 6),
             createdAt: new Date(),
             updatedAt: restarHoras(new Date(), 6),
-            created_by: req.body.user
+            created_by: req.user?.user ?? req.body.user
         };
 
         await Honorarios.update(
