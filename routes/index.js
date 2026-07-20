@@ -124,6 +124,19 @@ const trasladosController = require('../controllers/caja/trasladosController.js'
 
 module.exports = (app) => {
 
+    //AUTH — rutas publicas. Van ANTES del router.use(auth) de abajo, porque
+    //no se puede exigir un token a quien todavia no lo tiene.
+    router.post('/login', authController.login);
+    router.post('/refresh', authController.refresh);
+    router.post('/logout', authController.logout);
+    router.post('/validatePassword', authController.validatePassword);
+
+    //A partir de aqui todo exige token. Una sola linea en vez de repetir
+    //el middleware en cada ruta: lo que no este arriba, queda protegido.
+    router.use(auth);
+
+    router.post('/autenticar', authController.autenticar);
+
     //FAVOR DE DEJAR ORGANIZADO POR CARPETAS EN ORDEN ALFABETICO
 
     //CARPETA DE CAJA
@@ -722,13 +735,6 @@ module.exports = (app) => {
 
     //traslados
     router.put('/traslados/emergencia/hospital', trasladosController.trasladarEmergenciaAHospital)
-
-    //AUTH
-    router.post('/login', authController.login);
-    router.post('/refresh', authController.refresh);
-    router.post('/logout', authController.logout);
-    router.post('/autenticar', auth, authController.autenticar);
-    router.post('/validatePassword', authController.validatePassword);
 
     app.use('/', router);
 };
