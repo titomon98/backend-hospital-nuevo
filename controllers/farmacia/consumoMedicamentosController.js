@@ -8,6 +8,7 @@ const Cuenta = db.cuentas;
 const Expediente = db.expedientes;
 const Op = db.Sequelize.Op;
 const moment = require('moment');
+const { crearPedidoAutomatico } = require('../enfermeria/pedidosController');
 
 module.exports = {
     async get(req, res) {
@@ -292,6 +293,26 @@ module.exports = {
             by: parseInt(form.cantidad),
             where: { id: form.id_medicamento }
         })
+        // Cada consumo genera automaticamente un pedido a farmacia para reponer
+        // lo consumido (mismo medicamento, misma cantidad; codigo autogenerado).
+        // Si falla no se cae el consumo, solo se registra en consola.
+        try {
+            const producto = await Medicamento.findByPk(form.id_medicamento)
+            await crearPedidoAutomatico({
+                id_usuario: form.user,
+                movimiento: form.movimiento,
+                cantidad: form.cantidad,
+                fecha: restarHoras(new Date(), 6),
+                detalleItem: {
+                    is_medicine: true,
+                    id_medicine: form.id_medicamento,
+                    cantidad: form.cantidad,
+                    nombre: (producto && producto.nombre) ? producto.nombre : descripcion
+                }
+            })
+        } catch (e) {
+            console.log('Error creando pedido automatico:', e)
+        }
         Movimiento.create(datos)
         .then(tipo => {
             

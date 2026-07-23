@@ -9,51 +9,83 @@ const Quirurgico = db.quirurgicos;
 const Usuarios = db.usuarios;
 const Op = db.Sequelize.Op;
 
-module.exports = {
-    create(req, res) {
-        const datos = {
-            codigoPedido: req.body.codigoPedido,
-            fecha: req.body.fecha,
-            id_usuario: req.body.id_usuario,
-            cantidadUnidades: req.body.cantidadUnidades,
-            estado: 1
+// Helper reutilizable: crea la cabecera del pedido + sus lineas. NO mueve
+// existencias ni responde HTTP (eso lo hace quien lo llama). Devuelve el pedido
+// creado. Lo usan tanto pedidosController.create como los consumos de farmacia
+// (que generan un pedido automatico al descontar). Ver SURTIR_DETALLE.md.
+async function crearPedido({ codigoPedido, fecha, id_usuario, cantidadUnidades, picked, detalle }) {
+    // destino de las lineas: 1 = enfermeria (existencia_actual_farmacia),
+    // 2 = quirofano (existencia_actual_quirofano). Se deriva de "picked"
+    // (0 = farmacia, 1 = quirofano).
+    const destino = parseInt(picked) === 1 ? 2 : 1;
+
+    const pedido = await Pedido.create({
+        codigoPedido,
+        fecha,
+        id_usuario,
+        cantidadUnidades,
+        estado: 1
+    });
+
+    const detalles = detalle || [];
+    const filas = detalles.map(item => {
+        const datos_detalles = {
+            cantidad: parseInt(item.cantidad),
+            descripcion: item.nombre,
+            estado: 1,
+            destino: destino,
+            id_pedido: pedido.id
         };
+        if (item.is_medicine === true) {
+            datos_detalles.id_medicamento = item.id_medicine;
+        } else if (item.is_quirurgico === true) {
+            datos_detalles.id_quirurgico = item.id_quirurgico;
+        } else if (item.is_comun === true) {
+            datos_detalles.id_comun = item.id_comun;
+        }
+        return datos_detalles;
+    });
 
-        // destino de las lineas: 1 = enfermeria (existencia_actual_farmacia),
-        // 2 = quirofano (existencia_actual_quirofano). Se deriva del radio "picked"
-        // que manda enfermeria (0 = farmacia, 1 = quirofano).
-        const destino = parseInt(req.body.picked) === 1 ? 2 : 1;
+    await Promise.all(filas.map(f => DetallePedido.create(f)));
+    return pedido;
+}
 
-        // IMPORTANTE: el create YA NO mueve existencias. El traslado (restar de
-        // existencia_actual y sumar al area destino) ahora ocurre al surtir cada
-        // linea en detallePedidosController.surtir. Aqui solo se crean cabecera y
-        // lineas. Ver SURTIR_DETALLE.md.
-        Pedido.create(datos)
-        .then(pedido => {
-            const pedido_id = pedido.id
-            const detalles = req.body.detalle || []
+// Genera un pedido AUTOMATICO a partir de un consumo de farmacia. El codigo se
+// autogenera con fecha/hora para no colisionar/truncarse con codigos previos.
+// destino segun el movimiento del consumo: SALIDAQ = quirofano, resto = farmacia.
+// detalleItem lleva el tipo (is_medicine/is_quirurgico/is_comun), el id del
+// producto y la cantidad consumida.
+async function crearPedidoAutomatico({ id_usuario, movimiento, cantidad, fecha, detalleItem }) {
+    const ahora = fecha || new Date();
+    const dosDigitos = (n) => String(n).padStart(2, '0');
+    const codigoPedido = 'AUTOMATICO-' +
+        dosDigitos(ahora.getDate()) + '-' +
+        dosDigitos(ahora.getMonth() + 1) + '-' +
+        ahora.getFullYear() + '-' +
+        dosDigitos(ahora.getHours()) + '-' +
+        dosDigitos(ahora.getMinutes()) + '-' +
+        dosDigitos(ahora.getSeconds());
 
-            const filas = detalles.map(item => {
-                const datos_detalles = {
-                    cantidad: parseInt(item.cantidad),
-                    descripcion: item.nombre,
-                    estado: 1,
-                    destino: destino,
-                    id_pedido: pedido_id
-                }
-                if (item.is_medicine === true) {
-                    datos_detalles.id_medicamento = item.id_medicine
-                } else if (item.is_quirurgico === true) {
-                    datos_detalles.id_quirurgico = item.id_quirurgico
-                } else if (item.is_comun === true) {
-                    datos_detalles.id_comun = item.id_comun
-                }
-                return datos_detalles
-            })
+    // SALIDAQ (quirofano) -> picked 1 -> destino 2; resto -> picked 0 -> destino 1.
+    const picked = movimiento === 'SALIDAQ' ? 1 : 0;
 
-            return Promise.all(filas.map(f => DetallePedido.create(f)))
-                .then(() => res.send(pedido))
-        })
+    return crearPedido({
+        codigoPedido,
+        fecha: ahora,
+        id_usuario,
+        cantidadUnidades: parseInt(cantidad),
+        picked,
+        detalle: [detalleItem]
+    });
+}
+
+module.exports = {
+    // El create YA NO mueve existencias. El traslado (restar de existencia_actual
+    // y sumar al area destino) ocurre al surtir cada linea en
+    // detallePedidosController.surtir. Aqui solo se crean cabecera y lineas.
+    create(req, res) {
+        crearPedido(req.body)
+        .then(pedido => res.send(pedido))
         .catch(error => {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
@@ -223,4 +255,9 @@ module.exports = {
         });
     }
 };
+
+// Exportado aparte para que los consumos de farmacia puedan generar un pedido
+// automatico reutilizando exactamente la misma logica que /pedidos/create.
+module.exports.crearPedido = crearPedido;
+module.exports.crearPedidoAutomatico = crearPedidoAutomatico;
 
