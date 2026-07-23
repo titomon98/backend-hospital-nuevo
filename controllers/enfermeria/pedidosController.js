@@ -11,7 +11,6 @@ const Op = db.Sequelize.Op;
 
 module.exports = {
     create(req, res) {
-        let form = req.body
         const datos = {
             codigoPedido: req.body.codigoPedido,
             fecha: req.body.fecha,
@@ -20,173 +19,45 @@ module.exports = {
             estado: 1
         };
 
+        // destino de las lineas: 1 = enfermeria (existencia_actual_farmacia),
+        // 2 = quirofano (existencia_actual_quirofano). Se deriva del radio "picked"
+        // que manda enfermeria (0 = farmacia, 1 = quirofano).
+        const destino = parseInt(req.body.picked) === 1 ? 2 : 1;
+
+        // IMPORTANTE: el create YA NO mueve existencias. El traslado (restar de
+        // existencia_actual y sumar al area destino) ahora ocurre al surtir cada
+        // linea en detallePedidosController.surtir. Aqui solo se crean cabecera y
+        // lineas. Ver SURTIR_DETALLE.md.
         Pedido.create(datos)
         .then(pedido => {
             const pedido_id = pedido.id
-            let cantidadUnidades = 0;
-            let detalles = req.body.detalle
-            let cantidad = req.body.detalle.length
-            for (let i = 0; i < cantidad; i++){
-                if (detalles[i].is_medicine === true){
-                    let id_medicine = detalles[i].id_medicine
-                    let datos_detalles = {
-                        cantidad: parseInt(detalles[i].cantidad),
-                        descripcion: detalles[i].nombre,
-                        estado: 1,
-                        id_pedido: parseInt(pedido_id),
-                        id_medicamento: id_medicine
-                    }
-                    cantidadUnidades = cantidadUnidades + parseInt(detalles[i].cantidad)
-                    DetallePedido.create(datos_detalles)
-                    .then(detalle => {
-                        Medicamento.findByPk(id_medicine).then(med=>{
-                            if(req.body.picked === 0){
-                                Medicamento.update(
-                                { 
-                                    existencia_actual: detalles[i].existencias_actuales,
-                                    existencia_actual_farmacia: parseInt(med['existencia_actual_farmacia']) + parseInt(detalles[i].cantidad)
-                                },
-                                { where: { 
-                                    id: detalles[i].id_medicine
-                                }})
-                                .then(medicamento => res.status(200).send('El registro ha sido actualizado'))
-                                .catch(error => {
-                                    console.log(error)
-                                    return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-                                });
-                            }
-                            else {
-                                Medicamento.findByPk(id_medicine).then(med=>{
-                                    Medicamento.update(
-                                    { 
-                                        existencia_actual: detalles[i].existencias_actuales,
-                                        existencia_actual_quirofano: parseInt(med['existencia_actual_quirofano']) + parseInt(detalles[i].cantidad)
-                                    },
-                                    { where: { 
-                                        id: detalles[i].id_medicine
-                                    }})
-                                    .then(medicamento => res.status(200).send('El registro ha sido actualizado'))
-                                    .catch(error => {
-                                        console.log(error)
-                                        return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-                                    });
-                                })
-                            }
-                        })
-                    })
-                    .catch(error => {
-                        console.log(error)
-                        return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-                    });
-                }
-                else if (detalles[i].is_quirurgico === true){
-                    let id_quirurgico = detalles[i].id_quirurgico
-                    let datos_detalles = {
-                        cantidad: detalles[i].cantidad,
-                        descripcion: detalles[i].nombre,
-                        estado: 1,
-                        id_pedido: pedido_id,
-                        id_quirurgico: id_quirurgico
-                    }
-                    cantidadUnidades = cantidadUnidades + parseInt(detalles[i].cantidad)
-                    DetallePedido.create(datos_detalles).then(detalle => {
-                        Quirurgico.findByPk(id_quirurgico).then(qui=>{
-                                if(req.body.picked === 0)
-                                {
-                                Quirurgico.update(
-                                { 
-                                    existencia_actual: detalles[i].existencias_actuales,
-                                    existencia_actual_farmacia: parseInt(qui['existencia_actual_farmacia']) + parseInt(detalles[i].cantidad)
+            const detalles = req.body.detalle || []
 
-                                },
-                                { where: { 
-                                    id: detalles[i].id_quirurgico
-                                }})
-                                .then(quirurgico => res.status(200).send('El registro ha sido actualizado'))
-                                .catch(error => {
-                                    console.log(error)
-                                    return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-                                });
-                            }
-                            else{
-                                Quirurgico.update(
-                                { 
-                                    existencia_actual: detalles[i].existencias_actuales,
-                                    existencia_actual_quirofano: parseInt(qui['existencia_actual_quirofano']) + parseInt(detalles[i].cantidad)
-    
-                                },
-                                { where: { 
-                                    id: detalles[i].id_quirurgico
-                                }})
-                                .then(quirurgico => res.status(200).send('El registro ha sido actualizado'))
-                                .catch(error => {
-                                    console.log(error)
-                                    return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-                                });
-                            }
-                        })
-                    })
-                    .catch(error => {
-                        console.log(error)
-                        return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-                    });
+            const filas = detalles.map(item => {
+                const datos_detalles = {
+                    cantidad: parseInt(item.cantidad),
+                    descripcion: item.nombre,
+                    estado: 1,
+                    destino: destino,
+                    id_pedido: pedido_id
                 }
-                else if (detalles[i].is_comun === true){
-                    let id_comun = detalles[i].id_comun
-                    let datos_detalles = {
-                        cantidad: detalles[i].cantidad,
-                        descripcion: detalles[i].nombre,
-                        estado: 1,
-                        id_pedido: pedido_id,
-                        id_comun: id_comun
-                    }
-                    DetallePedido.create(datos_detalles).then(detalle => {
-                        Comun.findByPk(id_comun).then(com => {
-                            if(req.body.picked === 0){
-                                Comun.update({ 
-                                    existencia_actual: detalles[i].existencias_actuales,
-                                    existencia_actual_farmacia: parseInt(com['existencia_actual_farmacia']) + parseInt(detalles[i].cantidad)
-
-                                },
-                                { where: { 
-                                    id: detalles[i].id_comun
-                                }})
-                                .then(comun => res.status(200).send('El registro ha sido actualizado'))
-                                .catch(error => {
-                                    console.log(error)
-                                    return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-                                });
-                            }
-                            else {
-                                Comun.update({ 
-                                    existencia_actual: detalles[i].existencias_actuales,
-                                    existencia_actual_quirofano: parseInt(com['existencia_actual_quirofano']) + parseInt(detalles[i].cantidad)
-
-                                },
-                                { where: { 
-                                    id: detalles[i].id_comun
-                                }})
-                                .then(comun => res.status(200).send('El registro ha sido actualizado'))
-                                .catch(error => {
-                                    console.log(error)
-                                    return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-                                });
-                            }
-                        })
-                    })
-                    .catch(error => {
-                        console.log(error)
-                        return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-                    });
+                if (item.is_medicine === true) {
+                    datos_detalles.id_medicamento = item.id_medicine
+                } else if (item.is_quirurgico === true) {
+                    datos_detalles.id_quirurgico = item.id_quirurgico
+                } else if (item.is_comun === true) {
+                    datos_detalles.id_comun = item.id_comun
                 }
-            }
-            res.send(pedido);
+                return datos_detalles
+            })
+
+            return Promise.all(filas.map(f => DetallePedido.create(f)))
+                .then(() => res.send(pedido))
         })
         .catch(error => {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
-                    
     },
 
  
