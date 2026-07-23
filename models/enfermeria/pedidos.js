@@ -34,6 +34,13 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false
     },
+    // Area destino del pedido: 0 = Farmacia, 1 = Quirofano.
+    // Se usa al SURTIR para saber a que columna de existencia sumar.
+    picked: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: 0
+    },
   }, {
     sequelize,
     modelName: 'pedidos',

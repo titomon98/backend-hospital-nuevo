@@ -93,5 +93,52 @@ module.exports = {
                 res.status(400).send(error)
             })
     },
+
+    // Surtir UN item del pedido: suma la existencia al area destino del pedido
+    // (picked: 0 = Farmacia, 1 = Quirofano) y marca el item como surtido (estado 2).
+    // Cuando ya no quedan items pendientes, el pedido se cierra (estado 0).
+    async surtir (req, res) {
+        try {
+            const id = req.body.id;
+            const detalle = await DetallePedido.findByPk(id);
+            if (!detalle) {
+                return res.status(404).json({ msg: 'Detalle de pedido no encontrado' });
+            }
+            if (detalle.estado === 2) {
+                return res.status(400).json({ msg: 'Este item ya fue surtido' });
+            }
+
+            const pedido = await Pedido.findByPk(detalle.id_pedido);
+            const columna = (pedido && pedido.picked === 1)
+                ? 'existencia_actual_quirofano'
+                : 'existencia_actual_farmacia';
+            const cantidad = parseInt(detalle.cantidad) || 0;
+
+            if (detalle.id_medicamento) {
+                await Medicamento.increment(columna, { by: cantidad, where: { id: detalle.id_medicamento } });
+            } else if (detalle.id_quirurgico) {
+                await Quirurgico.increment(columna, { by: cantidad, where: { id: detalle.id_quirurgico } });
+            } else if (detalle.id_comun) {
+                await Comunes.increment(columna, { by: cantidad, where: { id: detalle.id_comun } });
+            }
+
+            detalle.estado = 2;
+            await detalle.save();
+
+            // Si ya no quedan items pendientes, cerrar el pedido.
+            const pendientes = await DetallePedido.count({
+                where: { id_pedido: detalle.id_pedido, estado: 1 }
+            });
+            if (pendientes === 0 && pedido) {
+                pedido.estado = 0;
+                await pedido.save();
+            }
+
+            return res.send({ msg: 'Item surtido correctamente', pedidoCerrado: pendientes === 0 });
+        } catch (error) {
+            console.log(error);
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        }
+    },
 };
 

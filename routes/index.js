@@ -301,6 +301,7 @@ module.exports = (app) => {
     //pedidos
     router.get('/detalle_pedidos/list', detallePedidosController.list);
     router.get('/detalle_pedidos/getByAccount', detallePedidosController.getByAccountId);
+    router.put('/detalle_pedidos/surtir', detallePedidosController.surtir);
 
     //servicioSalaOperaciones
     router.post('/salaOperaciones/created', servicioSalaOperacionesController.create);
