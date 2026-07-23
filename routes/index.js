@@ -301,6 +301,7 @@ module.exports = (app) => {
     //pedidos
     router.get('/detalle_pedidos/list', detallePedidosController.list);
     router.get('/detalle_pedidos/getByAccount', detallePedidosController.getByAccountId);
+    router.get('/detalle_pedidos/getPendientes', detallePedidosController.getPendientes);
     router.post('/detallePedidos/surtir', detallePedidosController.surtir);
 
     //servicioSalaOperaciones
