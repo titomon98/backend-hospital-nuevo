@@ -1,6 +1,7 @@
 'use strict'
 const Sequelize     = require('sequelize');
 const db = require("../../models");
+const tiempo = require("../../utils/tiempo");
 const Logs = db.log_traslados;
 const Consumo = db.consumos;
 const Servicio = db.servicios;
@@ -648,17 +649,18 @@ module.exports = {
 
             // Cálculo de días según reglas de corte a las 2PM
             function calcularDiasHabitacion(ingreso, salida) {
-                const fechaIngreso = new Date(ingreso);
-                const fechaSalida  = salida ? new Date(salida) : new Date();
+                // Anclado a UTC para no depender de la zona del proceso (ver utils/tiempo).
+                const fechaIngreso = tiempo.desdeBD(ingreso);
+                const fechaSalida  = salida ? tiempo.desdeBD(salida) : tiempo.ahora();
 
-                const minutosIngreso = fechaIngreso.getHours() * 60 + fechaIngreso.getMinutes();
+                const minutosIngreso = fechaIngreso.getUTCHours() * 60 + fechaIngreso.getUTCMinutes();
                 const MIN_7AM = 7  * 60;
                 const MIN_2PM = 14 * 60;
 
                 let dias = 0;
 
                 const primerCorte2PM = new Date(fechaIngreso);
-                primerCorte2PM.setHours(14, 0, 0, 0);
+                primerCorte2PM.setUTCHours(14, 0, 0, 0);
 
                 if (minutosIngreso < MIN_7AM) {
                     dias += 1;
@@ -666,7 +668,7 @@ module.exports = {
                     // sin cargo extra
                 } else {
                     dias += 1;
-                    primerCorte2PM.setDate(primerCorte2PM.getDate() + 1);
+                    primerCorte2PM.setUTCDate(primerCorte2PM.getUTCDate() + 1);
                 }
 
                 if (fechaSalida > primerCorte2PM) {
@@ -831,16 +833,10 @@ module.exports = {
             let costoEmergencia = 0.0;
             for (const detalle of detallesHabitacion) {
                 if (detalle.tipo_habitacion === 'Emergencia') {
-                    const fechaIngreso = new Date(detalle.ingreso);
-
-                    let fechaSalida;
-                    if (detalle.salida) {
-                        fechaSalida = new Date(detalle.salida);
-                    } else {
-                        // Hora actual en GMT-6, igual que como se almacena ingreso
-                        const ahora = new Date();
-                        fechaSalida = new Date(ahora.toLocaleString('en-US', { timeZone: 'America/Guatemala' }));
-                    }
+                    // Ingreso y salida anclados a UTC (ver utils/tiempo); antes
+                    // se restaba ingreso crudo contra un "ahora" en GMT-6.
+                    const fechaIngreso = tiempo.desdeBD(detalle.ingreso);
+                    const fechaSalida  = detalle.salida ? tiempo.desdeBD(detalle.salida) : tiempo.ahora();
 
                     const diffMs = fechaSalida - fechaIngreso;
                     const horasTotales = diffMs / (1000 * 60 * 60);
@@ -1039,19 +1035,20 @@ module.exports = {
             }
 
             function calcularDiasHabitacion(ingreso, salida) {
-                const fechaIngreso = new Date(ingreso);
-                const fechaSalida  = salida ? new Date(salida) : new Date();
-                const minutosIngreso = fechaIngreso.getHours() * 60 + fechaIngreso.getMinutes();
+                // Anclado a UTC para no depender de la zona del proceso (ver utils/tiempo).
+                const fechaIngreso = tiempo.desdeBD(ingreso);
+                const fechaSalida  = salida ? tiempo.desdeBD(salida) : tiempo.ahora();
+                const minutosIngreso = fechaIngreso.getUTCHours() * 60 + fechaIngreso.getUTCMinutes();
                 const MIN_7AM = 7  * 60;
                 const MIN_2PM = 14 * 60;
                 let dias = 0;
                 const primerCorte2PM = new Date(fechaIngreso);
-                primerCorte2PM.setHours(14, 0, 0, 0);
+                primerCorte2PM.setUTCHours(14, 0, 0, 0);
                 if (minutosIngreso < MIN_7AM) {
                     dias += 1;
                 } else if (minutosIngreso >= MIN_2PM) {
                     dias += 1;
-                    primerCorte2PM.setDate(primerCorte2PM.getDate() + 1);
+                    primerCorte2PM.setUTCDate(primerCorte2PM.getUTCDate() + 1);
                 }
                 if (fechaSalida > primerCorte2PM) {
                     const diffMs   = fechaSalida - primerCorte2PM;
@@ -1070,8 +1067,9 @@ module.exports = {
 
                 let costo;
                 if (esAmbulatorio) {
-                    const salida  = detalle.salida ? new Date(detalle.salida) : new Date();
-                    const ingreso = new Date(detalle.ingreso);
+                    // Anclado a UTC (ver utils/tiempo).
+                    const salida  = detalle.salida ? tiempo.desdeBD(detalle.salida) : tiempo.ahora();
+                    const ingreso = tiempo.desdeBD(detalle.ingreso);
                     const diffHoras  = (salida - ingreso) / (1000 * 60 * 60);
                     const horasExtra = Math.max(0, Math.floor(diffHoras) - 6);
                     costo = costoBase + (horasExtra * 50);

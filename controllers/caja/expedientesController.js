@@ -1,6 +1,7 @@
 'use strict'
 const Sequelize     = require('sequelize');
 const db = require("../../models");
+const tiempo = require("../../utils/tiempo");
 const Expediente = db.expedientes;
 const Cuenta = db.cuentas;
 const Habitaciones = db.habitaciones;
@@ -1633,20 +1634,15 @@ module.exports = {
         const form = req.body.form;
 
         // Construir fecha/hora de egreso como un solo Date
-        function toGMTMinus6(date) {
-            const d = new Date(date);
-            d.setHours(d.getHours() - 6);
-            return d;
-        }
-
         function buildFechaEgreso(fecha, hora) {
-            if (fecha && hora) return new Date(`${fecha}T${hora}:00`);
-            if (fecha)         return new Date(`${fecha}T14:00:00`);
-            return toGMTMinus6(new Date()); // now en GMT-6
+            // Egreso del formulario en GMT-6, anclado a UTC (utils/tiempo).
+            return tiempo.desdeFormulario(fecha, hora);
         }
 
         function calcularCostoHabitacion(detalle, fechaEgreso, habitacion) {
-            const fechaIngreso = toGMTMinus6(new Date(detalle.ingreso));
+            // Ingreso y salida se interpretan anclados a UTC para que el calculo
+            // no dependa de la zona horaria del proceso (ver utils/tiempo).
+            const fechaIngreso = tiempo.desdeBD(detalle.ingreso);
             const salida       = new Date(fechaEgreso);
 
             const costoBase    = parseFloat(detalle.costo_base);
@@ -1659,19 +1655,19 @@ module.exports = {
                 const horasExtra = Math.max(0, Math.floor(diffHoras) - 6);
                 return costoBase + (horasExtra * 50);
             } else {
-                const minutosIngreso = fechaIngreso.getHours() * 60 + fechaIngreso.getMinutes();
+                const minutosIngreso = fechaIngreso.getUTCHours() * 60 + fechaIngreso.getUTCMinutes();
                 const MIN_7AM = 7  * 60;
                 const MIN_2PM = 14 * 60;
 
                 let dias = 0;
                 const primerCorte2PM = new Date(fechaIngreso);
-                primerCorte2PM.setHours(14, 0, 0, 0);
+                primerCorte2PM.setUTCHours(14, 0, 0, 0);
 
                 if (minutosIngreso < MIN_7AM) {
                     dias += 1;
                 } else if (minutosIngreso >= MIN_2PM) {
                     dias += 1;
-                    primerCorte2PM.setDate(primerCorte2PM.getDate() + 1);
+                    primerCorte2PM.setUTCDate(primerCorte2PM.getUTCDate() + 1);
                 }
 
                 if (salida > primerCorte2PM) {
@@ -1882,12 +1878,12 @@ module.exports = {
             });
  
             let costoEmergencia = 0;
-            const salidaDatetime = fecha && hora ? new Date(`${fecha}T${hora}`) : new Date();
- 
+            const salidaDatetime = tiempo.desdeFormulario(fecha, hora);
+
             for (const detalle of detallesHabitacion) {
                 if (detalle.tipo_habitacion === 'Emergencia') {
-                    const fechaIngreso = new Date(detalle.ingreso);
-                    const fechaSalida  = detalle.salida ? new Date(detalle.salida) : salidaDatetime;
+                    const fechaIngreso = tiempo.desdeBD(detalle.ingreso);
+                    const fechaSalida  = detalle.salida ? tiempo.desdeBD(detalle.salida) : salidaDatetime;
  
                     const diffMs       = fechaSalida - fechaIngreso;
                     const horasTotales = diffMs / (1000 * 60 * 60);
