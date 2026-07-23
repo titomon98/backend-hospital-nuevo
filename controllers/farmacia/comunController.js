@@ -208,7 +208,7 @@ module.exports = {
     },
     get (req, res) {
         Comun.findAll({
-            attributes: ['id', 'nombre', 'existencia_actual', 'precio_venta', 'inventariado'],
+            attributes: ['id', 'nombre', 'existencia_actual', 'existencia_actual_quirofano', 'existencia_actual_farmacia', 'precio_venta', 'inventariado'],
             include: [{
               model: Presentacion,
               attributes: ['nombre']

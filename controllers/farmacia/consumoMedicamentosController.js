@@ -255,7 +255,6 @@ module.exports = {
           let nuevoTotal = 0
 
         let form = req.body.form
-        let existencia_nueva;
         let descripcion
 
         if (form.movimiento === 'SALIDAQ') {
@@ -268,7 +267,11 @@ module.exports = {
             descripcion = 'Consumo de medicamentos por la cuenta ' + numero_cuenta + ' En el area de Emergencia'
         }
         console.log('-------------------',form)
-        existencia_nueva = parseInt(form.existencias_actuales) - parseInt(form.cantidad)
+        // Descontar de la existencia del area correspondiente, no de la general.
+        // SALIDAQ = Quirofano; SALIDAH/SALIDAI/SALIDAE = Farmacia.
+        const columnaExistencia = form.movimiento === 'SALIDAQ'
+            ? 'existencia_actual_quirofano'
+            : 'existencia_actual_farmacia'
         Total = (parseFloat(form.cantidad) * parseFloat(form.precio_venta))
         nuevoTotal = (parseFloat(totalCuenta) + parseFloat(Total))
         await cuentaSeleccionada.update({ total: nuevoTotal});
@@ -285,12 +288,10 @@ module.exports = {
             updatedAt: restarHoras(new Date(), 6),
             created_by: form.user
         };
-        Medicamento.update({ 
-            existencia_actual: existencia_nueva
-        },
-        { where: { 
-            id: form.id_medicamento 
-        }})
+        Medicamento.decrement(columnaExistencia, {
+            by: parseInt(form.cantidad),
+            where: { id: form.id_medicamento }
+        })
         Movimiento.create(datos)
         .then(tipo => {
             
@@ -486,10 +487,14 @@ module.exports = {
       if (!medicamento) {
         return res.send('El medicamento no existe');
       }
-      medicamento.existencia_actual = medicamento.existencia_actual + cantidad_eliminada;
-      await medicamento.save();
 
       const movimiento = await Movimiento.findByPk(id_consumo);
+      // Devolver a la misma existencia (por area) de la que se desconto.
+      const columnaExistencia = (movimiento.descripcion || '').includes('Quirofano')
+        ? 'existencia_actual_quirofano'
+        : 'existencia_actual_farmacia'
+      await medicamento.increment(columnaExistencia, { by: parseInt(cantidad_eliminada) })
+
       movimiento.estado = 0
       movimiento.updated_by = responsable
       await movimiento.save();

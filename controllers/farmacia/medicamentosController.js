@@ -165,7 +165,7 @@ module.exports = {
     },
     get (req, res) {
         Medicamento.findAll({
-            attributes: ['id', 'nombre', 'existencia_actual', 'precio_venta'],
+            attributes: ['id', 'nombre', 'existencia_actual', 'existencia_actual_quirofano', 'existencia_actual_farmacia', 'precio_venta'],
             include: [{
               model: Presentacion,
               attributes: ['nombre']
@@ -183,7 +183,7 @@ module.exports = {
 
     getAnestesicos (req, res) {
         Medicamento.findAll({
-            attributes: ['id', 'nombre', 'existencia_actual', 'precio_venta'],
+            attributes: ['id', 'nombre', 'existencia_actual', 'existencia_actual_quirofano', 'existencia_actual_farmacia', 'precio_venta'],
             include: [{
               model: Presentacion,
               attributes: ['nombre']
