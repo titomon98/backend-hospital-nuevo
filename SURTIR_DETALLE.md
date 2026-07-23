@@ -97,21 +97,37 @@ nada.
 
 ---
 
+## Endpoint de listado plano
+
+`GET /detalle_pedidos/getPendientes`  →  `detallePedidosController.getPendientes`
+
+- Devuelve **una fila por cada línea pendiente** (`detalle_pedidos.estado = 1`) de
+  **todos** los pedidos, no las cabeceras.
+- Paginado con la misma forma que espera `vuetable`
+  (`{ total, last_page, current_page, from, to, data }`).
+- Incluye el `pedido` (para el código) y el producto asociado
+  (`medicamento` / `comune` / `quirurgico`).
+- Búsqueda por `descripcion` (`Op.like`).
+
 ## Frontend — `PedidosPendientesParent.vue` (farmacia)
 
-- El modal de detalle ahora surte **línea por línea**: cada fila tiene su botón
-  **Surtir** (`POST /detallePedidos/surtir`) con la directiva existente
-  `v-anti-doble`.
-- Columnas nuevas: **Destino** (Enfermería / Quirófano) y **Surtido**
-  (Pendiente / Surtido).
-- La línea surtida se refleja al instante (sin recargar todo); el botón de una línea
-  ya surtida se oculta.
-- Cuando el backend indica `pedidoCerrado`, refresca el listado (`vuetable`) y cierra
-  el modal, de modo que el pedido sale de pendientes.
-- Se **reutiliza** el endpoint existente `GET /detalle_pedidos/getByAccount` para
-  listar las líneas del pedido (no se creó otro).
-- Se quitó el botón único "Surtir" del pie del modal (que llamaba a
-  `/pedidos/deactivate`); ese endpoint **no** se modificó.
+La vista se reescribió como **lista plana de productos** (a pedido del cliente:
+"no sé qué estoy surtiendo"). Ya no muestra cabeceras de pedido ni usa un modal.
+
+- El `vuetable` consume `GET /detalle_pedidos/getPendientes` y muestra directamente
+  una fila por producto pendiente, con columnas: **Código de Pedido**, **Producto**,
+  **Cantidad**, **Destino** (Enfermería / Quirófano) y **Acción**.
+- Cada fila tiene su botón **Surtir** (`POST /detallePedidos/surtir`) con la
+  directiva existente `v-anti-doble`.
+- Al surtir, la línea deja de estar pendiente (`estado 0`) y **desaparece del
+  listado** al refrescar el `vuetable`.
+- Se eliminaron el modal, el formulario y el botón único que antes llamaba a
+  `/pedidos/deactivate`; ese endpoint **no** se modificó.
+
+### Versión anterior (modal)
+
+La primera iteración usaba el modal existente con `GET /detalle_pedidos/getByAccount`
+y surtido por línea dentro del modal. Se reemplazó por la lista plana descrita arriba.
 
 ---
 
@@ -128,10 +144,13 @@ nada.
 Backend (`backend-hospital-nuevo`, rama `surtir-por-detalle`):
 - `cf4a2da` — detalle_pedidos: agregar campo destino (+ este documento)
 - `58fe8f2` — endpoint POST /detallePedidos/surtir + create sin mover stock
-- (este documento final se agrega en un commit adicional)
+- `a902125` — SURTIR_DETALLE.md: documentación
+- `d67147c` — endpoint GET /detalle_pedidos/getPendientes (lista plana)
+- (actualización final de este documento en un commit adicional)
 
 Frontend (`frontend-hospital-nuevo`, rama `surtir-por-detalle`):
-- `072c65f` — PedidosPendientesParent: surtir por línea con destino y anti-doble
+- `072c65f` — PedidosPendientesParent: surtir por línea con destino y anti-doble (modal)
+- `321a51a` — PedidosPendientesParent: lista plana de productos por surtir
 
 ---
 
