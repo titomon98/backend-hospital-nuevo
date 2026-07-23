@@ -131,6 +131,40 @@ y surtido por línea dentro del modal. Se reemplazó por la lista plana descrita
 
 ---
 
+## Pedido automático al crear un consumo
+
+Cada consumo de farmacia genera automáticamente un pedido a farmacia para reponer
+lo consumido, **reutilizando la misma lógica que `/pedidos/create`**.
+
+- En `pedidosController` la lógica de `create` se extrajo a un helper
+  `crearPedido()` (crea cabecera + líneas, **no** mueve existencias, no responde
+  HTTP). `create` ahora solo lo llama y responde.
+- Helper `crearPedidoAutomatico({ id_usuario, movimiento, cantidad, fecha, detalleItem })`:
+  - Autogenera el código: **`AUTOMATICO-dd-mm-yyyy-HH-MM-SS`** (con la hora GT, vía
+    `restarHoras(new Date(), 6)`), para no colisionar ni truncarse con códigos previos.
+  - Deriva el destino del movimiento del consumo: **`SALIDAQ` → quirófano
+    (destino 2)**, cualquier otro (`SALIDAH`/`SALIDAI`/`SALIDAE`) → **farmacia
+    (destino 1)**.
+  - Crea una sola línea con el `id` del producto consumido y la **cantidad**
+    consumida.
+- Se llama en el `create` de `consumoMedicamentosController`,
+  `consumoComunController` y `consumoQuirurgicosController`, con el tipo correcto
+  (`is_medicine` / `is_comun` / `is_quirurgico`).
+- **Común y quirúrgico:** solo se genera el pedido automático para productos
+  **inventariados** (mismo `if (form.inventariado !== 'NO INVENTARIADO')` que ya
+  gobierna el descuento de existencia; los NO INVENTARIADOS no tienen existencia
+  que reponer). Medicamentos siempre generan pedido.
+- El pedido automático va envuelto en `try/catch`: si falla se registra en consola
+  y **no** se cae el consumo.
+- La descripción de la línea usa el `nombre` del producto (con fallback a la
+  descripción del consumo si no se encuentra).
+
+> Nota de coherencia con el modelo de inventario: el consumo descuenta la
+> existencia del área (farmacia/quirófano). El pedido automático, al ser surtido
+> por farmacia, hará el traslado real (baja `existencia_actual`, sube el área), es
+> decir repone el área desde la existencia general. No hay doble movimiento porque
+> `crearPedido` no mueve existencias.
+
 ## Verificación
 
 - Backend: carga sin errores (`node --check` de controllers/rutas/modelo OK; los
@@ -146,6 +180,9 @@ Backend (`backend-hospital-nuevo`, rama `surtir-por-detalle`):
 - `58fe8f2` — endpoint POST /detallePedidos/surtir + create sin mover stock
 - `a902125` — SURTIR_DETALLE.md: documentación
 - `d67147c` — endpoint GET /detalle_pedidos/getPendientes (lista plana)
+- `f0dff51` — SURTIR_DETALLE.md: getPendientes y lista plana
+- `ce214b7` — consumos generan pedido automatico a farmacia (helper crearPedido /
+  crearPedidoAutomatico)
 - (actualización final de este documento en un commit adicional)
 
 Frontend (`frontend-hospital-nuevo`, rama `surtir-por-detalle`):
