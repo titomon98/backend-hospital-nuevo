@@ -201,7 +201,6 @@ module.exports = {
                     id_usuario: req.user ? req.user.user_id : null,
                     movimiento: form.movimiento,
                     cantidad: form.cantidad,
-                    fecha: restarHoras(new Date(), 6),
                     detalleItem: {
                         is_quirurgico: true,
                         id_quirurgico: form.id_medicamento,

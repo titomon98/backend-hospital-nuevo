@@ -55,8 +55,10 @@ async function crearPedido({ codigoPedido, fecha, id_usuario, cantidadUnidades, 
 // destino segun el movimiento del consumo: SALIDAQ = quirofano, resto = farmacia.
 // detalleItem lleva el tipo (is_medicine/is_quirurgico/is_comun), el id del
 // producto y la cantidad consumida.
-async function crearPedidoAutomatico({ id_usuario, movimiento, cantidad, fecha, detalleItem }) {
-    const ahora = fecha || new Date();
+async function crearPedidoAutomatico({ id_usuario, movimiento, cantidad, detalleItem }) {
+    // Hora actual de Guatemala (GMT-6, sin horario de verano), independiente de la
+    // zona horaria del servidor. No restar horas: se quiere la hora real.
+    const ahora = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guatemala' }));
     const dosDigitos = (n) => String(n).padStart(2, '0');
     const codigoPedido = 'AUTOMATICO-' +
         dosDigitos(ahora.getDate()) + '-' +
