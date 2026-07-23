@@ -59,8 +59,17 @@ async function crearPedidoAutomatico({ id_usuario, movimiento, cantidad, detalle
     // Hora actual de Guatemala (GMT-6, sin horario de verano), independiente de la
     // zona horaria del servidor. No restar horas: se quiere la hora real.
     const ahora = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guatemala' }));
+    // Prefijo del codigo = area donde se suministro, segun el movimiento.
+    const areas = {
+        SALIDAQ: 'QUIROFANO',
+        SALIDAH: 'HOSPITALIZACION',
+        SALIDAI: 'INTENSIVO',
+        SALIDAE: 'EMERGENCIA'
+    };
+    const area = areas[movimiento] || 'AUTOMATICO';
+
     const dosDigitos = (n) => String(n).padStart(2, '0');
-    const codigoPedido = 'AUTOMATICO-' +
+    const codigoPedido = area + '-' +
         dosDigitos(ahora.getDate()) + '-' +
         dosDigitos(ahora.getMonth() + 1) + '-' +
         ahora.getFullYear() + '-' +
