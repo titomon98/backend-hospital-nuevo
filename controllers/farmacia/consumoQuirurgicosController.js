@@ -196,7 +196,9 @@ module.exports = {
             try {
                 const producto = await Quirurgico.findByPk(form.id_medicamento)
                 await crearPedidoAutomatico({
-                    id_usuario: form.user,
+                    // id_usuario del pedido es INTEGER; form.user es el nombre de
+                    // usuario (string). El id numerico viene del token (req.user.user_id).
+                    id_usuario: req.user ? req.user.user_id : null,
                     movimiento: form.movimiento,
                     cantidad: form.cantidad,
                     fecha: restarHoras(new Date(), 6),
