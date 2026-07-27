@@ -714,7 +714,7 @@ module.exports = (app) => {
     router.get('/reporte/farmacia/inventarioMedicina', reportesFarmaciaController.getInventarioMedicinas)
     router.get('/reporte/farmacia/iventarioGeneral', reportesFarmaciaController.getInventarioGeneral)
     router.get('/reporte/farmacia/suministroMedicamentos', reportesFarmaciaController.getMedicametosSuministrados)
-    router.get('/reporte/pedidos/consumos', reportesPedidosController.getConsumos)
+    router.get('/reporte/pedidos/surtidos', reportesPedidosController.getSurtidos)
 
     //reportes de enfermeria
     router.get('/reporte/enfermeria/pacientesLugar', reportesEnfermeriaController.getPacientesPorLugar)
