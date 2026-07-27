@@ -113,6 +113,7 @@ const facturaController = require('../controllers/caja/facturaController.js');
 const reportesCajaHospiController = require('../controllers/reportes/reportesCajaHospiController')
 const reportesCajaLabController = require('../controllers/reportes/reportesCajaLabController')
 const reportesFarmaciaController = require('../controllers/reportes/reportesFarmaciaController.js')
+const reportesPedidosController = require('../controllers/reportes/reportesPedidosController.js')
 const reportesEnfermeriaController = require('../controllers/reportes/reportesEnfermeriaController')
 const reportesExamenesController = require('../controllers/reportes/reportesExamenesController')
 const reportesMedicosController = require('../controllers/reportes/reportesMedicosController')
@@ -713,6 +714,7 @@ module.exports = (app) => {
     router.get('/reporte/farmacia/inventarioMedicina', reportesFarmaciaController.getInventarioMedicinas)
     router.get('/reporte/farmacia/iventarioGeneral', reportesFarmaciaController.getInventarioGeneral)
     router.get('/reporte/farmacia/suministroMedicamentos', reportesFarmaciaController.getMedicametosSuministrados)
+    router.get('/reporte/pedidos/consumos', reportesPedidosController.getConsumos)
 
     //reportes de enfermeria
     router.get('/reporte/enfermeria/pacientesLugar', reportesEnfermeriaController.getPacientesPorLugar)
