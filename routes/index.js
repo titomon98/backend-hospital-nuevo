@@ -400,6 +400,7 @@ module.exports = (app) => {
     //paquetes
     router.get('/paquetes/list', paquetesController.list);
     router.post('/paquetes/create', paquetesController.create);
+    router.post('/paquetes/aplicarACuenta', paquetesController.aplicarACuenta);
     router.put('/paquetes/update', paquetesController.update);
     router.put('/paquetes/activate', paquetesController.activate);
     router.put('/paquetes/deactivate', paquetesController.deactivate);
