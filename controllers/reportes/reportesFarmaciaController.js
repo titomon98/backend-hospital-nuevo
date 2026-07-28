@@ -60,6 +60,8 @@ const Expedientes = db.expedientes
 
         const detalleConsumoQuirurgicos = await DetalleConsumoQuirurgicos.findAll({
             where: {
+                // Excluir cargos de paquete (id_quirurgico NULL): no son un producto.
+                id_quirurgico: { [Op.ne]: null },
                 updatedAt: {
                     [Op.between]: [
                         `${fechaInicio} 00:00:00`,
