@@ -301,6 +301,49 @@ module.exports = {
     },
 
 
+    // Edicion completa de un paquete: nombre, total y sus lineas (detalle_paquetes).
+    // Reemplaza las lineas por las nuevas dentro de una transaccion. No afecta a
+    // cuentas donde ya se cobro el paquete (esas guardan su propio total).
+    async editar(req, res) {
+        const { id, nombre, total, detalle } = req.body;
+        if (!id) {
+            return res.status(400).json({ msg: 'Falta el id del paquete' });
+        }
+        try {
+            await db.sequelize.transaction(async (t) => {
+                const paquete = await Paquete.findByPk(id, { transaction: t });
+                if (!paquete) {
+                    const e = new Error('No se encontró el paquete');
+                    e.status = 404;
+                    throw e;
+                }
+                await paquete.update({ nombre, total }, { transaction: t });
+                await DetallePaquete.destroy({ where: { id_paquete: id }, transaction: t });
+
+                const filas = (detalle || []).map(item => {
+                    const fila = {
+                        cantidad: item.cantidad,
+                        descripcion: item.descripcion,
+                        subtotal: item.total,
+                        estado: 1,
+                        id_paquete: id
+                    };
+                    if (item.is_medicine === true) fila.id_medicamento = item.id_medicine;
+                    else if (item.is_quirurgico === true) fila.id_quirurgico = item.id_medicine;
+                    else if (item.is_comun === true) fila.id_comun = item.id_medicine;
+                    return fila;
+                });
+                await Promise.all(filas.map(f => DetallePaquete.create(f, { transaction: t })));
+            });
+            return res.status(200).json({ msg: 'El paquete ha sido actualizado' });
+        } catch (error) {
+            console.log(error);
+            const status = error.status || 400;
+            const msg = error.status ? error.message : 'Ha ocurrido un error, por favor intente más tarde';
+            return res.status(status).json({ msg });
+        }
+    },
+
     list(req, res) {
         const getPagingData = (data, page, limit) => {
             const { count: totalItems, rows: referido } = data;

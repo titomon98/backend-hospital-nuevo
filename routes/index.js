@@ -402,6 +402,7 @@ module.exports = (app) => {
     router.post('/paquetes/create', paquetesController.create);
     router.post('/paquetes/aplicarACuenta', paquetesController.aplicarACuenta);
     router.put('/paquetes/update', paquetesController.update);
+    router.put('/paquetes/editar', paquetesController.editar);
     router.put('/paquetes/activate', paquetesController.activate);
     router.put('/paquetes/deactivate', paquetesController.deactivate);
     router.get('/paquetes/getSearch', paquetesController.getSearch);
