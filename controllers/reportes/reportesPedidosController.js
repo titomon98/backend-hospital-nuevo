@@ -37,9 +37,10 @@ module.exports = {
             const modo = req.query.modo;
             const area = (req.query.area || '').toUpperCase();
 
-            const cfg = CONFIG[tipo];
-            if (!cfg) {
-                return res.status(400).json({ msg: 'Tipo de reporte invalido (medicamentos | comunes | quirurgicos)' });
+            // tipo 'todos' incluye los tres; los demas deben existir en CONFIG.
+            const cfg = tipo === 'todos' ? null : CONFIG[tipo];
+            if (tipo !== 'todos' && !cfg) {
+                return res.status(400).json({ msg: 'Tipo de reporte invalido (medicamentos | comunes | quirurgicos | todos)' });
             }
 
             // --- Ventana de fechas en hora de Guatemala ---
@@ -71,9 +72,12 @@ module.exports = {
             // --- Condiciones sobre la linea ---
             const and = [
                 { estado: { [Op.eq]: 0 } },                 // surtido
-                { [cfg.idCol]: { [Op.ne]: null } },         // tipo de producto
                 { updatedAt: { [Op.between]: [desdeUtc, hastaUtc] } }
             ];
+            // Filtro por tipo (si no es 'todos').
+            if (cfg) {
+                and.push({ [cfg.idCol]: { [Op.ne]: null } });
+            }
 
             // Filtro por area = prefijo del codigo del pedido (solo pedidos automaticos).
             const wherePedido = {};
@@ -99,9 +103,14 @@ module.exports = {
                 const plain = item.get({ plain: true });
                 const cantidad = parseInt(plain.cantidad) || 0;
                 totalCantidad += cantidad;
+                let tipoProducto = '';
+                if (plain.id_medicamento) tipoProducto = 'Medicamento';
+                else if (plain.id_comun) tipoProducto = 'Común';
+                else if (plain.id_quirurgico) tipoProducto = 'Quirúrgico';
                 return {
                     fecha: utcAGt(plain.updatedAt),
                     codigoPedido: (plain.pedido && plain.pedido.codigoPedido) ? plain.pedido.codigoPedido : '',
+                    tipoProducto: tipoProducto,
                     producto: plain.descripcion || '',
                     cantidad: cantidad,
                     destino: plain.destino === 2 ? 'Quirófano' : 'Enfermería'
