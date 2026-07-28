@@ -59,7 +59,9 @@ module.exports = {
           const data = await Movimiento.findAndCountAll({
             include: {
               model: Quirurgico,
-              required: true,
+              // LEFT JOIN: los cargos de paquete no tienen id_quirurgico y deben
+              // seguir apareciendo en la lista de consumos quirurgicos.
+              required: false,
               include: [{
                 model: Presentacion,
                 attributes: ['nombre']
@@ -81,6 +83,13 @@ module.exports = {
               const parsed = parseFloat(plainItem.cantidad);
               plainItem.cantidad =
                 Number.isInteger(parsed) ? parsed.toString() : parsed.toFixed(2);
+            }
+
+            // Cargo de paquete: no tiene quirurgico asociado; mostrar el nombre
+            // del paquete (tomado de la descripcion) en la columna de producto.
+            if (plainItem.id_paquete && !plainItem.quirurgico) {
+              const nombrePaquete = (plainItem.descripcion || '').split(' En el area de')[0];
+              plainItem.quirurgico = { nombre: nombrePaquete };
             }
 
             if (plainItem.descripcion) {

@@ -176,7 +176,7 @@ module.exports = {
                 await MovimientoQuirurgico.create({
                     id_quirurgico: null,
                     id_paquete: paquete.id,
-                    descripcion: 'Paquete: ' + paquete.nombre,
+                    descripcion: 'Paquete: ' + paquete.nombre + ' En el area de Quirofano',
                     cantidad: 1,
                     precio_venta: totalPaquete.toFixed(2),
                     total: totalPaquete.toFixed(2),
@@ -213,7 +213,7 @@ module.exports = {
                     if (incluida > 0) {
                         await info.Mov.create({
                             [info.idCol]: info.idProd,
-                            descripcion: 'Incluido en paquete: ' + paquete.nombre,
+                            descripcion: 'Incluido en paquete: ' + paquete.nombre + ' En el area de Quirofano',
                             cantidad: incluida,
                             precio_venta: 0,
                             total: 0,
@@ -234,7 +234,7 @@ module.exports = {
                         const totalExc = precioNormal * excedente;
                         await info.Mov.create({
                             [info.idCol]: info.idProd,
-                            descripcion: 'Excedente de paquete: ' + paquete.nombre,
+                            descripcion: 'Excedente de paquete: ' + paquete.nombre + ' En el area de Quirofano',
                             cantidad: excedente,
                             precio_venta: precioNormal.toFixed(2),
                             total: totalExc.toFixed(2),
