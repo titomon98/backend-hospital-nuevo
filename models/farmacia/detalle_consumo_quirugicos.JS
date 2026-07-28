@@ -10,14 +10,25 @@ module.exports = (sequelize, DataTypes) => {
         detalle_consumo_quirugicos.belongsTo(models.cuentas, {
             foreignKey: 'id_cuenta',
           });
+        detalle_consumo_quirugicos.belongsTo(models.paquetes, {
+            foreignKey: 'id_paquete',
+          });
     }
   }
-  detalle_consumo_quirugicos.init({     
+  detalle_consumo_quirugicos.init({
     id_quirurgico: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
       references: {
         model: 'quirurgicos',
+        key: 'id'
+        }
+      },
+    id_paquete: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'paquetes',
         key: 'id'
         }
       },
