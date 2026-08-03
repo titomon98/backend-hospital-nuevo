@@ -67,20 +67,42 @@ module.exports = {
         order: [['ingreso', 'ASC']]
       });
 
-      const data = filas.map((f, i) => {
+      // Agrupar por cuenta: un paciente sale UNA vez aunque haya cambiado de
+      // cuarto en el día; se listan todos los cuartos ocupados (traslados).
+      // ingreso = estancia más temprana; egreso = salida más reciente (vacío si
+      // sigue internado en alguna estancia abierta).
+      const mapa = new Map();
+      filas.forEach(f => {
         const p = f.get({ plain: true });
+        const key = p.cuenta ? p.cuenta.id : ('sin-cuenta-' + p.id);
         const exp = (p.cuenta && p.cuenta.expediente) || {};
-        const edad = exp.nacimiento ? moment().diff(moment(exp.nacimiento, 'YYYY-MM-DD'), 'years') : '';
-        return {
-          no: i + 1,
-          paciente: `${exp.apellidos || ''} ${exp.nombres || ''}`.trim(),
-          cuarto: (p.habitacione && p.habitacione.numero) ? p.habitacione.numero : '',
-          edad: edad,
-          medico: (exp.medico && exp.medico.nombre) ? exp.medico.nombre : '',
-          ingreso: utcAGt(p.ingreso),
-          egreso: utcAGt(p.salida)
-        };
+        if (!mapa.has(key)) {
+          mapa.set(key, {
+            paciente: `${exp.apellidos || ''} ${exp.nombres || ''}`.trim(),
+            cuartos: new Set(),
+            edad: exp.nacimiento ? moment().diff(moment(exp.nacimiento, 'YYYY-MM-DD'), 'years') : '',
+            medico: (exp.medico && exp.medico.nombre) ? exp.medico.nombre : '',
+            ingresoMin: p.ingreso,
+            salidaMax: p.salida,
+            abierta: p.salida === null
+          });
+        }
+        const g = mapa.get(key);
+        if (p.habitacione && p.habitacione.numero) g.cuartos.add(p.habitacione.numero);
+        if (p.ingreso && (!g.ingresoMin || p.ingreso < g.ingresoMin)) g.ingresoMin = p.ingreso;
+        if (p.salida === null) g.abierta = true;
+        else if (!g.salidaMax || p.salida > g.salidaMax) g.salidaMax = p.salida;
       });
+
+      const data = [...mapa.values()].map((g, i) => ({
+        no: i + 1,
+        paciente: g.paciente,
+        cuarto: [...g.cuartos].join(', '),
+        edad: g.edad,
+        medico: g.medico,
+        ingreso: utcAGt(g.ingresoMin),
+        egreso: g.abierta ? '' : utcAGt(g.salidaMax)
+      }));
 
       const fechaTitulo = moment(dia, 'YYYY-MM-DD').locale('es').format('dddd, DD [DE] MMMM [DE] YYYY').toUpperCase();
       return res.json({ dia, fechaTitulo, total: data.length, data });
