@@ -18,6 +18,7 @@ const authController = require('../controllers/authController');
 //CARPETA DE CAJA
 const contratosController = require('../controllers/caja/contratosController')
 const consumosController = require('../controllers/caja/consumosController')
+const revisionConsumosController = require('../controllers/caja/revisionConsumosController')
 const cuentasController = require('../controllers/caja/cuentasController')
 const detallePagoSegurosController = require('../controllers/caja/pagoSegurosController.js')
 const expedientesController = require('../controllers/caja/expedientesController')
@@ -149,6 +150,10 @@ module.exports = (app) => {
     router.put('/contrato/activate', contratosController.activate);
     router.put('/contrato/deactivate', contratosController.deactivate);
     router.get('/contrato/getSearch', contratosController.getSearch);
+
+    //revision de consumos
+    router.post('/revisionConsumos/set', revisionConsumosController.set);
+    router.get('/revisionConsumos/get/:id_cuenta', revisionConsumosController.get);
 
     //consumos
     router.get('/consumos/list', consumosController.list);
