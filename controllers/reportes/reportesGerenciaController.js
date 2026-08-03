@@ -41,9 +41,12 @@ module.exports = {
       const inicioUtc = gtaUtc(`${dia} 00:00:00`);
       const finUtc = gtaUtc(`${dia} 23:59:59`);
 
+      // "Hospitalizado" = estancia de cuarto que se solapa con el día, en una
+      // cuenta de hospitalización (cuenta.tipo = 1, que incluye Intensivo). No se
+      // filtra por tipo_habitacion porque ese campo guarda el TIPO de cuarto
+      // (Privada, Semi-privada, Intensivo, Emergencia...), no el área.
       const filas = await DetalleHabitaciones.findAll({
         where: {
-          tipo_habitacion: { [Op.in]: ['Hospitalizacion', 'Intensivo'] },
           ingreso: { [Op.lte]: finUtc },
           [Op.or]: [
             { salida: null },
@@ -56,6 +59,7 @@ module.exports = {
             model: Cuenta,
             attributes: ['id', 'numero'],
             required: true,
+            where: { tipo: 1 },
             include: [{
               model: Expediente,
               attributes: ['nombres', 'apellidos', 'nacimiento'],
@@ -80,6 +84,7 @@ module.exports = {
           mapa.set(key, {
             paciente: `${exp.apellidos || ''} ${exp.nombres || ''}`.trim(),
             cuartos: new Set(),
+            tipos: new Set(),
             edad: exp.nacimiento ? moment().diff(moment(exp.nacimiento, 'YYYY-MM-DD'), 'years') : '',
             medico: (exp.medico && exp.medico.nombre) ? exp.medico.nombre : '',
             ingresoMin: p.ingreso,
@@ -89,6 +94,7 @@ module.exports = {
         }
         const g = mapa.get(key);
         if (p.habitacione && p.habitacione.numero) g.cuartos.add(p.habitacione.numero);
+        if (p.tipo_habitacion) g.tipos.add(p.tipo_habitacion);
         if (p.ingreso && (!g.ingresoMin || p.ingreso < g.ingresoMin)) g.ingresoMin = p.ingreso;
         if (p.salida === null) g.abierta = true;
         else if (!g.salidaMax || p.salida > g.salidaMax) g.salidaMax = p.salida;
@@ -97,7 +103,9 @@ module.exports = {
       const data = [...mapa.values()].map((g, i) => ({
         no: i + 1,
         paciente: g.paciente,
-        cuarto: [...g.cuartos].join(', '),
+        // Si no se registró el cuarto (id_habitacion NULL), se muestra el tipo de
+        // habitación como referencia en vez de dejarlo en blanco.
+        cuarto: g.cuartos.size ? [...g.cuartos].join(', ') : [...g.tipos].join(', '),
         edad: g.edad,
         medico: g.medico,
         ingreso: utcAGt(g.ingresoMin),

@@ -34,7 +34,7 @@ module.exports = {
           },
           {
             model: DetalleHabitaciones,
-            attributes: ['ingreso', 'salida'],
+            attributes: ['ingreso', 'salida', 'tipo_habitacion'],
             required: false,
             include: [{ model: Habitaciones, attributes: ['numero'], required: false }]
           }
@@ -53,7 +53,11 @@ module.exports = {
         const p = c.get({ plain: true });
         const exp = p.expediente || {};
         const dets = p.detalle_habitaciones || [];
-        const cuartos = [...new Set(dets.map(d => d.habitacione && d.habitacione.numero).filter(Boolean))].join(', ');
+        const numeros = [...new Set(dets.map(d => d.habitacione && d.habitacione.numero).filter(Boolean))];
+        // Si no se registró el cuarto (id_habitacion NULL), se muestra el tipo de
+        // habitación como referencia en vez de dejarlo en blanco.
+        const tipos = [...new Set(dets.map(d => d.tipo_habitacion).filter(Boolean))];
+        const cuartos = numeros.length ? numeros.join(', ') : tipos.join(', ');
         const edad = exp.nacimiento ? moment().diff(moment(exp.nacimiento, 'YYYY-MM-DD'), 'years') : '';
         return {
           fecha: p.fecha_ingreso,
