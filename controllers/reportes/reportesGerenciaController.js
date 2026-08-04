@@ -124,22 +124,30 @@ module.exports = {
   async inventarioGeneral(req, res) {
     try {
       const [meds, comunes, quirurgicos, equipos] = await Promise.all([
-        Medicamento.findAll({ where: { estado: 1 }, attributes: ['nombre', 'existencia_actual'] }),
-        Comun.findAll({ where: { estado: 1 }, attributes: ['nombre', 'existencia_actual'] }),
-        Quirurgico.findAll({ where: { estado: 1 }, attributes: ['nombre', 'existencia_actual'] }),
-        Equipo.findAll({ where: { estado: 1 }, attributes: ['nombre', 'existencia'] })
+        Medicamento.findAll({ where: { estado: 1 }, attributes: ['nombre', 'existencia_actual', 'precio_costo', 'precio_venta'] }),
+        Comun.findAll({ where: { estado: 1 }, attributes: ['nombre', 'existencia_actual', 'precio_costo', 'precio_venta'] }),
+        Quirurgico.findAll({ where: { estado: 1 }, attributes: ['nombre', 'existencia_actual', 'precio_costo', 'precio_venta'] }),
+        // Equipo no tiene precio_costo/precio_venta: se usan gasto_unico (costo) y
+        // precio_publico (venta) como equivalentes.
+        Equipo.findAll({ where: { estado: 1 }, attributes: ['nombre', 'existencia', 'gasto_unico', 'precio_publico'] })
       ]);
 
-      const map = (arr, tipo, campo) => arr.map(x => {
+      const map = (arr, tipo, campoExist, campoCosto, campoVenta) => arr.map(x => {
         const p = x.get({ plain: true });
-        return { tipo, nombre: p.nombre, existencia: parseInt(p[campo]) || 0 };
+        return {
+          tipo,
+          nombre: p.nombre,
+          existencia: parseInt(p[campoExist]) || 0,
+          precio_costo: num(p[campoCosto]).toFixed(2),
+          precio_venta: num(p[campoVenta]).toFixed(2)
+        };
       });
 
       const data = [
-        ...map(meds, 'Medicamento', 'existencia_actual'),
-        ...map(quirurgicos, 'Quirúrgico', 'existencia_actual'),
-        ...map(comunes, 'Común', 'existencia_actual'),
-        ...map(equipos, 'Equipo', 'existencia')
+        ...map(meds, 'Medicamento', 'existencia_actual', 'precio_costo', 'precio_venta'),
+        ...map(quirurgicos, 'Quirúrgico', 'existencia_actual', 'precio_costo', 'precio_venta'),
+        ...map(comunes, 'Común', 'existencia_actual', 'precio_costo', 'precio_venta'),
+        ...map(equipos, 'Equipo', 'existencia', 'gasto_unico', 'precio_publico')
       ];
 
       return res.json({ total: data.length, data });
