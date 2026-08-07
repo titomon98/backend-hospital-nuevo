@@ -62,7 +62,7 @@ module.exports = {
             where: { tipo: 1 },
             include: [{
               model: Expediente,
-              attributes: ['nombres', 'apellidos', 'nacimiento'],
+              attributes: ['id', 'nombres', 'apellidos', 'nacimiento'],
               required: true,
               include: [{ model: Medico, attributes: ['nombre'], required: false }]
             }]
@@ -82,6 +82,7 @@ module.exports = {
         const exp = (p.cuenta && p.cuenta.expediente) || {};
         if (!mapa.has(key)) {
           mapa.set(key, {
+            expedienteId: exp.id,
             paciente: `${exp.apellidos || ''} ${exp.nombres || ''}`.trim(),
             cuartos: new Set(),
             tipos: new Set(),
@@ -100,17 +101,39 @@ module.exports = {
         else if (!g.salidaMax || p.salida > g.salidaMax) g.salidaMax = p.salida;
       });
 
-      const data = [...mapa.values()].map((g, i) => ({
-        no: i + 1,
-        paciente: g.paciente,
-        // Si no se registró el cuarto (id_habitacion NULL), se muestra el tipo de
-        // habitación como referencia en vez de dejarlo en blanco.
-        cuarto: g.cuartos.size ? [...g.cuartos].join(', ') : [...g.tipos].join(', '),
-        edad: g.edad,
-        medico: g.medico,
-        ingreso: utcAGt(g.ingresoMin),
-        egreso: g.abierta ? '' : utcAGt(g.salidaMax)
-      }));
+      // Para las estancias sin numero de cuarto (id_habitacion NULL), recuperar el
+      // cuarto actual del paciente por habitaciones.ocupante (mismo criterio que el
+      // sumario). Si no hay, se muestra el tipo de habitacion como referencia.
+      const grupos = [...mapa.values()];
+      const idsSinCuarto = grupos.filter(g => g.cuartos.size === 0 && g.expedienteId).map(g => g.expedienteId);
+      const cuartoPorOcupante = {};
+      if (idsSinCuarto.length) {
+        const habs = await Habitaciones.findAll({
+          where: { ocupante: { [Op.in]: idsSinCuarto } },
+          attributes: ['ocupante', 'numero'],
+          order: [['createdAt', 'DESC']]
+        });
+        habs.forEach(h => {
+          const hp = h.get({ plain: true });
+          if (cuartoPorOcupante[hp.ocupante] === undefined) cuartoPorOcupante[hp.ocupante] = hp.numero;
+        });
+      }
+
+      const data = grupos.map((g, i) => {
+        let cuarto = '';
+        if (g.cuartos.size) cuarto = [...g.cuartos].join(', ');
+        else if (cuartoPorOcupante[g.expedienteId]) cuarto = cuartoPorOcupante[g.expedienteId];
+        else cuarto = [...g.tipos].join(', ');
+        return {
+          no: i + 1,
+          paciente: g.paciente,
+          cuarto: cuarto,
+          edad: g.edad,
+          medico: g.medico,
+          ingreso: utcAGt(g.ingresoMin),
+          egreso: g.abierta ? '' : utcAGt(g.salidaMax)
+        };
+      });
 
       const fechaTitulo = moment(dia, 'YYYY-MM-DD').locale('es').format('dddd, DD [DE] MMMM [DE] YYYY').toUpperCase();
       return res.json({ dia, fechaTitulo, total: data.length, data });

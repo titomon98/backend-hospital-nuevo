@@ -28,7 +28,7 @@ module.exports = {
         include: [
           {
             model: Expediente,
-            attributes: ['expediente', 'nombres', 'apellidos', 'nacimiento'],
+            attributes: ['id', 'expediente', 'nombres', 'apellidos', 'nacimiento'],
             required: true,
             include: [{ model: Medico, attributes: ['nombre'], required: false }]
           },
@@ -49,15 +49,37 @@ module.exports = {
         return (fecha + ' ' + hora).trim();
       };
 
-      const data = cuentas.map(c => {
-        const p = c.get({ plain: true });
+      const planas = cuentas.map(c => c.get({ plain: true }));
+
+      // Para cuentas cuyas estancias no tienen numero de cuarto (id_habitacion
+      // NULL), recuperar el cuarto actual del paciente por habitaciones.ocupante
+      // (mismo criterio que el sumario).
+      const idsSinCuarto = planas
+        .filter(p => !((p.detalle_habitaciones || []).some(d => d.habitacione && d.habitacione.numero)))
+        .map(p => p.expediente && p.expediente.id)
+        .filter(Boolean);
+      const cuartoPorOcupante = {};
+      if (idsSinCuarto.length) {
+        const habs = await Habitaciones.findAll({
+          where: { ocupante: { [Op.in]: idsSinCuarto } },
+          attributes: ['ocupante', 'numero'],
+          order: [['createdAt', 'DESC']]
+        });
+        habs.forEach(h => {
+          const hp = h.get({ plain: true });
+          if (cuartoPorOcupante[hp.ocupante] === undefined) cuartoPorOcupante[hp.ocupante] = hp.numero;
+        });
+      }
+
+      const data = planas.map(p => {
         const exp = p.expediente || {};
         const dets = p.detalle_habitaciones || [];
         const numeros = [...new Set(dets.map(d => d.habitacione && d.habitacione.numero).filter(Boolean))];
-        // Si no se registró el cuarto (id_habitacion NULL), se muestra el tipo de
-        // habitación como referencia en vez de dejarlo en blanco.
         const tipos = [...new Set(dets.map(d => d.tipo_habitacion).filter(Boolean))];
-        const cuartos = numeros.length ? numeros.join(', ') : tipos.join(', ');
+        let cuartos = '';
+        if (numeros.length) cuartos = numeros.join(', ');
+        else if (cuartoPorOcupante[exp.id]) cuartos = cuartoPorOcupante[exp.id];
+        else cuartos = tipos.join(', ');
         const edad = exp.nacimiento ? moment().diff(moment(exp.nacimiento, 'YYYY-MM-DD'), 'years') : '';
         return {
           fecha: p.fecha_ingreso,
