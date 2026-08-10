@@ -35,7 +35,7 @@ module.exports = {
     // sin relacion con el consumo ni con la cuenta.
     async createForServicio(req, res) {
         try {
-            const { id_servicio, personal } = req.body;
+            const { id_servicio, personal, user } = req.body;
 
             if (!id_servicio || !Array.isArray(personal) || personal.length === 0) {
                 return res.status(400).json({
@@ -44,10 +44,12 @@ module.exports = {
                 });
             }
 
+            const responsable = req.user?.user ?? user ?? null;
             const filas = personal.map(persona => ({
                 descripcion: 'Persona involucrada con identificador ' + persona.id,
                 id_personal: persona.id,
-                id_servicio: id_servicio
+                id_servicio: id_servicio,
+                created_by: responsable
             }));
 
             const creados = await DetallePersonal.bulkCreate(filas);
@@ -79,6 +81,7 @@ module.exports = {
             }
 
             registro.estado = 0;
+            registro.updated_by = req.user?.user ?? req.body.user ?? null;
             await registro.save();
 
             return res.json({
