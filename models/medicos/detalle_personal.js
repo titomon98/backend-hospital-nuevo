@@ -9,7 +9,9 @@ module.exports = (sequelize, DataTypes) => {
         detalle_personal.belongsTo(models.personals, {
             foreignKey: "id_personal",
         });
-        detalle_personal.belongsTo(models.servicio_sala_operaciones, {
+        // id_servicio se relaciona con el catalogo `servicios` (roles de personal
+        // 9-14 en Quirofano). No tiene relacion con servicio_sala_operaciones.
+        detalle_personal.belongsTo(models.servicios, {
             foreignKey: "id_servicio",
         });
     }

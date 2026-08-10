@@ -964,10 +964,12 @@ module.exports = {
                 direccion_encargado: form.direccion_encargado,
                 nombre_conyuge: form.nombre_conyuge,
                 direccion_conyuge: form.direccion_conyuge,
-                telefono_conyuge: form.telefono_conyuge
+                telefono_conyuge: form.telefono_conyuge,
+                nombre_factura: form.nombre_factura ?? null,
+                nit_factura: form.nit_factura ?? null
             },
-            { where: { 
-                id: form.id 
+            { where: {
+                id: form.id
             } }
             )
             .then(marca => res.status(200).send('El registro ha sido actualizado'))

@@ -2,9 +2,7 @@ const Sequelize     = require('sequelize');
 const db = require("../../models");
 const Personal = db.personals;
 const DetallePersonal = db.detalle_personals;
-const SalaOperaciones = db.servicio_sala_operaciones;
-const Cuenta = db.cuentas;
-const Expediente = db.expedientes;
+const Servicios = db.servicios;
 const Op = db.Sequelize.Op;
 
 module.exports = {
@@ -28,6 +26,41 @@ module.exports = {
             return res.status(500).json({
                 ok: false,
                 message: "Error al crear detalle de personal"
+            });
+        }
+    },
+
+    // Guarda el personal de sala para un servicio de personal (id 9-14 del
+    // catalogo `servicios`). Registro aislado: solo personal <-> servicio,
+    // sin relacion con el consumo ni con la cuenta.
+    async createForServicio(req, res) {
+        try {
+            const { id_servicio, personal } = req.body;
+
+            if (!id_servicio || !Array.isArray(personal) || personal.length === 0) {
+                return res.status(400).json({
+                    ok: false,
+                    message: "Datos incompletos: se requiere id_servicio y personal"
+                });
+            }
+
+            const filas = personal.map(persona => ({
+                descripcion: 'Persona involucrada con identificador ' + persona.id,
+                id_personal: persona.id,
+                id_servicio: id_servicio
+            }));
+
+            const creados = await DetallePersonal.bulkCreate(filas);
+
+            return res.status(201).json({
+                ok: true,
+                data: creados
+            });
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({
+                ok: false,
+                message: "Error al guardar el personal del servicio"
             });
         }
     },
@@ -76,19 +109,8 @@ module.exports = {
                         attributes: ["id", "nombre", "telefono", "categoria"]
                     },
                     {
-                        model: SalaOperaciones,
-                        attributes: ["id", "descripcion"],
-                        include: [
-                            {
-                                model: Cuenta,
-                                attributes: ["id", "numero"],
-                                include: [
-                                    {
-                                        model: Expediente
-                                    }
-                                ],
-                            }
-                        ],
+                        model: Servicios,
+                        attributes: ["id", "descripcion"]
                     }
                 ],
                 limit,
@@ -121,22 +143,7 @@ module.exports = {
                 where: { id_personal: id },
                 include: [
                     { model: Personal, attributes: ["id", "nombre", "telefono"] },
-                    {
-                        model: SalaOperaciones,
-                        attributes: ["id", "descripcion"],
-                        include: [
-                            {
-                                model: Cuenta,
-                                attributes: ["id", "numero"],
-                                include: [
-                                    {
-                                        model: Expediente,
-                                        attributes: ["id", "nombres", "apellidos"],
-                                    }
-                                ],
-                            }
-                        ],
-                    }
+                    { model: Servicios, attributes: ["id", "descripcion"] }
                 ],
                 order: [["id", "DESC"]]
             });

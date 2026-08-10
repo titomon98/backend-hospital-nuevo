@@ -162,15 +162,8 @@ module.exports = {
     try {
       const nuevoDetalle = await SalaOperaciones.create(datos);
       await cuentaSeleccionada.update({ total: nuevoTotal});
-      const personal = req.body.personal
-      personal.forEach(persona => {
-        const personalData = {
-          descripcion: 'Persona involucrada con identificador ' + persona.id,
-          id_personal: persona.id,
-          id_servicio: nuevoDetalle.id
-        }
-        const personalRespuesta = DetallePersonal.create(personalData)
-      });
+      // El personal de sala ya no se guarda aqui: detalle_personals se relaciona
+      // con el catalogo `servicios` (roles 9-14), no con servicio_sala_operaciones.
       res.send(nuevoDetalle);
     } catch (error) {
       console.log(error);

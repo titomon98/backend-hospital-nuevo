@@ -600,6 +600,7 @@ module.exports = (app) => {
     //detalle_personal
     router.get('/detalle_personal/get', detallePersonalController.get);
     router.get('/detalle_personal/getAll', detallePersonalController.getAll);
+    router.post('/detalle_personal/createForServicio', detallePersonalController.createForServicio);
 
     //CARPETA DE PACIENTES
     //recetas
