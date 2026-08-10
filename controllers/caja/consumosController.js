@@ -29,6 +29,9 @@ const Cuenta_Lab = db.lab_cuentas;
 const SalaOperaciones = db.servicio_sala_operaciones;
 const Categoria = db.categoria_sala_operaciones;
 
+const DetallePersonal = db.detalle_personals;
+const Personal = db.personals;
+
 const Op = db.Sequelize.Op;
 
 module.exports = {
@@ -259,30 +262,53 @@ module.exports = {
         
         const { limit, offset } = getPagination(page, size);
 
-        Consumo.findAndCountAll({ include: [
-            {
-                model: Servicio,
-                require: true
-            },
-            {
-                model: Cuenta,
-                require: true
+        try {
+            const data = await Consumo.findAndCountAll({ include: [
+                {
+                    model: Servicio,
+                    require: true
+                },
+                {
+                    model: Cuenta,
+                    require: true
+                }
+            ], where: {
+                id_cuenta: id_cuenta,
+            }, order:[[`${criterio}`,`${order}`]],limit,offset})
+
+            const response = getPagingData(data, page, limit);
+
+            // Para los servicios de personal (id_servicio 9-14) se adjunta el
+            // personal de sala que ayudo (detalle_personals, unido por id_servicio).
+            const filas = response.referido.map(r => r.get ? r.get({ plain: true }) : r);
+            const serviciosPersonal = [...new Set(
+                filas.filter(f => f.id_servicio >= 9 && f.id_servicio <= 14).map(f => f.id_servicio)
+            )];
+            if (serviciosPersonal.length) {
+                const detalles = await DetallePersonal.findAll({
+                    where: { id_servicio: { [Op.in]: serviciosPersonal } },
+                    include: [{ model: Personal, attributes: ['id', 'nombre'] }]
+                });
+                const porServicio = {};
+                detalles.forEach(d => {
+                    const p = d.get({ plain: true });
+                    if (!p.personal) return;
+                    (porServicio[p.id_servicio] = porServicio[p.id_servicio] || []).push(p.personal.nombre);
+                });
+                filas.forEach(f => {
+                    f.personal = (f.id_servicio >= 9 && f.id_servicio <= 14)
+                        ? [...new Set(porServicio[f.id_servicio] || [])].join(', ')
+                        : '';
+                });
+            } else {
+                filas.forEach(f => { f.personal = ''; });
             }
-        ], where: { 
-            id_cuenta: id_cuenta,
-        }, order:[[`${criterio}`,`${order}`]],limit,offset})
-        .then(data => {
 
-        console.log('data: '+JSON.stringify(data))
-        const response = getPagingData(data, page, limit);
-
-        console.log('response: '+JSON.stringify(response))
-        res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
-        })
-        .catch(error => {
+            res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:filas});
+        } catch (error) {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
+        }
     },
 
     async  obtenerConsumosPorIdCuenta(req, res) {
