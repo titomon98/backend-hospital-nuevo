@@ -117,6 +117,7 @@ module.exports = (router) => {
     router.delete('/expedientes/delete', expedientesController.delete)
     router.put('/expedientes/egresoNormal', expedientesController.egresoNormal);
     router.post('/expedientes/reingresoNormal', expedientesController.reingresoNormal);
+    router.post('/expedientes/reingresoConAsignacion', expedientesController.reingresoConAsignacion);
     router.put('/expedientes/egresoEmergencia', expedientesController.egresoEmergencia)
     router.get('/expedientes/listEmergenciaHistorial', expedientesController.listEmergenciaHistorial);
     router.get('/expedientes/listPacientesHistorial', expedientesController.listPacientesHistorial);

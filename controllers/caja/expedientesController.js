@@ -1875,6 +1875,109 @@ module.exports = {
         }
     },
 
+    // Reingreso desde el modulo de Reingresos (paciente egresado que ya pago en caja).
+    // A diferencia de reingresoNormal, aqui NO hay cuenta previa a la cual apuntar:
+    // se CREA una cuenta nueva. Ademas reactiva el expediente al area elegida, crea
+    // el detalle de habitacion (cuarto) y asigna el medico. Todo en una transaccion.
+    async reingresoConAsignacion(req, res) {
+        const restarHoras = (fecha, horas) => {
+            const nueva = new Date(fecha);
+            nueva.setHours(nueva.getHours() - horas);
+            return nueva;
+        };
+        const form = req.body.form || {};
+        const id_expediente = form.id;
+        const responsable = req.user?.user ?? form.user;
+        // Area -> estado del expediente (mismo criterio que createFromEnfermeria).
+        const estadoArea = { hospi: 1, quirofano: 3, intensivo: 4 }[form.selectedOption] || 1;
+
+        if (!id_expediente || !form.habitacion || !form.fecha || !form.hora || !form.assignedDoctor) {
+            return res.status(400).json({ msg: 'Datos incompletos: se requiere habitacion, fecha, hora y medico' });
+        }
+
+        const t = await db.sequelize.transaction();
+        try {
+            const habitacion = await Habitaciones.findOne({ where: { id: form.habitacion }, transaction: t });
+            if (!habitacion) {
+                await t.rollback();
+                return res.status(400).json({ msg: 'La habitacion seleccionada no existe' });
+            }
+
+            // 1) Reactivar el expediente al area, con la fecha/hora de ingreso y el medico.
+            await Expediente.update({
+                estado: estadoArea,
+                solvencia: 0,
+                fecha_ingreso_reciente: form.fecha,
+                hora_ingreso_reciente: form.hora,
+                id_medico: form.assignedDoctor
+            }, { where: { id: id_expediente }, transaction: t });
+
+            // 2) Crear una cuenta NUEVA (no se reutiliza la anterior).
+            const nuevaCuenta = await Cuenta.create({
+                numero: 1,
+                fecha_ingreso: form.fecha,
+                hora_ingreso: form.hora,
+                motivo: form.motivo || 'Reingreso',
+                descripcion: null,
+                otros: null,
+                total: 0.0,
+                id_expediente: id_expediente,
+                estado: 1,
+                descuento: 0.0,
+                solicitud_descuento: 3,
+                created_by: responsable
+            }, { transaction: t });
+            await nuevaCuenta.update({ numero: nuevaCuenta.id }, { transaction: t });
+
+            // 3) Detalle de habitacion (cuarto) sobre la cuenta nueva.
+            //    Costo segun tipo de paciente / estudio (igual que asignarHabitacion).
+            let costo = habitacion.costo_diario;
+            if (form.tipo_paciente === '1' || form.tipo_paciente === 1) {
+                costo = habitacion.costo_ambulatorio;
+            } else if (form.estudioDeSueno === '1' || form.estudioDeSueno === 1) {
+                costo = habitacion.costo_estudio_de_sueno;
+            } else if (form.estudioDeSueno === '2' || form.estudioDeSueno === 2) {
+                costo = habitacion.costo_quimioterapia;
+            }
+            await DetalleHabitaciones.create({
+                id_cuenta: nuevaCuenta.id,
+                tipo_habitacion: habitacion.tipo,
+                id_habitacion: habitacion.id,
+                estado: 1,
+                costo_base: costo,
+                ingreso: new Date(form.fecha + ' ' + form.hora),
+                salida: null,
+                createdAt: new Date(),
+                updatedAt: restarHoras(new Date(), 6),
+                created_by: responsable
+            }, { transaction: t });
+
+            // 4) Liberar el cuarto anterior de este paciente y ocupar el nuevo.
+            await Habitaciones.update({ estado: 1, ocupante: null }, { where: { ocupante: id_expediente }, transaction: t });
+            await Habitaciones.update({ estado: 2, ocupante: id_expediente }, { where: { id: form.habitacion }, transaction: t });
+
+            // 5) Log del reingreso.
+            const destino = { hospi: 'Hospitalización', quirofano: 'Quirófano', intensivo: 'Cuidados Intensivos' }[form.selectedOption] || 'Hospitalización';
+            await Logs.create({
+                id_expediente,
+                origen: 'Egresado',
+                destino,
+                motivo: 'Reingreso',
+                id_habitacionDestino: form.habitacion,
+                createdAt: new Date(),
+                updatedAt: restarHoras(new Date(), 6),
+                created_by: responsable
+            }, { transaction: t });
+
+            await t.commit();
+            return res.status(200).json({ msg: 'El paciente ha sido reingresado correctamente', id_cuenta: nuevaCuenta.id });
+        } catch (error) {
+            await t.rollback();
+            console.error(error);
+            return res.status(400).json({ msg: 'Ha ocurrido un error al reingresar al paciente' });
+        }
+    },
+
     async egresoEmergencia(req, res) {
         const { id, fecha, hora, user } = req.body;
         const { motivo, diagnostico, tratamiento, observaciones } = req.body.egreso;
