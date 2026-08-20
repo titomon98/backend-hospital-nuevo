@@ -200,6 +200,21 @@ module.exports = {
                 const ahora = restarHoras(new Date(), 6);
                 const totalPaquete = parseFloat(paquete.total) || 0;
 
+                // Pre-cargar todos los productos por tipo (con lock) en 3 queries,
+                // en vez de un findByPk por item (clave con paquetes grandes ~40 items).
+                const idsPorTipo = { medicine: [], comun: [], quirurgico: [] };
+                for (const det of detalles) {
+                    const info = resolverTipo(det);
+                    if (info) idsPorTipo[info.flag].push(info.idProd);
+                }
+                const medArr = idsPorTipo.medicine.length ? await Medicamento.findAll({ where: { id: idsPorTipo.medicine }, transaction: t, lock: t.LOCK.UPDATE }) : [];
+                const comArr = idsPorTipo.comun.length ? await Comun.findAll({ where: { id: idsPorTipo.comun }, transaction: t, lock: t.LOCK.UPDATE }) : [];
+                const quiArr = idsPorTipo.quirurgico.length ? await Quirurgico.findAll({ where: { id: idsPorTipo.quirurgico }, transaction: t, lock: t.LOCK.UPDATE }) : [];
+                const prodMap = { medicine: {}, comun: {}, quirurgico: {} };
+                medArr.forEach(p => { prodMap.medicine[p.id] = p; });
+                comArr.forEach(p => { prodMap.comun[p.id] = p; });
+                quiArr.forEach(p => { prodMap.quirurgico[p.id] = p; });
+
                 // 1) Cargo unico del paquete como consumo quirurgico.
                 await MovimientoQuirurgico.create({
                     id_quirurgico: null,
@@ -217,29 +232,32 @@ module.exports = {
 
                 let nuevoTotal = (parseFloat(cuenta.total) || 0) + totalPaquete;
                 const lineasPedido = [];
+                const movsMedicamento = [];
+                const movsComun = [];
+                const movsQuirurgico = [];
+                // { tabla_producto: { id: cantidad_total_a_descontar } }
+                const decrementos = { medicamentos: {}, comunes: {}, quirurgicos: {} };
 
-                // 2) y 3) Items del paquete.
+                // 2) y 3) Items del paquete: se arman en memoria y se insertan en lote.
                 for (const det of detalles) {
                     const info = resolverTipo(det);
                     if (!info) continue;
+                    const producto = prodMap[info.flag][info.idProd];
 
                     const cantidadPaquete = parseInt(det.cantidad) || 0;
                     const cantidadReal = cantidadRealDe(det, consumos);
                     const incluida = Math.min(cantidadReal, cantidadPaquete);
                     const excedente = Math.max(0, cantidadReal - cantidadPaquete);
 
-                    const producto = await info.Prod.findByPk(info.idProd, {
-                        transaction: t,
-                        lock: t.LOCK.UPDATE
-                    });
                     // Los medicamentos siempre son inventariados (no tienen ese campo).
                     const inventariado = info.flag === 'medicine'
                         ? true
                         : (producto && producto.inventariado === 'INVENTARIADO');
+                    const movArr = info.flag === 'medicine' ? movsMedicamento : (info.flag === 'comun' ? movsComun : movsQuirurgico);
 
                     // 2a) Consumo incluido en el paquete: NO se cobra (Q0), solo inventario.
                     if (incluida > 0) {
-                        await info.Mov.create({
+                        movArr.push({
                             [info.idCol]: info.idProd,
                             descripcion: 'Incluido en paquete: ' + paquete.nombre + ' En el area de Quirofano',
                             cantidad: incluida,
@@ -250,17 +268,14 @@ module.exports = {
                             createdAt: ahora,
                             updatedAt: ahora,
                             created_by: usuario
-                        }, { transaction: t });
-                        if (inventariado) {
-                            await producto.decrement('existencia_actual_quirofano', { by: incluida, transaction: t });
-                        }
+                        });
                     }
 
                     // 3) Excedente: se cobra a precio normal del producto.
                     if (excedente > 0) {
                         const precioNormal = parseFloat(producto.precio_venta) || 0;
                         const totalExc = precioNormal * excedente;
-                        await info.Mov.create({
+                        movArr.push({
                             [info.idCol]: info.idProd,
                             descripcion: 'Excedente de paquete: ' + paquete.nombre + ' En el area de Quirofano',
                             cantidad: excedente,
@@ -271,15 +286,14 @@ module.exports = {
                             createdAt: ahora,
                             updatedAt: ahora,
                             created_by: usuario
-                        }, { transaction: t });
-                        if (inventariado) {
-                            await producto.decrement('existencia_actual_quirofano', { by: excedente, transaction: t });
-                        }
+                        });
                         nuevoTotal += totalExc;
                     }
 
-                    // Linea de reposicion: la cantidad realmente consumida (inventariados).
-                    if (inventariado && cantidadReal > 0) {
+                    // Inventario a descontar (incluida + excedente = cantidadReal) y linea de reposicion.
+                    if (inventariado && producto && cantidadReal > 0) {
+                        const tabla = info.flag === 'medicine' ? 'medicamentos' : (info.flag === 'comun' ? 'comunes' : 'quirurgicos');
+                        decrementos[tabla][info.idProd] = (decrementos[tabla][info.idProd] || 0) + cantidadReal;
                         lineasPedido.push({
                             is_medicine: info.flag === 'medicine',
                             is_quirurgico: info.flag === 'quirurgico',
@@ -291,6 +305,24 @@ module.exports = {
                             nombre: (producto && producto.nombre) ? producto.nombre : det.descripcion
                         });
                     }
+                }
+
+                // Inserta los consumos en lote (3 bulkCreate en vez de N inserts).
+                if (movsMedicamento.length) await MovimientoMedicamentos.bulkCreate(movsMedicamento, { transaction: t });
+                if (movsComun.length) await MovimientoComun.bulkCreate(movsComun, { transaction: t });
+                if (movsQuirurgico.length) await MovimientoQuirurgico.bulkCreate(movsQuirurgico, { transaction: t });
+
+                // Descuenta existencias con 1 UPDATE por tabla (CASE) en vez de N updates.
+                // Los valores son enteros (parseInt), sin riesgo de inyeccion.
+                for (const [tabla, mapa] of Object.entries(decrementos)) {
+                    const ids = Object.keys(mapa);
+                    if (!ids.length) continue;
+                    const casos = ids.map(id => `WHEN ${parseInt(id, 10)} THEN ${parseInt(mapa[id], 10)}`).join(' ');
+                    const idList = ids.map(id => parseInt(id, 10)).join(',');
+                    await db.sequelize.query(
+                        `UPDATE \`${tabla}\` SET \`existencia_actual_quirofano\` = \`existencia_actual_quirofano\` - CASE \`id\` ${casos} ELSE 0 END WHERE \`id\` IN (${idList})`,
+                        { transaction: t }
+                    );
                 }
 
                 await cuenta.update({ total: nuevoTotal.toFixed(2) }, { transaction: t });
