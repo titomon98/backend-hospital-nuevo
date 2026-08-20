@@ -21,6 +21,7 @@ module.exports = (router) => {
 
     //revision de consumos
     router.post('/revisionConsumos/set', revisionConsumosController.set);
+    router.post('/revisionConsumos/confirmarConsumo', revisionConsumosController.confirmarConsumo);
     router.get('/revisionConsumos/get/:id_cuenta', revisionConsumosController.get);
 
     //consumos

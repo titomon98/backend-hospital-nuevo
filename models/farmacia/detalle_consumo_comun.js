@@ -66,6 +66,9 @@ module.exports = (sequelize, DataTypes) => {
     reviewed_by: {
       type: DataTypes.STRING,
     },
+    inconsistente: {
+      type: DataTypes.INTEGER,
+    },
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true
