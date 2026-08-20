@@ -17,6 +17,7 @@ const quirurgicoMovimientosController = require('../controllers/farmacia/quirurg
 const detalle_consumo_medicamentos = require('../controllers/farmacia/consumoMedicamentosController.js')
 const detalle_consumo_quirugicos = require('../controllers/farmacia/consumoQuirurgicosController.js')
 const detalle_consumo_comunes = require('../controllers/farmacia/consumoComunController.js')
+const consumosBatchController = require('../controllers/farmacia/consumosBatchController.js')
 
 module.exports = (router) => {
     //alertas
@@ -104,8 +105,12 @@ module.exports = (router) => {
     router.put('/muestras_movimientos/deactivate', muestrasMovimientosController.deactivate);
     router.get('/muestras_movimientos/getSearch', muestrasMovimientosController.getSearch);
 
+    //consumos batch (guardar muchos consumos en una sola transaccion)
+    router.post('/detalle_consumos/batch', consumosBatchController.create);
+
     //paquetes
     router.get('/paquetes/list', paquetesController.list);
+    router.post('/paquetes/existenciasInsumos', paquetesController.getExistenciasInsumos);
     router.post('/paquetes/create', paquetesController.create);
     router.post('/paquetes/aplicarACuenta', paquetesController.aplicarACuenta);
     router.put('/paquetes/update', paquetesController.update);

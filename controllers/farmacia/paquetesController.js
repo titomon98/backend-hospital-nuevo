@@ -58,6 +58,34 @@ const cantidadRealDe = (det, consumos) => {
 };
 
 module.exports = {
+    // Devuelve existencia_actual e inventariado de varios insumos de una sola vez
+    // (por lotes de ids por tipo), para cargar un paquete sin hacer N llamadas.
+    async getExistenciasInsumos(req, res) {
+        try {
+            const { comun = [], quirurgico = [], medicamento = [] } = req.body;
+            const [comunes, quirurgicos, medicamentos] = await Promise.all([
+                comun.length ? Comun.findAll({ where: { id: comun }, attributes: ['id', 'existencia_actual', 'inventariado'] }) : [],
+                quirurgico.length ? Quirurgico.findAll({ where: { id: quirurgico }, attributes: ['id', 'existencia_actual', 'inventariado'] }) : [],
+                medicamento.length ? Medicamento.findAll({ where: { id: medicamento }, attributes: ['id', 'existencia_actual'] }) : [],
+            ]);
+            const mapear = (arr, conInventariado) => arr.reduce((acc, x) => {
+                acc[x.id] = {
+                    existencia_actual: x.existencia_actual,
+                    inventariado: conInventariado ? x.inventariado : null,
+                };
+                return acc;
+            }, {});
+            return res.json({
+                comun: mapear(comunes, true),
+                quirurgico: mapear(quirurgicos, true),
+                medicamento: mapear(medicamentos, false),
+            });
+        } catch (error) {
+            console.log(error);
+            return res.status(400).json({ msg: 'Ha ocurrido un error al obtener las existencias' });
+        }
+    },
+
     create(req, res) {
         let form = req.body
         const datos = {
