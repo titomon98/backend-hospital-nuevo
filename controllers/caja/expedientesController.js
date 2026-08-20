@@ -1692,8 +1692,16 @@ module.exports = {
         if (cuentas.length > 0) {
             const id_cuenta = cuentas[0].id;
 
+            // Solo la lab_cuenta de la admision actual (creada desde el ultimo ingreso),
+            // para no cobrar examenes de una admision anterior tras un reingreso.
+            const expedienteEgreso = await Expediente.findByPk(req.body.id, { attributes: ['fecha_ingreso_reciente'] });
+            const desdeIngresoLab = expedienteEgreso ? expedienteEgreso.fecha_ingreso_reciente : null;
             const cuentaLabSeleccionada = await Cuenta_Lab.findOne({
-                where: { id_expediente: req.body.id, estado: 1 },
+                where: {
+                    id_expediente: req.body.id,
+                    estado: 1,
+                    ...(desdeIngresoLab ? { createdAt: { [Op.gte]: desdeIngresoLab } } : {}),
+                },
                 order: [['createdAt', 'DESC']],
             });
             const id_cuenta_lab = cuentaLabSeleccionada ? cuentaLabSeleccionada.id : null;
@@ -1804,17 +1812,27 @@ module.exports = {
             const today = restarHoras(new Date(), 6);
             const id_expediente = req.body.id;
 
-            // Reactivar expediente
+            // Fecha/hora del reingreso en GT-6 (Guatemala no observa horario de verano).
+            const gt = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guatemala' }));
+            const pad = (n) => String(n).padStart(2, '0');
+            const fechaIngreso = `${gt.getFullYear()}-${pad(gt.getMonth() + 1)}-${pad(gt.getDate())}`;
+            const horaIngreso = `${pad(gt.getHours())}:${pad(gt.getMinutes())}:${pad(gt.getSeconds())}`;
+
+            // Reactivar expediente y actualizar la fecha/hora de ingreso reciente
             await Expediente.update(
-                { estado: 1, solvencia: 0, fecha_ingreso_reciente: today },
+                { estado: 1, solvencia: 0, fecha_ingreso_reciente: fechaIngreso, hora_ingreso_reciente: horaIngreso },
                 { where: { id: id_expediente } }
             );
 
-            // Obtener la última cuenta (la que ya existe)
+            // Obtener la última cuenta (la que ya existe) y actualizar su fecha/hora
+            // de ingreso al momento del reingreso.
             const cuenta = await Cuenta.findOne({
                 where: { id_expediente },
                 order: [['createdAt', 'DESC']],
             });
+            if (cuenta) {
+                await cuenta.update({ fecha_ingreso: fechaIngreso, hora_ingreso: horaIngreso });
+            }
 
             // Buscar la habitación que tenía este paciente
             const habitacion = await Habitaciones.findOne({
@@ -1866,9 +1884,16 @@ module.exports = {
  
             const id_cuenta = cuenta.id;
  
-            // 2. Obtener cuenta de lab (para exámenes)
+            // 2. Obtener cuenta de lab (para exámenes) — solo la de la admision actual
+            //    (creada desde el ultimo ingreso), para no cobrar lab de una previa.
+            const expedienteEmerg = await Expediente.findByPk(id, { attributes: ['fecha_ingreso_reciente'] });
+            const desdeIngresoLabE = expedienteEmerg ? expedienteEmerg.fecha_ingreso_reciente : null;
             const cuentaLab = await Cuenta_Lab.findOne({
-                where: { id_expediente: id, estado: 1 },
+                where: {
+                    id_expediente: id,
+                    estado: 1,
+                    ...(desdeIngresoLabE ? { createdAt: { [Op.gte]: desdeIngresoLabE } } : {}),
+                },
                 order: [['createdAt', 'DESC']],
             });
             const id_cuenta_lab = cuentaLab ? cuentaLab.id : null;

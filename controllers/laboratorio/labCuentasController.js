@@ -573,12 +573,20 @@ module.exports = {
 
     async getSearch(req, res) {
         const idExpediente = parseInt(req.query.search, 10)// Obtener el id_expediente de la consulta
-        console.log("ID Expediente recibido:", idExpediente); 
+        console.log("ID Expediente recibido:", idExpediente);
         try {
+          // Solo se consideran lab_cuentas de la admision actual: creadas desde el
+          // ultimo ingreso (expedientes.fecha_ingreso_reciente). Asi un reingreso no
+          // toma la lab_cuenta de una admision anterior; si no hay examenes nuevos,
+          // no devuelve ninguna en vez de tomar una vieja.
+          const expediente = await Expediente.findByPk(idExpediente, { attributes: ['fecha_ingreso_reciente'] });
+          const desdeIngreso = expediente ? expediente.fecha_ingreso_reciente : null;
+          const whereLab = { id_expediente: idExpediente };
+          if (desdeIngreso) whereLab.createdAt = { [Op.gte]: desdeIngreso };
           const cuenta = await Cuenta.findAll({
-            where: { id_expediente: idExpediente },
+            where: whereLab,
             order: [['createdAt', 'DESC']], // Buscar por id_expediente
-            include: [{ model: db.expedientes, as: 'expediente' }] 
+            include: [{ model: db.expedientes, as: 'expediente' }]
           });
           let cuentaSeleccionada = null;
           for (const cuentas of cuenta) {
