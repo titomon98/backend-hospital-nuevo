@@ -1812,11 +1812,19 @@ module.exports = {
             const today = restarHoras(new Date(), 6);
             const id_expediente = req.body.id;
 
-            // Fecha/hora del reingreso en GT-6 (Guatemala no observa horario de verano).
-            const gt = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guatemala' }));
-            const pad = (n) => String(n).padStart(2, '0');
-            const fechaIngreso = `${gt.getFullYear()}-${pad(gt.getMonth() + 1)}-${pad(gt.getDate())}`;
-            const horaIngreso = `${pad(gt.getHours())}:${pad(gt.getMinutes())}:${pad(gt.getSeconds())}`;
+            // Fecha/hora del reingreso: si vienen del formulario (reingreso con
+            // asignacion de habitacion) se usan; si no, la hora GT-6 del servidor
+            // (Guatemala no observa horario de verano).
+            let fechaIngreso, horaIngreso;
+            if (req.body.fecha && req.body.hora) {
+                fechaIngreso = req.body.fecha;
+                horaIngreso = req.body.hora;
+            } else {
+                const gt = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guatemala' }));
+                const pad = (n) => String(n).padStart(2, '0');
+                fechaIngreso = `${gt.getFullYear()}-${pad(gt.getMonth() + 1)}-${pad(gt.getDate())}`;
+                horaIngreso = `${pad(gt.getHours())}:${pad(gt.getMinutes())}:${pad(gt.getSeconds())}`;
+            }
 
             // Reactivar expediente y actualizar la fecha/hora de ingreso reciente
             await Expediente.update(
