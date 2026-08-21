@@ -34,6 +34,55 @@ const SalaOperaciones = db.servicio_sala_operaciones;
 const Categoria = db.categoria_sala_operaciones;
 
 const DetalleHonorarios = db.detalle_honorarios;
+const LogEliminacion = db.logs_eliminacion_pacientes;
+const DetallePagoCuentas = db.detalle_pago_cuentas;
+const RevisionConsumos = db.revision_consumos;
+
+// Resta horas a una fecha (usado para anclar timestamps a GT-6).
+const restarHorasGT = (fecha, horas) => {
+    const nueva = new Date(fecha);
+    nueva.setHours(nueva.getHours() - horas);
+    return nueva;
+};
+
+// Restaura al inventario las existencias de los consumos ACTIVOS (estado 1) de las
+// cuentas indicadas y devuelve si habia consumos. La columna (farmacia/quirofano) se
+// deduce de la descripcion, igual que el borrado individual de consumos. Solo repone
+// productos inventariados; los medicamentos siempre descuentan, quirurgico/comun solo
+// si su producto no es 'NO INVENTARIADO'. No borra las filas (eso lo hace el caller).
+async function restaurarInventarioDeCuenta(idsCuentas, t) {
+    const columnaDe = (descripcion) =>
+        (descripcion || '').includes('Quirofano') ? 'existencia_actual_quirofano' : 'existencia_actual_farmacia';
+    let huboConsumos = false;
+
+    const [medicamentos, quirurgicos, comunes] = await Promise.all([
+        MovimientoMedicamentos.findAll({ where: { id_cuenta: idsCuentas, estado: 1 }, transaction: t }),
+        MovimientoQuirurgico.findAll({ where: { id_cuenta: idsCuentas, estado: 1 }, transaction: t }),
+        MovimientoComun.findAll({ where: { id_cuenta: idsCuentas, estado: 1 }, transaction: t }),
+    ]);
+
+    if (medicamentos.length || quirurgicos.length || comunes.length) huboConsumos = true;
+
+    for (const m of medicamentos) {
+        if (!m.id_medicamento) continue;
+        await Medicamento.increment(columnaDe(m.descripcion), { by: parseInt(m.cantidad), where: { id: m.id_medicamento }, transaction: t });
+    }
+    for (const q of quirurgicos) {
+        if (!q.id_quirurgico) continue; // filas de paquete (id_quirurgico NULL) no descontaron existencia
+        const prod = await Quirurgico.findByPk(q.id_quirurgico, { transaction: t });
+        if (prod && prod.inventariado !== 'NO INVENTARIADO') {
+            await Quirurgico.increment(columnaDe(q.descripcion), { by: parseInt(q.cantidad), where: { id: q.id_quirurgico }, transaction: t });
+        }
+    }
+    for (const c of comunes) {
+        if (!c.id_comun) continue;
+        const prod = await Comun.findByPk(c.id_comun, { transaction: t });
+        if (prod && prod.inventariado !== 'NO INVENTARIADO') {
+            await Comun.increment(columnaDe(c.descripcion), { by: parseInt(c.cantidad), where: { id: c.id_comun }, transaction: t });
+        }
+    }
+    return huboConsumos;
+}
 
 // ESTADOS ACTIVOS (paciente sigue en el hospital, no aplica para historial):
 // 1 - hospitalizacion, 3 - quirofano, 4 - intensivo, 5 - emergencia
@@ -1598,38 +1647,74 @@ module.exports = {
         });
     },
 
-    delete (req, res) {
-        
-        Cuenta.findAll({
-            where: { id_expediente: req.body.id },
-            attributes: ['id']
-        })
-        .then(cuentas => {
+    // Elimina permanentemente un expediente de emergencia (y todas sus cuentas).
+    // Repone al inventario los consumos activos, borra todos los datos que dependen
+    // de la cuenta y deja registro en logs_eliminacion_pacientes (quien, a quien y
+    // a que hora). Se usa desde Emergencias.vue (solo cuando hay una sola cuenta).
+    async delete (req, res) {
+        const responsable = req.user?.user ?? req.body.user ?? null;
+        const motivo = req.body.motivo ?? null;
+        const t = await db.sequelize.transaction();
+        try {
+            const expediente = await Expediente.findByPk(req.body.id, {
+                attributes: ['id', 'expediente', 'nombres', 'apellidos'],
+                transaction: t,
+            });
+
+            const cuentas = await Cuenta.findAll({
+                where: { id_expediente: req.body.id },
+                attributes: ['id', 'tipo', 'total'],
+                transaction: t,
+            });
             const idsCuentas = cuentas.map(c => c.id);
 
-            if (idsCuentas.length === 0) return Promise.resolve();
+            if (idsCuentas.length > 0) {
+                // Reponer existencias de los consumos activos antes de borrarlos.
+                const huboConsumos = await restaurarInventarioDeCuenta(idsCuentas, t);
 
-            // Eliminamos en paralelo todos los hijos de las cuentas
-            return Promise.all([
-                DetalleHabitaciones.destroy({ where: { id_cuenta: idsCuentas } }),
-                Consumo.destroy({ where: { id_cuenta: idsCuentas } }),
-                DetalleCuentas.destroy({ where: { id_cuenta: idsCuentas } }),
-                MovimientoComun.destroy({ where: { id_cuenta: idsCuentas } }),
-                MovimientoMedicamentos.destroy({ where: { id_cuenta: idsCuentas } }),
-                MovimientoQuirurgico.destroy({ where: { id_cuenta: idsCuentas } }),
-            ]);
-        })
-        .then(() => {
-            return Cuenta.destroy({ where: { id_expediente: req.body.id } });
-        })
-        .then(() => {
-            return Expediente.destroy({ where: { id: req.body.id } });
-        })
-        .then(() => res.status(200).send('El registro ha sido eliminado'))
-        .catch(error => {
+                await Promise.all([
+                    DetalleHabitaciones.destroy({ where: { id_cuenta: idsCuentas }, transaction: t }),
+                    Consumo.destroy({ where: { id_cuenta: idsCuentas }, transaction: t }),
+                    DetalleCuentas.destroy({ where: { id_cuenta: idsCuentas }, transaction: t }),
+                    MovimientoComun.destroy({ where: { id_cuenta: idsCuentas }, transaction: t }),
+                    MovimientoMedicamentos.destroy({ where: { id_cuenta: idsCuentas }, transaction: t }),
+                    MovimientoQuirurgico.destroy({ where: { id_cuenta: idsCuentas }, transaction: t }),
+                    DetalleHonorarios.destroy({ where: { id_cuenta: idsCuentas }, transaction: t }),
+                    DetallePagoCuentas.destroy({ where: { id_cuenta: idsCuentas }, transaction: t }),
+                    RevisionConsumos.destroy({ where: { id_cuenta: idsCuentas }, transaction: t }),
+                ]);
+
+                // Un registro de eliminacion por cada cuenta borrada.
+                const nombrePaciente = expediente ? `${expediente.nombres} ${expediente.apellidos}` : null;
+                const ahoraGT = restarHorasGT(new Date(), 6);
+                for (const c of cuentas) {
+                    await LogEliminacion.create({
+                        id_expediente: req.body.id,
+                        id_cuenta: c.id,
+                        numero_expediente: expediente ? expediente.expediente : null,
+                        nombre_paciente: nombrePaciente,
+                        tipo_cuenta: 2,
+                        area: 'Emergencia', // este endpoint solo lo usa Emergencias.vue
+                        motivo,
+                        total_cuenta: c.total,
+                        tenia_consumos: huboConsumos ? 1 : 0,
+                        created_by: responsable,
+                        createdAt: ahoraGT,
+                        updatedAt: ahoraGT,
+                    }, { transaction: t });
+                }
+            }
+
+            await Cuenta.destroy({ where: { id_expediente: req.body.id }, transaction: t });
+            await Expediente.destroy({ where: { id: req.body.id }, transaction: t });
+
+            await t.commit();
+            return res.status(200).send('El registro ha sido eliminado');
+        } catch (error) {
+            await t.rollback();
             console.log(error);
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
+        }
     },
 
     async egresoNormal(req, res) {
@@ -2198,6 +2283,198 @@ module.exports = {
         } catch (error) {
             console.error('Error al obtener las cuentas del expediente:', error);
             return res.status(500).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        }
+    },
+
+    // SOLO GERENCIA (rol 1). Corrige la fecha/hora de ingreso ACTUAL de un paciente
+    // (para casos de error de digitacion). Actualiza los tres lugares que la usan:
+    // expediente (fecha/hora_ingreso_reciente), la cuenta activa (fecha/hora_ingreso)
+    // y el detalle de habitacion activo (ingreso), para que el cobro de habitacion
+    // siga siendo consistente.
+    async editarIngresoActual(req, res) {
+        const { id_expediente, fecha, hora, user, user_type } = req.body;
+        if (parseInt(user_type) !== 1) {
+            return res.status(403).json({ msg: 'Solo gerencia puede editar la fecha de ingreso' });
+        }
+        if (!id_expediente || !fecha || !hora) {
+            return res.status(400).json({ msg: 'Datos incompletos: se requiere expediente, fecha y hora' });
+        }
+
+        const t = await db.sequelize.transaction();
+        try {
+            const cuenta = await Cuenta.findOne({
+                where: { id_expediente },
+                order: [['createdAt', 'DESC']],
+                transaction: t,
+            });
+            if (!cuenta) {
+                await t.rollback();
+                return res.status(404).json({ msg: 'No se encontró una cuenta para este paciente' });
+            }
+
+            await Expediente.update(
+                { fecha_ingreso_reciente: fecha, hora_ingreso_reciente: hora, updated_by: user },
+                { where: { id: id_expediente }, transaction: t }
+            );
+
+            await cuenta.update({ fecha_ingreso: fecha, hora_ingreso: hora, updated_by: user }, { transaction: t });
+
+            // Detalle de habitacion activo (mismo formato que reingreso/asignacion).
+            await DetalleHabitaciones.update(
+                { ingreso: new Date(fecha + ' ' + hora), updated_by: user },
+                { where: { id_cuenta: cuenta.id, estado: 1, salida: null }, transaction: t }
+            );
+
+            await t.commit();
+            return res.status(200).json({ msg: 'La fecha y hora de ingreso se actualizaron correctamente' });
+        } catch (error) {
+            await t.rollback();
+            console.log(error);
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        }
+    },
+
+    // SOLO GERENCIA (rol 1). Elimina el reingreso/hospitalizacion ACTUAL de un
+    // paciente (caso de error, ej. hora de ingreso mal registrada): saca al paciente
+    // del hospital sin cobrar nada. Repone al inventario los consumos activos, borra
+    // todos los datos que dependen de la cuenta, libera la habitacion, deja el
+    // expediente como egresado y registra la eliminacion en logs_eliminacion_pacientes.
+    async eliminarCuentaActual(req, res) {
+        const { id_expediente, user, user_type, motivo } = req.body;
+        if (parseInt(user_type) !== 1) {
+            return res.status(403).json({ msg: 'Solo gerencia puede eliminar la cuenta actual' });
+        }
+        if (!id_expediente) {
+            return res.status(400).json({ msg: 'Datos incompletos: se requiere expediente' });
+        }
+
+        const t = await db.sequelize.transaction();
+        try {
+            const cuenta = await Cuenta.findOne({
+                where: { id_expediente },
+                order: [['createdAt', 'DESC']],
+                transaction: t,
+            });
+            if (!cuenta) {
+                await t.rollback();
+                return res.status(404).json({ msg: 'No se encontró una cuenta activa para este paciente' });
+            }
+
+            const expediente = await Expediente.findByPk(id_expediente, {
+                attributes: ['id', 'expediente', 'nombres', 'apellidos', 'estado'],
+                transaction: t,
+            });
+            // El area del paciente se determina por expediente.estado (cuenta.tipo no se
+            // usa en el sistema y siempre queda en 1). Hospitalizacion = 1 / 91.
+            if (!expediente || ![1, 91].includes(expediente.estado)) {
+                await t.rollback();
+                return res.status(400).json({ msg: 'El paciente no está actualmente hospitalizado' });
+            }
+
+            const idsCuentas = [cuenta.id];
+            const huboConsumos = await restaurarInventarioDeCuenta(idsCuentas, t);
+
+            await Promise.all([
+                DetalleHabitaciones.destroy({ where: { id_cuenta: idsCuentas }, transaction: t }),
+                Consumo.destroy({ where: { id_cuenta: idsCuentas }, transaction: t }),
+                DetalleCuentas.destroy({ where: { id_cuenta: idsCuentas }, transaction: t }),
+                MovimientoComun.destroy({ where: { id_cuenta: idsCuentas }, transaction: t }),
+                MovimientoMedicamentos.destroy({ where: { id_cuenta: idsCuentas }, transaction: t }),
+                MovimientoQuirurgico.destroy({ where: { id_cuenta: idsCuentas }, transaction: t }),
+                DetalleHonorarios.destroy({ where: { id_cuenta: idsCuentas }, transaction: t }),
+                DetallePagoCuentas.destroy({ where: { id_cuenta: idsCuentas }, transaction: t }),
+                RevisionConsumos.destroy({ where: { id_cuenta: idsCuentas }, transaction: t }),
+            ]);
+
+            await cuenta.destroy({ transaction: t });
+
+            // Liberar la habitacion que ocupaba el paciente (mismo patron que el egreso).
+            await Habitaciones.update(
+                { estado: 1, ocupante: null, ocupante_previo: id_expediente },
+                { where: { ocupante: id_expediente }, transaction: t }
+            );
+
+            // Dejar el expediente como egresado (egreso normal = 7).
+            await Expediente.update(
+                { estado: 7, solvencia: 0, updated_by: user },
+                { where: { id: id_expediente }, transaction: t }
+            );
+
+            const ahoraGT = restarHorasGT(new Date(), 6);
+            await LogEliminacion.create({
+                id_expediente,
+                id_cuenta: cuenta.id,
+                numero_expediente: expediente ? expediente.expediente : null,
+                nombre_paciente: `${expediente.nombres} ${expediente.apellidos}`,
+                tipo_cuenta: 1,
+                area: 'Hospitalización',
+                motivo: motivo ?? null,
+                total_cuenta: cuenta.total,
+                tenia_consumos: huboConsumos ? 1 : 0,
+                created_by: user,
+                createdAt: ahoraGT,
+                updatedAt: ahoraGT,
+            }, { transaction: t });
+
+            await t.commit();
+            return res.status(200).json({ msg: 'La cuenta actual del paciente ha sido eliminada correctamente' });
+        } catch (error) {
+            await t.rollback();
+            console.log(error);
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        }
+    },
+
+    // Listado paginado (vuetable) de las eliminaciones de cuentas de pacientes, para
+    // la pestaña "Historial eliminaciones" del panel de gerencia.
+    async listEliminaciones(req, res) {
+        const getPagingData = (data, page, limit) => {
+            const { count: totalItems, rows: referido } = data;
+            const currentPage = page ? +page : 0;
+            const totalPages = Math.ceil(totalItems / limit);
+            return { totalItems, referido, totalPages, currentPage };
+        };
+        const getPagination = (page, size) => {
+            const limit = size ? +size : 10;
+            const offset = page ? page * limit : 0;
+            return { limit, offset };
+        };
+
+        const busqueda = req.query.search;
+        const page = req.query.page - 1;
+        const size = req.query.limit;
+        const criterio = req.query.criterio;
+        const order = req.query.order;
+        const { limit, offset } = getPagination(page, size);
+
+        const condition = busqueda
+            ? { [Op.or]: [
+                { nombre_paciente: { [Op.like]: `%${busqueda}%` } },
+                { numero_expediente: { [Op.like]: `%${busqueda}%` } },
+                { created_by: { [Op.like]: `%${busqueda}%` } },
+                { area: { [Op.like]: `%${busqueda}%` } },
+            ] }
+            : {};
+
+        try {
+            const data = await LogEliminacion.findAndCountAll({
+                where: condition,
+                order: [[criterio || 'createdAt', order || 'DESC']],
+                limit,
+                offset,
+            });
+            const response = getPagingData(data, page, limit);
+            return res.send({
+                total: response.totalItems,
+                last_page: response.totalPages,
+                current_page: page + 1,
+                from: response.currentPage,
+                to: response.totalPages,
+                data: response.referido,
+            });
+        } catch (error) {
+            console.log(error);
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         }
     }
 };
