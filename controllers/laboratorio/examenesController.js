@@ -46,7 +46,7 @@ module.exports = {
                 pendiente_de_pago: form.total,
                 id_expediente: form.id_expediente,
                 createdAt: new Date(),
-                updatedAt: restarHoras(new Date(), 6),
+                updatedAt: new Date(),
                 fecha_corte: null,
                 descuento: 0,
                 solicitud_descuento: 3,
@@ -65,7 +65,7 @@ module.exports = {
                     expediente: form.nombre,
                     edad: form.edad,
                     cui: form.cui,
-                    comision: form.comision.nombre,
+                    comision: (form.comision && typeof form.comision === 'object') ? (form.comision.nombre ?? null) : (form.comision || null),
                     total: examenAlmacenado.precio_normal,
                     correo: form.correo,
                     whatsapp: form.whatsapp,
@@ -83,7 +83,7 @@ module.exports = {
                     created_by: req.user?.user ?? req.body.user,
                     updated_by: req.user?.user ?? req.body.user,
                     createdAt: new Date(),
-                    updatedAt: restarHoras(new Date(), 6),
+                    updatedAt: new Date(),
                   };
                   return Examenes.create(datosExamen);
                 })
@@ -129,7 +129,7 @@ module.exports = {
                 pendiente_de_pago: form.total,
                 id_expediente: expediente.id,
                 createdAt: new Date(),
-                updatedAt: restarHoras(new Date(), 6),
+                updatedAt: new Date(),
                 fecha_corte: null,
                 created_by: req.user?.user ?? req.body.user,
                 updated_by: req.user?.user ?? req.body.user,
@@ -150,7 +150,7 @@ module.exports = {
                     expediente: form.nombre + ' ' + form.apellido,
                     edad: form.edad,
                     cui: form.cui,
-                    comision: form.comision.nombre,
+                    comision: (form.comision && typeof form.comision === 'object') ? (form.comision.nombre ?? null) : (form.comision || null),
                     total: examenAlmacenado.precio_normal,
                     correo: form.correo,
                     whatsapp: form.whatsapp,
@@ -166,7 +166,7 @@ module.exports = {
                     id_cuenta: cuentaCreada.id,
                     id_lab_cuentas: cuentaCreada.id,
                     createdAt: new Date(),
-                    updatedAt: restarHoras(new Date(), 6),
+                    updatedAt: new Date(),
                     created_by: req.user?.user ?? req.body.user,
                     updated_by: req.user?.user ?? req.body.user,
                   };
@@ -195,7 +195,7 @@ module.exports = {
                 pendiente_de_pago: 0,
                 id_expediente: form.id_expediente,
                 createdAt: new Date(),
-                updatedAt: restarHoras(new Date(), 6),
+                updatedAt: new Date(),
                 fecha_corte: null,
                 created_by: req.user?.user ?? req.body.user,
                 updated_by: req.user?.user ?? req.body.user,
@@ -214,7 +214,7 @@ module.exports = {
                     expediente: form.nombre,
                     edad: form.edad,
                     cui: form.cui,
-                    comision: form.comision.nombre,
+                    comision: (form.comision && typeof form.comision === 'object') ? (form.comision.nombre ?? null) : (form.comision || null),
                     total:0,
                     correo: form.correo,
                     whatsapp: form.whatsapp,
@@ -232,7 +232,7 @@ module.exports = {
                     created_by: req.user?.user ?? req.body.user,
                     updated_by: req.user?.user ?? req.body.user,
                     createdAt: new Date(),
-                    updatedAt: restarHoras(new Date(), 6),
+                    updatedAt: new Date(),
                   };
                   return Examenes.create(datosExamen);
                 })
@@ -277,7 +277,7 @@ module.exports = {
                 pendiente_de_pago: 0,
                  id_expediente: expediente.id,
                 createdAt: new Date(),
-                updatedAt: restarHoras(new Date(), 6),
+                updatedAt: new Date(),
                 fecha_corte: null,
                 descuento: 0,
                 solicitud_descuento: 3,
@@ -298,7 +298,7 @@ module.exports = {
                     expediente: form.nombre + ' ' + form.apellido,
                     edad: form.edad,
                     cui: form.cui,
-                    comision: form.comision.nombre,
+                    comision: (form.comision && typeof form.comision === 'object') ? (form.comision.nombre ?? null) : (form.comision || null),
                     total: 0,
                     correo: form.correo,
                     whatsapp: form.whatsapp,
@@ -316,7 +316,7 @@ module.exports = {
                     created_by: req.user?.user ?? req.body.user,
                     updated_by: req.user?.user ?? req.body.user,
                     createdAt: new Date(),
-                    updatedAt: restarHoras(new Date(), 6),
+                    updatedAt: new Date(),
                   };
                   return Examenes.create(datosExamen);
                 })

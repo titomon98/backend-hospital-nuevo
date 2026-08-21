@@ -66,7 +66,7 @@ module.exports = {
                 resultado: form.resultado,
                 alarma: alarma,  // Guardamos la alarma si existe
                 createdAt: new Date(),
-                updatedAt: restarHoras(new Date(), 6)
+                updatedAt: new Date()
             };
 
             // Guardar el detalle del examen realizado
@@ -76,14 +76,12 @@ module.exports = {
         // Esperar a que todas las promesas se resuelvan
         await Promise.all(promises);
         
-        // Actualizar el estado del examen
-        await examenSeleccionado.update({ estado: 2 });
-        // Cambiar el estado del examen a 3
+        // Marcar el examen como "Con resultados" (estado 3).
         await UpdateExamenRealizado.update(
-            { 
+            {
                 estado: 3,
                 nota: resultados[0].nota,
-                updatedAt: restarHoras(new Date(), 6)
+                updatedAt: new Date()
             },
             { where: { id: idExamenRealizado } }
         );
