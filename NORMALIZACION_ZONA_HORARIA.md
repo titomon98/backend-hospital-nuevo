@@ -55,3 +55,25 @@ Cada uno requiere revisar **su sitio de lectura** antes de cambiarlo.
 - Historial de eliminaciones (`logs_eliminacion_pacientes`) → Sequelize/UTC.
 - Laboratorio: `updatedAt` de `examenes_realizados`, `lab_cuentas` y
   `detalle_examen_realizado` → UTC (no se leen crudos en GT-6).
+
+## FASE 1 — HECHA (frontend, sin riesgo de datos)
+Auditoría:
+- Todas las columnas de fecha revisadas son `datetime` (MySQL no las convierte;
+  Sequelize con connection tz +00:00 las lee como UTC).
+- El coloreo día/noche estaba DUPLICADO en 11 vistas (`getRowClass`), leyendo la
+  fecha CRUDA (`.split(' ')`) sobre distintos campos: `createdAt`,
+  `fecha_consumo`, `fecha_honorario`, `ingreso`.
+
+Entregado:
+- `frontend-hospital-nuevo/src/config/fechas.js` con `horaGTde` y
+  `claseFilaDiaNoche` (PUNTO ÚNICO de conversión para display).
+- Las 11 vistas ahora llaman al helper (refactor 1:1, sin cambio de
+  comportamiento). Único lugar a tocar cuando se migre el storage a UTC.
+- Nota: el helper vive en `src/config/` (no `src/utils/`) porque webpack de
+  este proyecto no resuelve `src/utils/`.
+
+## Próximo (Fase 2, requiere pruebas)
+- Añadir a `src/config/fechas.js` helpers de display de fecha/hora y reemplazar
+  las lecturas naive (`moment(x)` / `.split(' ')`) restantes.
+- Recién entonces migrar el storage a UTC controller por controller + UPDATE de
+  datos (+6h SOLO en columnas que hoy guardan GT-6), con regresión completa.
