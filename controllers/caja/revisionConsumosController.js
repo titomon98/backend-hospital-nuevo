@@ -99,13 +99,19 @@ module.exports = {
                 await consumo.update({ reviewed_by: user }, { transaction: t });
             }
 
-            // ¿Todos los consumos de la cuenta confirmados?
-            const tablas = [db.detalle_consumo_medicamentos, db.detalle_consumo_quirugicos, db.detalle_consumo_comunes];
+            // ¿Todos los consumos de la cuenta confirmados? (se excluyen los cargos
+            // de paquete en quirurgico: id_quirurgico NULL, no son productos revisables)
+            const tablas = [
+                { T: db.detalle_consumo_medicamentos, extra: {} },
+                { T: db.detalle_consumo_quirugicos, extra: { id_quirurgico: { [Op.ne]: null } } },
+                { T: db.detalle_consumo_comunes, extra: {} }
+            ];
             let totalConsumos = 0, revisados = 0, inconsistentes = 0;
-            for (const T of tablas) {
-                totalConsumos += await T.count({ where: { id_cuenta, estado: 1 }, transaction: t });
-                revisados += await T.count({ where: { id_cuenta, estado: 1, reviewed_by: { [Op.ne]: null } }, transaction: t });
-                inconsistentes += await T.count({ where: { id_cuenta, estado: 1, inconsistente: 1 }, transaction: t });
+            for (const { T, extra } of tablas) {
+                const base = { id_cuenta, estado: 1, ...extra };
+                totalConsumos += await T.count({ where: base, transaction: t });
+                revisados += await T.count({ where: { ...base, reviewed_by: { [Op.ne]: null } }, transaction: t });
+                inconsistentes += await T.count({ where: { ...base, inconsistente: 1 }, transaction: t });
             }
 
             let finalizado = false;
@@ -127,6 +133,52 @@ module.exports = {
             await t.rollback();
             console.log(error);
             return res.status(400).json({ msg: 'Ha ocurrido un error al confirmar el consumo' });
+        }
+    },
+
+    // Lista los consumos de una cuenta para revisarlos uno por uno (medicamentos,
+    // anestesicos, quirurgico y comun). Excluye los cargos de paquete (id_quirurgico NULL).
+    async getConsumosRevision(req, res) {
+        const Op = db.Sequelize.Op;
+        const id_cuenta = req.params.id_cuenta;
+        try {
+            const [med, qui, com] = await Promise.all([
+                db.detalle_consumo_medicamentos.findAll({
+                    where: { id_cuenta, estado: 1 },
+                    include: [{ model: db.medicamentos, attributes: ['nombre'] }],
+                    attributes: ['id', 'cantidad', 'precio_venta', 'reviewed_by', 'inconsistente']
+                }),
+                db.detalle_consumo_quirugicos.findAll({
+                    where: { id_cuenta, estado: 1, id_quirurgico: { [Op.ne]: null } },
+                    include: [{ model: db.quirurgicos, attributes: ['nombre'] }],
+                    attributes: ['id', 'cantidad', 'precio_venta', 'reviewed_by', 'inconsistente']
+                }),
+                db.detalle_consumo_comunes.findAll({
+                    where: { id_cuenta, estado: 1 },
+                    include: [{ model: db.comunes, attributes: ['nombre'] }],
+                    attributes: ['id', 'cantidad', 'precio_venta', 'reviewed_by', 'inconsistente']
+                })
+            ]);
+            const armar = (arr, tipo, key) => arr.map(x => {
+                const p = x.get({ plain: true });
+                return {
+                    id: p.id,
+                    tipo,
+                    nombre: (p[key] && p[key].nombre) ? p[key].nombre : 'Sin nombre',
+                    cantidad: p.cantidad,
+                    precio_venta: p.precio_venta,
+                    reviewed_by: p.reviewed_by,
+                    inconsistente: p.inconsistente
+                };
+            });
+            return res.json([
+                ...armar(med, 'medicamento', 'medicamento'),
+                ...armar(qui, 'quirurgico', 'quirurgico'),
+                ...armar(com, 'comun', 'comune')
+            ]);
+        } catch (error) {
+            console.log(error);
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         }
     },
 
