@@ -29,309 +29,109 @@ module.exports = {
 
       const today = new Date();
       let form = req.body.form;
+      const usuario = req.user?.user ?? req.body.user;
+      const esExterno = form.examenExterior == true || form.examenExterior == 'true';
+      const esNuevo = form.NewExpediente == true || form.NewExpediente == 'true';
+      const comisionNombre = (form.comision && typeof form.comision === 'object')
+        ? (form.comision.nombre ?? null)
+        : (form.comision || null);
 
+      const t = await db.sequelize.transaction();
       try {
-        if (form.examenExterior == false || form.examenExterior == 'false') {
-          try {
-            if (form.NewExpediente == false || form.NewExpediente == 'false') {
-              const examenesAlmacenados = await ExamenAlmacenado.findAll({
-                where: { id: form.id_examenes_almacenados },
-              });
-        
-              const datosCuenta = {
-                numero: 1,
-                total: form.total,
-                estado: 1,
-                total_pagado: 0,
-                pendiente_de_pago: form.total,
-                id_expediente: form.id_expediente,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-                fecha_corte: null,
-                descuento: 0,
-                solicitud_descuento: 3,
-                subtotal: 0,
-                created_by: req.user?.user ?? req.body.user,
-                updated_by: req.user?.user ?? req.body.user,
-              };
-        
-              const cuentaCreada = await Cuenta.create(datosCuenta);
-              await cuentaCreada.update({ numero: cuentaCreada.id });
-
-              // Crear un examen realizado por cada examen almacenado
-              const examenesCreados = await Promise.all(
-                examenesAlmacenados.map(async (examenAlmacenado) => {
-                  const datosExamen = {
-                    expediente: form.nombre,
-                    edad: form.edad,
-                    cui: form.cui,
-                    comision: (form.comision && typeof form.comision === 'object') ? (form.comision.nombre ?? null) : (form.comision || null),
-                    total: examenAlmacenado.precio_normal,
-                    correo: form.correo,
-                    whatsapp: form.whatsapp,
-                    numero_muestra: form.numero_muestra,
-                    referido: form.referido,
-                    nombre_factura: form.factura,
-                    nit: form.nit,
-                    id_encargado: form.id_encargado?.id || null,
-                    pagado: 0,
-                    por_pagar: examenAlmacenado.precio_normal,
-                    id_examenes_almacenados: examenAlmacenado.id,
-                    estado: 1,
-                    id_cuenta: cuentaCreada.id,
-                    id_lab_cuentas: cuentaCreada.id,
-                    created_by: req.user?.user ?? req.body.user,
-                    updated_by: req.user?.user ?? req.body.user,
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
-                  };
-                  return Examenes.create(datosExamen);
-                })
-              );
-        
-              res.send(examenesCreados);
-            } else if (form.NewExpediente == true || form.NewExpediente == 'true') {
-              const examenesAlmacenados = await ExamenAlmacenado.findAll({
-                where: { id: form.id_examenes_almacenados },
-              });
-        
-              const datos_expediente = {
-                nombres: form.nombre,
-                apellidos: form.apellido,
-                expediente: 'INGRESO EN LABORATORIO',
-                primer_ingreso: restarHoras(new Date(), 6),
-                fecha_ingreso_reciente: restarHoras(new Date(), 6),
-                hora_ingreso_reciente: restarHoras(new Date(), 6),
-                nacimiento: '0001-01-01',
-                cui: form.cui,
-                telefono: form.whatsapp,
-                direccion: 'INGRESO EN LABORATORIO',
-                nombre_encargado: 'INGRESO EN LABORATORIO',
-                contacto_encargado: 'INGRESO EN LABORATORIO',
-                cui_encargado: 'INGRESO EN LABORATORIO',
-                direccion_encargado: 'INGRESO EN LABORATORIO',
-                estado: 11,
-                created_by: req.user?.user ?? req.body.user,
-                updated_by: req.user?.user ?? req.body.user,
-              };
-        
-              const expediente = await Expediente.create(datos_expediente);
-              const year = today.getFullYear();
-              var idFormateado = String(expediente.id).padStart(4, "0");
-              const nuevoExpediente = year + "-" + idFormateado;
-              await expediente.update({ expediente: nuevoExpediente });
-              
-              const datosCuenta = {
-                numero: 1,
-                total: form.total,
-                estado: 1,
-                total_pagado: 0,
-                pendiente_de_pago: form.total,
-                id_expediente: expediente.id,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-                fecha_corte: null,
-                created_by: req.user?.user ?? req.body.user,
-                updated_by: req.user?.user ?? req.body.user,
-                descuento: 0,
-                solicitud_descuento: 3,
-                subtotal: 0,
-                fecha_ingreso: restarHoras(new Date(), 6),
-                hora_ingreso: restarHoras(new Date(), 6)
-              };
-        
-              const cuentaCreada = await Cuenta.create(datosCuenta);
-              await cuentaCreada.update({ numero: cuentaCreada.id });
-        
-              // Crear un examen realizado por cada examen almacenado
-              const examenesCreados = await Promise.all(
-                examenesAlmacenados.map(async (examenAlmacenado) => {
-                  const datosExamen = {
-                    expediente: form.nombre + ' ' + form.apellido,
-                    edad: form.edad,
-                    cui: form.cui,
-                    comision: (form.comision && typeof form.comision === 'object') ? (form.comision.nombre ?? null) : (form.comision || null),
-                    total: examenAlmacenado.precio_normal,
-                    correo: form.correo,
-                    whatsapp: form.whatsapp,
-                    numero_muestra: form.numero_muestra,
-                    referido: form.referido,
-                    nombre_factura: form.factura,
-                    nit: form.nit,
-                    id_encargado: form.id_encargado?.id || null,
-                    pagado: 0,
-                    por_pagar: examenAlmacenado.precio_normal,
-                    id_examenes_almacenados: examenAlmacenado.id,
-                    estado: 1,
-                    id_cuenta: cuentaCreada.id,
-                    id_lab_cuentas: cuentaCreada.id,
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
-                    created_by: req.user?.user ?? req.body.user,
-                    updated_by: req.user?.user ?? req.body.user,
-                  };
-                  return Examenes.create(datosExamen);
-                })
-              );
-        
-              res.send(examenesCreados);
-            }
-          } catch (error) {
-            console.error('Error al crear el examen:', error)
-            res.status(501).send({ error: 'Error al crear el examen:' })
-          }           
-        } else if (form.examenExterior == true || form.examenExterior == 'true') {
-          try {
-            if (form.NewExpediente == false || form.NewExpediente == 'false') {
-              const examenesAlmacenados = await ExamenAlmacenado.findAll({
-                where: { id: form.id_examenes_almacenados },
-              });
-
-              const datosCuenta = {
-                numero: 1,
-                total: 0,
-                estado: 1,
-                total_pagado: 0,
-                pendiente_de_pago: 0,
-                id_expediente: form.id_expediente,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-                fecha_corte: null,
-                created_by: req.user?.user ?? req.body.user,
-                updated_by: req.user?.user ?? req.body.user,
-                descuento: 0,
-                solicitud_descuento: 3,
-                subtotal: 0
-              };
-        
-              const cuentaCreada = await Cuenta.create(datosCuenta);
-              await cuentaCreada.update({ numero: cuentaCreada.id });
-
-              // Crear un examen realizado por cada examen almacenado
-              const examenesCreados = await Promise.all(
-                examenesAlmacenados.map(async (examenAlmacenado) => {
-                  const datosExamen = {
-                    expediente: form.nombre,
-                    edad: form.edad,
-                    cui: form.cui,
-                    comision: (form.comision && typeof form.comision === 'object') ? (form.comision.nombre ?? null) : (form.comision || null),
-                    total:0,
-                    correo: form.correo,
-                    whatsapp: form.whatsapp,
-                    numero_muestra: form.numero_muestra,
-                    referido: form.referido,
-                    nombre_factura: form.factura,
-                    nit: form.nit,
-                    id_encargado: form.id_encargado?.id || null,
-                    pagado: 0,
-                    por_pagar: 0,
-                    id_examenes_almacenados: examenAlmacenado.id,
-                    estado: 2,
-                    id_cuenta: cuentaCreada.id,
-                    id_lab_cuentas: cuentaCreada.id,
-                    created_by: req.user?.user ?? req.body.user,
-                    updated_by: req.user?.user ?? req.body.user,
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
-                  };
-                  return Examenes.create(datosExamen);
-                })
-              );
-              res.send(examenesCreados);
-            } else if (form.NewExpediente == true || form.NewExpediente == 'true') {
-              const examenesAlmacenados = await ExamenAlmacenado.findAll({
-                where: { id: form.id_examenes_almacenados },
-              });
-        
-              const datos_expediente = {
-                nombres: form.nombre,
-                apellidos: form.apellido,
-                expediente: 'INGRESO EN LABORATORIO',
-                primer_ingreso: restarHoras(new Date(), 6),
-                fecha_ingreso_reciente: restarHoras(new Date(), 6),
-                hora_ingreso_reciente: restarHoras(new Date(), 6),
-                nacimiento: '0001-01-01',
-                cui: form.cui,
-                telefono: form.whatsapp,
-                direccion: 'INGRESO EN LABORATORIO',
-                nombre_encargado: 'INGRESO EN LABORATORIO',
-                contacto_encargado: 'INGRESO EN LABORATORIO',
-                cui_encargado: 'INGRESO EN LABORATORIO',
-                direccion_encargado: 'INGRESO EN LABORATORIO',
-                estado: 11,
-                created_by: req.user?.user ?? req.body.user,
-                updated_by: req.user?.user ?? req.body.user,
-              };
-        
-              const expediente = await Expediente.create(datos_expediente);
-              const year = today.getFullYear();
-              var idFormateado = String(expediente.id).padStart(4, "0");
-              const nuevoExpediente = year + "-" + idFormateado;
-              await expediente.update({ expediente: nuevoExpediente });
-
-              const datosCuenta = {
-                numero: 1,
-                total: 0,
-                estado: 1,
-                total_pagado: 0,
-                pendiente_de_pago: 0,
-                 id_expediente: expediente.id,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-                fecha_corte: null,
-                descuento: 0,
-                solicitud_descuento: 3,
-                subtotal: 0,
-                created_by: req.user?.user ?? req.body.user,
-                updated_by: req.user?.user ?? req.body.user,
-                fecha_ingreso: restarHoras(new Date(), 6),
-                hora_ingreso: restarHoras(new Date(), 6)
-              };
-        
-              const cuentaCreada = await Cuenta.create(datosCuenta);
-              await cuentaCreada.update({ numero: cuentaCreada.id });
-
-              // Crear un examen realizado por cada examen almacenado
-              const examenesCreados = await Promise.all(
-                examenesAlmacenados.map(async (examenAlmacenado) => {
-                  const datosExamen = {
-                    expediente: form.nombre + ' ' + form.apellido,
-                    edad: form.edad,
-                    cui: form.cui,
-                    comision: (form.comision && typeof form.comision === 'object') ? (form.comision.nombre ?? null) : (form.comision || null),
-                    total: 0,
-                    correo: form.correo,
-                    whatsapp: form.whatsapp,
-                    numero_muestra: form.numero_muestra,
-                    referido: form.referido,
-                    nombre_factura: form.factura,
-                    nit: form.nit,
-                    id_encargado: form.id_encargado?.id || null,
-                    pagado: 0,
-                    por_pagar: 0,
-                    id_examenes_almacenados: examenAlmacenado.id,
-                    estado: 2,
-                    id_cuenta: cuentaCreada.id,
-                    id_lab_cuentas: cuentaCreada.id,
-                    created_by: req.user?.user ?? req.body.user,
-                    updated_by: req.user?.user ?? req.body.user,
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
-                  };
-                  return Examenes.create(datosExamen);
-                })
-              );
-        
-              res.send(examenesCreados);
-            }
-          } catch (error) {
-            console.error('Error al crear el examen:', error)
-            res.status(502).send({ error: 'Error al crear el examen:' })
-          }  
+        const examenesAlmacenados = await ExamenAlmacenado.findAll({
+          where: { id: form.id_examenes_almacenados },
+          transaction: t,
+        });
+        if (!examenesAlmacenados.length) {
+          await t.rollback();
+          return res.status(400).json({ msg: 'No se encontraron los exámenes seleccionados' });
         }
+
+        // 1) Resolver el expediente: existente (agendado desde enfermería/caja) o
+        //    nuevo (paciente que ingresa directo en laboratorio).
+        let id_expediente = form.id_expediente;
+        let nombreExpediente = form.nombre;
+        if (esNuevo) {
+          // Fechas de negocio en GT-6, igual que en el resto del sistema.
+          const ahoraGT = restarHoras(new Date(), 6);
+          const expediente = await Expediente.create({
+            nombres: form.nombre,
+            apellidos: form.apellido,
+            expediente: 'INGRESO EN LABORATORIO',
+            primer_ingreso: ahoraGT,
+            fecha_ingreso_reciente: ahoraGT,
+            hora_ingreso_reciente: ahoraGT,
+            nacimiento: '0001-01-01',
+            cui: form.cui,
+            telefono: form.whatsapp,
+            direccion: 'INGRESO EN LABORATORIO',
+            nombre_encargado: 'INGRESO EN LABORATORIO',
+            contacto_encargado: 'INGRESO EN LABORATORIO',
+            cui_encargado: 'INGRESO EN LABORATORIO',
+            direccion_encargado: 'INGRESO EN LABORATORIO',
+            estado: 11,
+            created_by: usuario,
+            updated_by: usuario,
+          }, { transaction: t });
+          await expediente.update(
+            { expediente: `${today.getFullYear()}-${String(expediente.id).padStart(4, '0')}` },
+            { transaction: t }
+          );
+          id_expediente = expediente.id;
+          nombreExpediente = `${form.nombre} ${form.apellido}`;
+        }
+
+        // 2) Cuenta de laboratorio. Los exámenes externos no se cobran (total 0).
+        const totalCuenta = esExterno ? 0 : form.total;
+        const cuentaCreada = await Cuenta.create({
+          numero: 1,
+          total: totalCuenta,
+          estado: 1,
+          total_pagado: 0,
+          pendiente_de_pago: totalCuenta,
+          id_expediente,
+          fecha_corte: null,
+          descuento: 0,
+          solicitud_descuento: 3,
+          subtotal: 0,
+          created_by: usuario,
+          updated_by: usuario,
+        }, { transaction: t });
+        await cuentaCreada.update({ numero: cuentaCreada.id }, { transaction: t });
+
+        // 3) Un examen realizado por cada examen almacenado seleccionado.
+        //    Interno: estado 1 (en progreso) y se cobra; externo: estado 2 y sin costo.
+        const examenesCreados = await Promise.all(
+          examenesAlmacenados.map((examenAlmacenado) => Examenes.create({
+            expediente: nombreExpediente,
+            edad: form.edad,
+            cui: form.cui,
+            comision: comisionNombre,
+            total: esExterno ? 0 : examenAlmacenado.precio_normal,
+            correo: form.correo,
+            whatsapp: form.whatsapp,
+            numero_muestra: form.numero_muestra,
+            referido: form.referido,
+            nombre_factura: form.factura,
+            nit: form.nit,
+            id_encargado: form.id_encargado?.id || null,
+            pagado: 0,
+            por_pagar: esExterno ? 0 : examenAlmacenado.precio_normal,
+            id_examenes_almacenados: examenAlmacenado.id,
+            estado: esExterno ? 2 : 1,
+            id_cuenta: cuentaCreada.id,
+            id_lab_cuentas: cuentaCreada.id,
+            created_by: usuario,
+            updated_by: usuario,
+          }, { transaction: t }))
+        );
+
+        await t.commit();
+        return res.send(examenesCreados);
       } catch (error) {
-        console.error('Error al validar si es examen externo o interno:', error);
-        res.status(500).send({ error: 'Error al validar si es examen externo o interno:' });
+        await t.rollback();
+        console.error('Error al crear el examen:', error);
+        return res.status(500).json({ msg: 'Error al crear el examen' });
       }
       
 
