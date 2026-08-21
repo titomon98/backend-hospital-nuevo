@@ -38,13 +38,6 @@ const LogEliminacion = db.logs_eliminacion_pacientes;
 const DetallePagoCuentas = db.detalle_pago_cuentas;
 const RevisionConsumos = db.revision_consumos;
 
-// Resta horas a una fecha (usado para anclar timestamps a GT-6).
-const restarHorasGT = (fecha, horas) => {
-    const nueva = new Date(fecha);
-    nueva.setHours(nueva.getHours() - horas);
-    return nueva;
-};
-
 // Restaura al inventario las existencias de los consumos ACTIVOS (estado 1) de las
 // cuentas indicadas y devuelve si habia consumos. La columna (farmacia/quirofano) se
 // deduce de la descripcion, igual que el borrado individual de consumos. Solo repone
@@ -1684,9 +1677,9 @@ module.exports = {
                     RevisionConsumos.destroy({ where: { id_cuenta: idsCuentas }, transaction: t }),
                 ]);
 
-                // Un registro de eliminacion por cada cuenta borrada.
+                // Un registro de eliminacion por cada cuenta borrada. createdAt/updatedAt
+                // los maneja Sequelize (UTC); el frontend los convierte a GT-6 al mostrar.
                 const nombrePaciente = expediente ? `${expediente.nombres} ${expediente.apellidos}` : null;
-                const ahoraGT = restarHorasGT(new Date(), 6);
                 for (const c of cuentas) {
                     await LogEliminacion.create({
                         id_expediente: req.body.id,
@@ -1699,8 +1692,6 @@ module.exports = {
                         total_cuenta: c.total,
                         tenia_consumos: huboConsumos ? 1 : 0,
                         created_by: responsable,
-                        createdAt: ahoraGT,
-                        updatedAt: ahoraGT,
                     }, { transaction: t });
                 }
             }
@@ -2400,7 +2391,7 @@ module.exports = {
                 { where: { id: id_expediente }, transaction: t }
             );
 
-            const ahoraGT = restarHorasGT(new Date(), 6);
+            // createdAt/updatedAt los maneja Sequelize (UTC); el frontend los convierte a GT-6.
             await LogEliminacion.create({
                 id_expediente,
                 id_cuenta: cuenta.id,
@@ -2412,8 +2403,6 @@ module.exports = {
                 total_cuenta: cuenta.total,
                 tenia_consumos: huboConsumos ? 1 : 0,
                 created_by: user,
-                createdAt: ahoraGT,
-                updatedAt: ahoraGT,
             }, { transaction: t });
 
             await t.commit();
