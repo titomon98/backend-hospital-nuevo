@@ -128,4 +128,5 @@ module.exports = (router) => {
     router.put('/expedientes/editarIngresoActual', expedientesController.editarIngresoActual);
     router.delete('/expedientes/eliminarCuentaActual', expedientesController.eliminarCuentaActual);
     router.get('/expedientes/listEliminaciones', expedientesController.listEliminaciones);
+    router.put('/expedientes/setSeguro', expedientesController.setSeguro);
 }

@@ -114,15 +114,20 @@ module.exports = {
 
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Sequelize.Op.or]: [{ no_poliza: { [Sequelize.Op.like]: `%${busqueda}%` } }, {solvente: {[Sequelize.Op.eq]:0}}] } : {solvente: {[Sequelize.Op.eq]:0}} ;
+        const Op = Sequelize.Op;
+        // "Seguros por cobrar" = seguros de pacientes marcados como de seguro (es_seguro=1)
+        // que ya egresaron (por lo tanto están en etapa de cobro). Antes filtraba por
+        // solvente=0; ahora el ruteo lo decide el flag es_seguro del expediente.
+        const condition = busqueda ? { no_poliza: { [Op.like]: `%${busqueda}%` } } : {};
 
         Seguro.findAndCountAll({
             include: [
                 {
-                    model: Expediente
+                    model: Expediente,
+                    required: true,
+                    where: { es_seguro: 1, estado: { [Op.notIn]: [1, 3, 4, 5] } }
                 },
                 {
-                    
                     model: Aseguradora
                 }
             ],

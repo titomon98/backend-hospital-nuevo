@@ -2468,6 +2468,25 @@ module.exports = {
             console.log(error);
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         }
+    },
+
+    // Cambia si un expediente es "de seguro" (en cualquier momento del ciclo). Cuando
+    // es_seguro = 1, su deuda aparece en "Seguros por cobrar" y NO en "Cuentas por cobrar".
+    async setSeguro(req, res) {
+        const { id, es_seguro, user } = req.body;
+        if (!id || (parseInt(es_seguro) !== 0 && parseInt(es_seguro) !== 1)) {
+            return res.status(400).json({ msg: 'Datos inválidos: se requiere expediente y es_seguro (0/1)' });
+        }
+        try {
+            await Expediente.update(
+                { es_seguro: parseInt(es_seguro), updated_by: user },
+                { where: { id } }
+            );
+            return res.status(200).json({ msg: 'El expediente se actualizó correctamente', es_seguro: parseInt(es_seguro) });
+        } catch (error) {
+            console.log(error);
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        }
     }
 };
 

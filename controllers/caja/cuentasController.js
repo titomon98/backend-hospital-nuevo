@@ -124,14 +124,16 @@ module.exports = {
 
         const estadosExcluidos = [1, 3, 4, 5];
 
-        Cuenta.findAndCountAll({ 
+        Cuenta.findAndCountAll({
             include: [
                 {
                     model: Expediente,
                     where: {
                        estado: {
                          [Op.notIn]: estadosExcluidos
-                       }
+                       },
+                       // Los pacientes de seguro van a "Seguros por cobrar", no aquí.
+                       es_seguro: 0
                     },
                     required: true
                 }

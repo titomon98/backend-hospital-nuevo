@@ -109,6 +109,13 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       defaultValue: 0,
     },
+    // 1 = el paciente es de seguro (su deuda va a "Seguros por cobrar"); 0 = cuenta normal.
+    // Se puede cambiar en cualquier momento desde el menú de expediente.
+    es_seguro: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
     //nuevos atributos
     estado_civil: {
       type: DataTypes.STRING
