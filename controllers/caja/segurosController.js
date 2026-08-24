@@ -121,11 +121,14 @@ module.exports = {
         const condition = busqueda ? { no_poliza: { [Op.like]: `%${busqueda}%` } } : {};
 
         Seguro.findAndCountAll({
+            distinct: true,
             include: [
                 {
                     model: Expediente,
                     required: true,
-                    where: { es_seguro: 1, estado: { [Op.notIn]: [1, 3, 4, 5] } }
+                    where: { es_seguro: 1, estado: { [Op.notIn]: [1, 3, 4, 5] } },
+                    // Solo con saldo pendiente (cuenta activa); las pagadas ya no se cobran.
+                    include: [{ model: Cuenta, required: true, where: { estado: 1 }, attributes: ['id'] }]
                 },
                 {
                     model: Aseguradora
