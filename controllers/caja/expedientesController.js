@@ -188,6 +188,15 @@ async function clasificarHistorial(req, res, soloEmergencia) {
     }
 }
 
+// Resuelve la categoría del paciente a partir de los campos del formulario de
+// asignación de habitación (tipo_paciente / estudioDeSueno). Se usa para el corte.
+function resolverCategoria(form) {
+    if (form.tipo_paciente === '1' || form.tipo_paciente === 1) return 'Ambulatorio';
+    if (form.estudioDeSueno === '1' || form.estudioDeSueno === 1) return 'Estudio de sueño';
+    if (form.estudioDeSueno === '2' || form.estudioDeSueno === 2) return 'Quimioterapia';
+    return 'Hospitalización';
+}
+
 module.exports = {
     create(req, res) {
         const restarHoras = (fecha, horas) => {
@@ -390,7 +399,8 @@ module.exports = {
                 estado: 1,
                 created_by: req.user?.user ?? req.body.user,
                 descuento: 0.0,
-                solicitud_descuento: 3
+                solicitud_descuento: 3,
+                tipo_paciente: 'Emergencia'
             }
             console.log('Aqui vamos bien')
             Cuenta.create(datos_cuenta)
@@ -479,12 +489,17 @@ module.exports = {
             created_by: req.user?.user ?? req.body.user
         }
         await DetalleHabitaciones.create(createHabitacion)
+        // Guardar la categoría del paciente en la cuenta (para el corte).
+        await Cuenta.update(
+            { tipo_paciente: resolverCategoria(form) },
+            { where: { id: form.cuenta } }
+        )
         await Habitaciones.update(
             {
                 estado: 1,
                 ocupante: null,
             },
-            { where: { 
+            { where: {
                 ocupante: form.id
             }}
         )
@@ -2003,6 +2018,7 @@ module.exports = {
                 estado: 1,
                 descuento: 0.0,
                 solicitud_descuento: 3,
+                tipo_paciente: resolverCategoria(form),
                 created_by: responsable
             }, { transaction: t });
             await nuevaCuenta.update({ numero: nuevaCuenta.id }, { transaction: t });

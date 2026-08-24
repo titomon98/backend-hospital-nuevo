@@ -89,6 +89,13 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: 1
     },
     //tipo: 1 - hospi; 2 - emergencia; 3 - Quirófano; 4 - Ambulatorio
+    // Categoría del paciente para el corte: 'Hospitalización' | 'Emergencia' |
+    // 'Ambulatorio' | 'Estudio de sueño' | 'Quimioterapia'. Se llena al asignar
+    // habitación / reingreso / emergencia; NULL en cuentas viejas (fallback por costo).
+    tipo_paciente: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     id_expediente: {
         type: DataTypes.INTEGER,
         allowNull: false

@@ -277,25 +277,29 @@ module.exports = {
                 plain.total_laboratorio = parseFloat(laboratorio).toFixed(2);
                 plain.total_hospital = totalHospital.toFixed(2);
 
-                // Categoría del paciente para el corte. Emergencia por tipo de habitación;
-                // el resto se deduce comparando el costo_base aplicado con las columnas de
-                // costo de la habitación (igual criterio que la asignación/egreso).
-                let categoria = 'Hospitalización';
-                const detalleHab = await db.detalle_habitaciones.findOne({
-                    where: { id_cuenta: c.id },
-                    order: [['id', 'ASC']]
-                });
-                if (detalleHab) {
-                    if (detalleHab.tipo_habitacion === 'Emergencia') {
-                        categoria = 'Emergencia';
-                    } else if (detalleHab.id_habitacion) {
-                        const hab = await db.habitaciones.findByPk(detalleHab.id_habitacion);
-                        if (hab) {
-                            const base = parseFloat(detalleHab.costo_base);
-                            if (parseFloat(hab.costo_ambulatorio) === base) categoria = 'Ambulatorio';
-                            else if (parseFloat(hab.costo_estudio_de_sueno) === base) categoria = 'Estudio de sueño';
-                            else if (parseFloat(hab.costo_quimioterapia) === base) categoria = 'Quimioterapia';
-                            else categoria = 'Hospitalización';
+                // Categoría del paciente para el corte. Se usa el campo cuentas.tipo_paciente
+                // (guardado al asignar habitación / reingreso / emergencia). Para cuentas
+                // viejas sin ese campo, se cae a la deducción por costo (Emergencia por tipo
+                // de habitación; el resto comparando costo_base con las columnas de costo).
+                let categoria = plain.tipo_paciente || null;
+                if (!categoria) {
+                    categoria = 'Hospitalización';
+                    const detalleHab = await db.detalle_habitaciones.findOne({
+                        where: { id_cuenta: c.id },
+                        order: [['id', 'ASC']]
+                    });
+                    if (detalleHab) {
+                        if (detalleHab.tipo_habitacion === 'Emergencia') {
+                            categoria = 'Emergencia';
+                        } else if (detalleHab.id_habitacion) {
+                            const hab = await db.habitaciones.findByPk(detalleHab.id_habitacion);
+                            if (hab) {
+                                const base = parseFloat(detalleHab.costo_base);
+                                if (parseFloat(hab.costo_ambulatorio) === base) categoria = 'Ambulatorio';
+                                else if (parseFloat(hab.costo_estudio_de_sueno) === base) categoria = 'Estudio de sueño';
+                                else if (parseFloat(hab.costo_quimioterapia) === base) categoria = 'Quimioterapia';
+                                else categoria = 'Hospitalización';
+                            }
                         }
                     }
                 }
