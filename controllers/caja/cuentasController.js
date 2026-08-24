@@ -223,28 +223,61 @@ module.exports = {
             return { limit, offset };
         };
 
-        console.log("DATE-----------------------------------", req.query.fecha_corte.split(' ')[0])
-        var condition = { 
+        const fecha = req.query.fecha_corte.split(' ')[0];
+        const condition = {
             [Op.and]: [
-                { estado: { [Op.like]: 0 } },
-                Sequelize.where(Sequelize.fn('DATE', Sequelize.col('cuentas.updatedAt')), req.query.fecha_corte.split(' ')[0])  // Compara solo la parte de la fecha
+                { estado: 0 },
+                Sequelize.where(Sequelize.fn('DATE', Sequelize.col('cuentas.updatedAt')), fecha)
             ]
         };
 
-
-        Cuenta.findAndCountAll({ 
+        Cuenta.findAll({
             include: [
-                {
-                    model: Expediente
-                },
-                {
-                    model: db.detalle_pago_cuentas
-                }
+                { model: Expediente },
+                { model: db.detalle_pago_cuentas }
             ],
-            where: condition})
-        .then(data => {
-            console.log('------------ data: '+JSON.stringify(data.rows))
-            res.send(data.rows);
+            where: condition
+        })
+        .then(async (cuentas) => {
+            // El corte de hospital debe reflejar SOLO los consumos de hospital. El total
+            // de la cuenta incluye, además, honorarios médicos y exámenes de laboratorio
+            // (se suman al egresar). Aquí los restamos para dejar solo lo de hospital:
+            //   total_hospital = total_pagado - honorarios - laboratorio
+            // Honorarios: ligados directo a la cuenta. Laboratorio: en la lab_cuenta de la
+            // admisión (misma que cobró el egreso). Honorarios y lab van en sus propios cortes.
+            const rows = await Promise.all(cuentas.map(async (c) => {
+                const plain = c.get({ plain: true });
+
+                const honorarios = await db.detalle_honorarios.sum('total', {
+                    where: { id_cuenta: c.id, estado: { [Op.ne]: 100 } }
+                }) || 0;
+
+                let laboratorio = 0;
+                const desdeIngreso = plain.expediente ? plain.expediente.fecha_ingreso_reciente : null;
+                const labCuenta = await db.lab_cuentas.findOne({
+                    where: {
+                        id_expediente: c.id_expediente,
+                        estado: 1,
+                        ...(desdeIngreso ? { createdAt: { [Op.gte]: desdeIngreso } } : {})
+                    },
+                    order: [['createdAt', 'DESC']]
+                });
+                if (labCuenta) {
+                    laboratorio = await db.examenes_realizados.sum('total', {
+                        where: { id_cuenta: labCuenta.id }
+                    }) || 0;
+                }
+
+                const totalPagado = parseFloat(plain.total_pagado) || 0;
+                const totalHospital = Math.max(0, totalPagado - parseFloat(honorarios) - parseFloat(laboratorio));
+
+                plain.total_honorarios = parseFloat(honorarios).toFixed(2);
+                plain.total_laboratorio = parseFloat(laboratorio).toFixed(2);
+                plain.total_hospital = totalHospital.toFixed(2);
+                return plain;
+            }));
+
+            res.send(rows);
         })
         .catch(error => {
             console.log(error)
