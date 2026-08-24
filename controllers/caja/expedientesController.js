@@ -1675,6 +1675,7 @@ module.exports = {
                     DetalleHonorarios.destroy({ where: { id_cuenta: idsCuentas }, transaction: t }),
                     DetallePagoCuentas.destroy({ where: { id_cuenta: idsCuentas }, transaction: t }),
                     RevisionConsumos.destroy({ where: { id_cuenta: idsCuentas }, transaction: t }),
+                    SalaOperaciones.destroy({ where: { id_cuenta: idsCuentas }, transaction: t }),
                 ]);
 
                 // Un registro de eliminacion por cada cuenta borrada. createdAt/updatedAt
@@ -2376,6 +2377,7 @@ module.exports = {
                 DetalleHonorarios.destroy({ where: { id_cuenta: idsCuentas }, transaction: t }),
                 DetallePagoCuentas.destroy({ where: { id_cuenta: idsCuentas }, transaction: t }),
                 RevisionConsumos.destroy({ where: { id_cuenta: idsCuentas }, transaction: t }),
+                SalaOperaciones.destroy({ where: { id_cuenta: idsCuentas }, transaction: t }),
             ]);
 
             await cuenta.destroy({ transaction: t });
