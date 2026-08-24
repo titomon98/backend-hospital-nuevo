@@ -115,26 +115,32 @@ module.exports = {
         const { limit, offset } = getPagination(page, size);
 
         const Op = Sequelize.Op;
-        // "Seguros por cobrar" = seguros de pacientes marcados como de seguro (es_seguro=1)
-        // que ya egresaron (por lo tanto están en etapa de cobro). Antes filtraba por
-        // solvente=0; ahora el ruteo lo decide el flag es_seguro del expediente.
-        const condition = busqueda ? { no_poliza: { [Op.like]: `%${busqueda}%` } } : {};
+        // "Seguros por cobrar" = cuentas pendientes (estado 1) de pacientes marcados como
+        // de seguro (es_seguro=1) que ya egresaron. Misma forma que Cuentas por cobrar
+        // (cuenta + expediente), con la póliza incluida si existe; si no, desde el front
+        // se puede ir a generarla. El ruteo lo decide el flag es_seguro del expediente.
+        const filtroExp = {
+            es_seguro: 1,
+            estado: { [Op.notIn]: [1, 3, 4, 5] },
+            ...(busqueda ? { [Op.or]: [
+                { nombres: { [Op.like]: `%${busqueda}%` } },
+                { apellidos: { [Op.like]: `%${busqueda}%` } }
+            ] } : {})
+        };
 
-        Seguro.findAndCountAll({
+        Cuenta.findAndCountAll({
             distinct: true,
             include: [
                 {
                     model: Expediente,
                     required: true,
-                    where: { es_seguro: 1, estado: { [Op.notIn]: [1, 3, 4, 5] } },
-                    // Solo con saldo pendiente (cuenta activa); las pagadas ya no se cobran.
-                    include: [{ model: Cuenta, required: true, where: { estado: 1 }, attributes: ['id'] }]
-                },
-                {
-                    model: Aseguradora
+                    where: filtroExp,
+                    include: [
+                        { model: Seguro, required: false, include: [{ model: Aseguradora }] }
+                    ]
                 }
             ],
-             where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+             where: { estado: 1 },order:[['id', order === 'ASC' ? 'ASC' : 'DESC']],limit,offset})
         .then(data => {
 
         console.log('data: '+JSON.stringify(data))

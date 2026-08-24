@@ -12,6 +12,9 @@ module.exports = (sequelize, DataTypes) => {
       expediente.hasMany(models.recetas, {
         foreignKey: "id_expediente",
       });
+      expediente.hasMany(models.seguros, {
+        foreignKey: "id_expediente",
+      });
       expediente.hasOne(models.habitaciones, {
         foreignKey: "ocupante",
       });
