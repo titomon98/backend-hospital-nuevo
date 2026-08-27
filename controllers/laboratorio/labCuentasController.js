@@ -68,8 +68,12 @@ module.exports = {
         const order=req.query.order;
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda ? { [Op.or]: [{ '$Expediente.nombres$': { [Op.like]: `%${busqueda}%` } }, {'$Expediente.apellidos$':{[Op.like]: `%${busqueda}%`}}], 'estado':0 } : {'estado':0} ;
-        //var condition = {'estado':0} ;
+        // La tabla del corte de laboratorio filtra por el DÍA en que se pagaron los
+        // exámenes (lab_cuentas.fecha_corte).
+        const fechaPago = req.query.fecha_corte;
+        var condition = { estado: 0 };
+        if (fechaPago) condition.fecha_corte = fechaPago;
+        if (busqueda) condition[Op.or] = [{ '$Expediente.nombres$': { [Op.like]: `%${busqueda}%` } }, { '$Expediente.apellidos$': { [Op.like]: `%${busqueda}%` } }];
 
         Cuenta.findAndCountAll({ 
             include: [
