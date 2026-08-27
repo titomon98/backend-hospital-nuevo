@@ -455,7 +455,11 @@ module.exports = {
         const order=req.query.order;
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda?{ [Op.or]:[ {id: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:0}] } : {estado:0}
+        // La tabla del corte de hospital filtra por FECHA DE EGRESO del paciente.
+        const fechaEgreso = req.query.fecha_egreso;
+        var condition = { estado: 0 };
+        if (fechaEgreso) condition.fecha_egreso = fechaEgreso;
+        if (busqueda) condition[Op.or] = [{ id: { [Op.like]: `%${busqueda}%` } }];
         console.log(busqueda)
         Cuenta.findAndCountAll({
             include: [
