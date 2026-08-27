@@ -18,15 +18,19 @@ module.exports = {
             nuevaFecha.setHours(nuevaFecha.getHours() - horas);
             return nuevaFecha;
         };
-        const esTransferencia = form.metodo_pago === 'Transferencia';
+        // Desglose del pago al médico: efectivo, transferencia del hospital y del paciente.
+        const efectivo = parseFloat(form.pago_efectivo) || 0;
+        const transfHospital = parseFloat(form.pago_transferencia_hospital) || 0;
+        const transfPaciente = parseFloat(form.pago_transferencia_paciente) || 0;
         const datos = {
             id_medico: form.medico.id,
             nombre_medico: form.medico.nombre,
             nit: form.medico.nit,
             cantidad_pagada: form.cantidad,
-            cantidad_entregada: form.total ?? null,
-            metodo_pago: form.metodo_pago ?? null,
-            tipo_transferencia: esTransferencia ? (form.tipo_transferencia ?? null) : null,
+            cantidad_entregada: efectivo + transfHospital + transfPaciente,
+            pago_efectivo: efectivo,
+            pago_transferencia_hospital: transfHospital,
+            pago_transferencia_paciente: transfPaciente,
             fecha_creacion: restarHoras(new Date(), 6),
             createdAt: new Date(),
             updatedAt: restarHoras(new Date(), 6),
