@@ -18,11 +18,15 @@ module.exports = {
             nuevaFecha.setHours(nuevaFecha.getHours() - horas);
             return nuevaFecha;
         };
+        const esTransferencia = form.metodo_pago === 'Transferencia';
         const datos = {
             id_medico: form.medico.id,
             nombre_medico: form.medico.nombre,
             nit: form.medico.nit,
             cantidad_pagada: form.cantidad,
+            cantidad_entregada: form.total ?? null,
+            metodo_pago: form.metodo_pago ?? null,
+            tipo_transferencia: esTransferencia ? (form.tipo_transferencia ?? null) : null,
             fecha_creacion: restarHoras(new Date(), 6),
             createdAt: new Date(),
             updatedAt: restarHoras(new Date(), 6),

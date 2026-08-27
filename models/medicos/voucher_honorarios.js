@@ -23,6 +23,19 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DECIMAL(20, 2),
       allowNull: false
     },
+    // Monto entregado al médico en ese momento y cómo se pagó.
+    cantidad_entregada: {
+      type: DataTypes.DECIMAL(20, 2),
+      allowNull: true
+    },
+    metodo_pago: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    tipo_transferencia: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     fecha_creacion: {
       type: DataTypes.DATE,
       allowNull: false
