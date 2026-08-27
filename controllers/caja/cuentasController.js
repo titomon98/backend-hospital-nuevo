@@ -13,6 +13,38 @@ const MovimientoQuirurgico = db.detalle_consumo_quirugicos;
 const Medicamento = db.medicamentos;
 const DetalleHabitacion = db.detalle_habitaciones
 
+// Calcula el desglose de una cuenta para el corte/tabla: honorarios y laboratorio
+// (que se suman al total al egresar) y el total de hospital = total_pagado - ambos.
+// Devuelve strings con 2 decimales. Se usa en listPay y listCortesPerDate.
+async function desgloseCuenta(c, plain) {
+    const honorarios = await db.detalle_honorarios.sum('total', {
+        where: { id_cuenta: c.id, estado: { [Op.ne]: 100 } }
+    }) || 0;
+
+    let laboratorio = 0;
+    const desdeIngreso = plain.expediente ? plain.expediente.fecha_ingreso_reciente : null;
+    const labCuenta = await db.lab_cuentas.findOne({
+        where: {
+            id_expediente: c.id_expediente,
+            estado: 1,
+            ...(desdeIngreso ? { createdAt: { [Op.gte]: desdeIngreso } } : {})
+        },
+        order: [['createdAt', 'DESC']]
+    });
+    if (labCuenta) {
+        laboratorio = await db.examenes_realizados.sum('total', {
+            where: { id_cuenta: labCuenta.id }
+        }) || 0;
+    }
+
+    const totalPagado = parseFloat(plain.total_pagado) || 0;
+    return {
+        total_honorarios: parseFloat(honorarios).toFixed(2),
+        total_laboratorio: parseFloat(laboratorio).toFixed(2),
+        total_hospital: Math.max(0, totalPagado - parseFloat(honorarios) - parseFloat(laboratorio)).toFixed(2)
+    };
+}
+
 module.exports = {
     create(req, res) {
         let form = req.body
@@ -425,20 +457,25 @@ module.exports = {
 
         var condition = busqueda?{ [Op.or]:[ {id: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:0}] } : {estado:0}
         console.log(busqueda)
-        Cuenta.findAndCountAll({ 
+        Cuenta.findAndCountAll({
             include: [
                 {
                     model: Expediente,
                 }
             ],
             where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
-        .then(data => {
-
-        console.log('data: '+JSON.stringify(data))
-        const response = getPagingData(data, page, limit);
-
-        console.log('response: '+JSON.stringify(response))
-        res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
+        .then(async data => {
+            const response = getPagingData(data, page, limit);
+            // Agregar el desglose (hospital / honorarios / laboratorio) a cada fila.
+            const filas = await Promise.all(response.referido.map(async (c) => {
+                const plain = c.get({ plain: true });
+                const d = await desgloseCuenta(c, plain);
+                plain.total_hospital = d.total_hospital;
+                plain.total_honorarios = d.total_honorarios;
+                plain.total_laboratorio = d.total_laboratorio;
+                return plain;
+            }));
+            res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:filas});
         })
         .catch(error => {
             console.log(error)
