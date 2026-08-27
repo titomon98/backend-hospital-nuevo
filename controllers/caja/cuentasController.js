@@ -336,6 +336,14 @@ module.exports = {
                     }
                 }
                 plain.categoria = categoria;
+
+                // Número de factura de la cuenta (si existe).
+                const factura = await db.facturas.findOne({
+                    where: { id_cuenta_hospital: c.id },
+                    attributes: ['numero'],
+                    order: [['id', 'DESC']]
+                });
+                plain.numero_factura = (factura && factura.numero) ? factura.numero : null;
                 return plain;
             }));
 
