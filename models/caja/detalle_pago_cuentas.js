@@ -49,6 +49,12 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: false
     },
+    // Categoria del cobro separado: 'hospital' | 'honorarios' | 'laboratorio'.
+    // NULL en pagos historicos/globales previos al cobro por categoria.
+    categoria: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
   }, {
     sequelize,
     modelName: 'detalle_pago_cuentas',

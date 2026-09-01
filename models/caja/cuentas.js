@@ -72,6 +72,20 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DECIMAL(10,2),
       defaultValue: 0
     },
+    // Cobro separado por categoria: lo pagado de cada rubro. Solvente cuando el
+    // total de cada categoria queda cubierto (pendiente <= 0 en las tres).
+    pagado_hospital: {
+      type: DataTypes.DECIMAL(10,2),
+      defaultValue: 0
+    },
+    pagado_honorarios: {
+      type: DataTypes.DECIMAL(10,2),
+      defaultValue: 0
+    },
+    pagado_laboratorio: {
+      type: DataTypes.DECIMAL(10,2),
+      defaultValue: 0
+    },
     descuento: {
       type: DataTypes.DECIMAL(10,2)
     },

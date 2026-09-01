@@ -53,6 +53,8 @@ module.exports = (router) => {
     router.put('/cuentas/updateMotivoEgreso', cuentasController.updateMotivoEgreso);
     router.put('/cuentas/activate', cuentasController.activate);
     router.put('/cuentas/deactivate', cuentasController.deactivate);
+    router.get('/cuentas/desgloseCobro/:id', cuentasController.desgloseCobro);
+    router.put('/cuentas/cobrarCategoria', cuentasController.cobrarCategoria);
     router.get('/cuentas/getSearch', cuentasController.getSearch);
     router.get('/cuentas/getTotales/:area', cuentasController.getTotales);
     router.patch('/cuentas/:id/ingresoParcialPago', cuentasController.ingresoParcialPago)

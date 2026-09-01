@@ -45,6 +45,35 @@ async function desgloseCuenta(c, plain) {
     };
 }
 
+// Totales REALES por categoria de una cuenta (para el cobro separado):
+//   honorarios  = suma de detalle_honorarios (excluye anulados, estado 100)
+//   laboratorio = suma de examenes de la cuenta de laboratorio del ingreso
+//   hospital    = resto del total de la cuenta (total - honorarios - laboratorio)
+async function totalesPorCategoria(cuenta) {
+    const honorarios = parseFloat(await db.detalle_honorarios.sum('total', {
+        where: { id_cuenta: cuenta.id, estado: { [Op.ne]: 100 } }
+    }) || 0);
+
+    let laboratorio = 0;
+    const expediente = await db.expedientes.findByPk(cuenta.id_expediente, { attributes: ['fecha_ingreso_reciente'] });
+    const desdeIngreso = expediente ? expediente.fecha_ingreso_reciente : null;
+    const labCuenta = await db.lab_cuentas.findOne({
+        where: {
+            id_expediente: cuenta.id_expediente,
+            estado: 1,
+            ...(desdeIngreso ? { createdAt: { [Op.gte]: desdeIngreso } } : {})
+        },
+        order: [['createdAt', 'DESC']]
+    });
+    if (labCuenta) {
+        laboratorio = parseFloat(await db.examenes_realizados.sum('total', { where: { id_cuenta: labCuenta.id } }) || 0);
+    }
+
+    const total = parseFloat(cuenta.total) || 0;
+    const hospital = Math.max(0, total - honorarios - laboratorio);
+    return { hospital, honorarios, laboratorio };
+}
+
 module.exports = {
     create(req, res) {
         let form = req.body
@@ -1052,6 +1081,130 @@ module.exports = {
         } catch (error) {
             console.log(error);
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        }
+    },
+
+    // Cobro separado: desglose por categoria (Hospital / Honorarios / Laboratorio)
+    // con total, pagado y pendiente de cada una. El paciente es solvente cuando las
+    // tres quedan en pendiente <= 0.
+    async desgloseCobro(req, res) {
+        try {
+            const cuenta = await Cuenta.findByPk(req.params.id);
+            if (!cuenta) return res.status(404).json({ msg: 'Cuenta no encontrada' });
+            const tot = await totalesPorCategoria(cuenta);
+            const cat = (total, pagado) => ({
+                total: +(Number(total) || 0).toFixed(2),
+                pagado: +(Number(pagado) || 0).toFixed(2),
+                pendiente: +Math.max(0, (Number(total) || 0) - (Number(pagado) || 0)).toFixed(2)
+            });
+            const hospital = cat(tot.hospital, cuenta.pagado_hospital);
+            const honorarios = cat(tot.honorarios, cuenta.pagado_honorarios);
+            const laboratorio = cat(tot.laboratorio, cuenta.pagado_laboratorio);
+            const solvente = hospital.pendiente <= 0 && honorarios.pendiente <= 0 && laboratorio.pendiente <= 0;
+            return res.json({ id_cuenta: cuenta.id, hospital, honorarios, laboratorio, solvente });
+        } catch (error) {
+            console.log(error);
+            return res.status(400).json({ msg: 'Error al obtener el desglose de cobro' });
+        }
+    },
+
+    // Abona a UNA categoria del cobro separado. Incrementa pagado_<categoria>,
+    // registra el pago (con su categoria y metodos) y recalcula total_pagado y
+    // pendiente_de_pago. Si las tres categorias quedan cubiertas, cierra la cuenta
+    // (estado 0) y marca al expediente como solvente.
+    async cobrarCategoria(req, res) {
+        const categoriasValidas = ['hospital', 'honorarios', 'laboratorio'];
+        const { id, categoria, id_expediente, id_seguro } = req.body;
+        const monto = parseFloat(req.body.monto) || 0;
+        if (!id || !categoriasValidas.includes(categoria)) {
+            return res.status(400).json({ msg: 'Datos de cobro inválidos' });
+        }
+        if (monto <= 0) {
+            return res.status(400).json({ msg: 'El monto a abonar debe ser mayor a cero' });
+        }
+        const t = await db.sequelize.transaction();
+        try {
+            const cuenta = await Cuenta.findByPk(id, { transaction: t, lock: t.LOCK.UPDATE });
+            if (!cuenta) { await t.rollback(); return res.status(404).json({ msg: 'Cuenta no encontrada' }); }
+
+            const tot = await totalesPorCategoria(cuenta);
+            const columna = 'pagado_' + categoria;
+            const totalCategoria = Number(tot[categoria]) || 0;
+            const pagadoActual = parseFloat(cuenta[columna]) || 0;
+            const pendienteCategoria = Math.max(0, totalCategoria - pagadoActual);
+
+            if (monto > pendienteCategoria + 0.001) {
+                await t.rollback();
+                return res.status(400).json({ msg: `El abono (Q${monto.toFixed(2)}) excede lo pendiente de ${categoria} (Q${pendienteCategoria.toFixed(2)})` });
+            }
+
+            const nuevoPagadoCategoria = pagadoActual + monto;
+            const pagH = (categoria === 'hospital' ? nuevoPagadoCategoria : parseFloat(cuenta.pagado_hospital) || 0);
+            const pagO = (categoria === 'honorarios' ? nuevoPagadoCategoria : parseFloat(cuenta.pagado_honorarios) || 0);
+            const pagL = (categoria === 'laboratorio' ? nuevoPagadoCategoria : parseFloat(cuenta.pagado_laboratorio) || 0);
+
+            const totalCuenta = tot.hospital + tot.honorarios + tot.laboratorio;
+            const totalPagado = pagH + pagO + pagL;
+            const pendienteGlobal = Math.max(0, totalCuenta - totalPagado);
+
+            const pendHosp = Math.max(0, tot.hospital - pagH);
+            const pendHono = Math.max(0, tot.honorarios - pagO);
+            const pendLab = Math.max(0, tot.laboratorio - pagL);
+            const solvente = pendHosp <= 0 && pendHono <= 0 && pendLab <= 0;
+
+            await cuenta.update({
+                [columna]: nuevoPagadoCategoria,
+                total_pagado: totalPagado.toFixed(2),
+                pendiente_de_pago: pendienteGlobal.toFixed(2),
+                ...(solvente ? { estado: 0 } : {})
+            }, { transaction: t });
+
+            const detalle = await detallePagoCuentas.create({
+                efectivo: req.body.efectivo || 0,
+                tarjeta: req.body.tarjeta || 0,
+                recargoTarjeta: req.body.recargoTarjeta || 0,
+                deposito: req.body.deposito || 0,
+                cheque: req.body.cheque || 0,
+                seguro: req.body.seguro || 0,
+                transferencia: req.body.transferencia || 0,
+                total: monto,
+                tipo: solvente ? 'finiquito' : 'abono',
+                categoria: categoria,
+                id_cuenta: id
+            }, { transaction: t });
+
+            // Registro de seguro (igual que en el finiquito clasico).
+            if (parseInt(req.body.seguro) > 0 && id_seguro) {
+                await Seguro.update({ solvente: 0 }, { where: { id: id_seguro }, transaction: t });
+                await PagoSeguro.create({
+                    id_detalle_pago_cuenta: detalle.id,
+                    monto: req.body.seguro,
+                    id_seguro: id_seguro,
+                    total: req.body.seguro,
+                    pagado: 0,
+                    por_pagar: req.body.seguro
+                }, { transaction: t });
+            }
+
+            if (solvente && id_expediente) {
+                await Expediente.update({ solvencia: 1 }, { where: { id: id_expediente }, transaction: t });
+            }
+
+            await t.commit();
+            return res.json({
+                ok: true,
+                solvente,
+                categoria,
+                desglose: {
+                    hospital: { total: +tot.hospital.toFixed(2), pagado: +pagH.toFixed(2), pendiente: +pendHosp.toFixed(2) },
+                    honorarios: { total: +tot.honorarios.toFixed(2), pagado: +pagO.toFixed(2), pendiente: +pendHono.toFixed(2) },
+                    laboratorio: { total: +tot.laboratorio.toFixed(2), pagado: +pagL.toFixed(2), pendiente: +pendLab.toFixed(2) }
+                }
+            });
+        } catch (error) {
+            await t.rollback();
+            console.log(error);
+            return res.status(400).json({ msg: 'Ha ocurrido un error al procesar el abono' });
         }
     },
 };
