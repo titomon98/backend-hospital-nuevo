@@ -110,9 +110,30 @@ module.exports = {
         const sinPagarOrdenado = groupAndSortByMedico(sinPagar);
         const pagadosOrdenado = groupAndSortByMedico(pagados);
 
+        // Resumen de pagos del día: desglose por vía de pago de los vouchers
+        // emitidos en la fecha, más el total aún pendiente de pago.
+        const vouchersDia = await HonorariosPagados.findAll({
+            where: {
+                fecha_creacion: {
+                    [Op.between]: [
+                        `${fechaInicio} 00:00:00`,
+                        `${fechaFin} 23:59:59`,
+                    ],
+                },
+            },
+            attributes: ['pago_efectivo', 'pago_transferencia_hospital'],
+            raw: true,
+        });
+        const resumenPagos = {
+            efectivo: vouchersDia.reduce((s, v) => s + (parseFloat(v.pago_efectivo) || 0), 0),
+            transferenciaMedico: vouchersDia.reduce((s, v) => s + (parseFloat(v.pago_transferencia_hospital) || 0), 0),
+            totalPendiente: sinPagar.reduce((s, h) => s + (h.total_honorario || 0), 0),
+        };
+
         res.json({
             sinPagar: sinPagarOrdenado,
             pagados: pagadosOrdenado,
+            resumenPagos: resumenPagos,
         });
       } catch (error) {
         console.error(error);
