@@ -1124,9 +1124,27 @@ module.exports = {
                 ? `${expediente.fecha_ingreso_reciente}T${expediente.hora_ingreso_reciente || '00:00:00'}`
                 : null;
 
+            // Ultima habitacion utilizada en esta cuenta: sirve para mostrar numero
+            // y tipo de servicio (Privada / Semi-privada / etc.) incluso si el
+            // paciente ya egreso (ahi 'ocupante' queda vacio). No depende de estado.
+            let tipoServicio = 'NO ASIGNADO';
+            const ultimoDetalleHab = await DetalleHabitaciones.findOne({
+                where: { id_cuenta },
+                order: [['ingreso', 'DESC']],
+                attributes: ['tipo_habitacion', 'id_habitacion'],
+            });
+            if (ultimoDetalleHab) {
+                tipoServicio = ultimoDetalleHab.tipo_habitacion || 'NO ASIGNADO';
+                if (ultimoDetalleHab.id_habitacion) {
+                    const habUsada = await Habitaciones.findByPk(ultimoDetalleHab.id_habitacion, { attributes: ['numero'] });
+                    if (habUsada && habUsada.numero) numerohabitacion = habUsada.numero;
+                }
+            }
+
             return res.status(200).json({
                 nombremedico,
                 numerohabitacion,
+                tipoServicio,
                 fechaFormateada,
                 costoTotal:     parseFloat(costoTotal.toFixed(2)),
                 costoIntensivo: parseFloat(costoIntensivo.toFixed(2)),
