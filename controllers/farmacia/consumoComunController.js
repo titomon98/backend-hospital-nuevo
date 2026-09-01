@@ -47,7 +47,7 @@ module.exports = {
           const { limit, offset } = getPagination(page, size);
           const condition = {
             [Op.and]: [
-              { id_cuenta: { [Op.like]: `%${id}%` } },
+              { id_cuenta: id },
               { descripcion: { [Op.like]: `%${area}%` } },
               { estado: { [Op.eq]: 1 } }
             ]

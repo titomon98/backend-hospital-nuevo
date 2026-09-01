@@ -866,7 +866,7 @@ module.exports = {
 
             const condition = {
                 [Op.and]: [
-                  { id_cuenta: { [Op.like]: `%${idCuenta}%` } },
+                  { id_cuenta: idCuenta },
                   { descripcion: { [Op.like]: `%${area}%` } },
                   { estado: { [Op.eq]: 1 } }
                 ]
