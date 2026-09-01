@@ -68,4 +68,6 @@ module.exports = (router) => {
     router.get('/salaOperaciones/list', servicioSalaOperacionesController.list);
     router.get('/salaOperaciones/getId/:id', servicioSalaOperacionesController.find);
     router.get('/salaOperaciones/getSearch', servicioSalaOperacionesController.getSearch);
+    router.put('/salaOperaciones/editarTotal', servicioSalaOperacionesController.editarTotal);
+    router.get('/salaOperaciones/listAjustes', servicioSalaOperacionesController.listAjustes);
 }

@@ -243,4 +243,110 @@ module.exports = {
       return res.status(500).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
     }
   },
+
+  // Edita el total (costo) de un servicio de sala de operaciones. Solo roles 1 y 3.
+  // Ajusta el total de la cuenta por la diferencia y deja un registro de auditoria
+  // en logs_ajuste_sala_operaciones (quien, cuando, monto anterior y nuevo, motivo).
+  async editarTotal(req, res) {
+    const { id, motivo } = req.body;
+    const user = req.user?.user ?? req.body.user;
+    const rol = parseInt(req.body.user_type);
+    const totalNuevo = parseFloat(req.body.total_nuevo);
+
+    if (![1, 3].includes(rol)) {
+      return res.status(403).json({ msg: 'No autorizado para editar la sala de operaciones' });
+    }
+    if (!id || isNaN(totalNuevo) || totalNuevo < 0) {
+      return res.status(400).json({ msg: 'Datos inválidos: se requiere el servicio y un total válido' });
+    }
+
+    const t = await db.sequelize.transaction();
+    try {
+      const servicio = await SalaOperaciones.findByPk(id, { transaction: t });
+      if (!servicio) { await t.rollback(); return res.status(404).json({ msg: 'Servicio de sala de operaciones no encontrado' }); }
+
+      const totalAnterior = parseFloat(servicio.total) || 0;
+      const diff = totalNuevo - totalAnterior;
+
+      const cuenta = await Cuenta.findByPk(servicio.id_cuenta, { transaction: t, lock: t.LOCK.UPDATE });
+      if (!cuenta) { await t.rollback(); return res.status(404).json({ msg: 'Cuenta no encontrada' }); }
+
+      const nuevoTotalCuenta = (parseFloat(cuenta.total) || 0) + diff;
+
+      let numeroExpediente = null;
+      let nombrePaciente = null;
+      let idExpediente = cuenta.id_expediente;
+      if (idExpediente) {
+        const expediente = await db.expedientes.findByPk(idExpediente, {
+          attributes: ['expediente', 'nombres', 'apellidos'], transaction: t
+        });
+        if (expediente) {
+          numeroExpediente = expediente.expediente;
+          nombrePaciente = `${expediente.nombres} ${expediente.apellidos}`;
+        }
+      }
+
+      await servicio.update({ total: totalNuevo, updated_by: user }, { transaction: t });
+      await cuenta.update({ total: nuevoTotalCuenta.toFixed(2) }, { transaction: t });
+      await db.logs_ajuste_sala_operaciones.create({
+        id_servicio: servicio.id,
+        id_cuenta: cuenta.id,
+        id_expediente: idExpediente,
+        numero_expediente: numeroExpediente,
+        nombre_paciente: nombrePaciente,
+        total_anterior: totalAnterior,
+        total_nuevo: totalNuevo,
+        motivo: motivo ?? null,
+        created_by: user
+      }, { transaction: t });
+
+      await t.commit();
+      return res.json({ ok: true, id: servicio.id, total_anterior: totalAnterior, total_nuevo: totalNuevo });
+    } catch (error) {
+      await t.rollback();
+      console.log(error);
+      return res.status(400).json({ msg: 'Ha ocurrido un error al editar la sala de operaciones' });
+    }
+  },
+
+  // Lista los ajustes de sala de operaciones para monitoreo en Gerencia.
+  async listAjustes(req, res) {
+    const busqueda = req.query.search;
+    const page = (parseInt(req.query.page) || 1) - 1;
+    const size = parseInt(req.query.limit) || 25;
+    const criterio = req.query.criterio || 'createdAt';
+    const order = req.query.order || 'DESC';
+    const limit = size;
+    const offset = page > 0 ? page * limit : 0;
+
+    const condition = busqueda
+      ? { [Op.or]: [
+          { nombre_paciente: { [Op.like]: `%${busqueda}%` } },
+          { numero_expediente: { [Op.like]: `%${busqueda}%` } },
+          { created_by: { [Op.like]: `%${busqueda}%` } },
+          { motivo: { [Op.like]: `%${busqueda}%` } },
+        ] }
+      : {};
+
+    try {
+      const data = await db.logs_ajuste_sala_operaciones.findAndCountAll({
+        where: condition,
+        order: [[criterio, order]],
+        limit,
+        offset,
+      });
+      const totalPages = Math.ceil(data.count / limit);
+      return res.send({
+        total: data.count,
+        last_page: totalPages,
+        current_page: page + 1,
+        from: page * limit + 1,
+        to: page * limit + data.rows.length,
+        data: data.rows,
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+    }
+  },
 };
