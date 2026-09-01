@@ -136,45 +136,66 @@ module.exports = {
         }
     },
 
-    // Lista los consumos de una cuenta para revisarlos uno por uno (medicamentos,
-    // anestesicos, quirurgico y comun). Excluye los cargos de paquete (id_quirurgico NULL).
+    // Lista los consumos de una cuenta para revisarlos uno por uno, separados por
+    // rubro (medicamentos, anestesicos, material quirurgico, material comun) y
+    // filtrados por el area donde se suministraron. Excluye los cargos de paquete
+    // (id_quirurgico NULL). El campo `tipo` es el que espera confirmarConsumo
+    // (medicamento/quirurgico/comun); `rubro` es solo para agrupar en pantalla.
     async getConsumosRevision(req, res) {
         const Op = db.Sequelize.Op;
         const id_cuenta = req.params.id_cuenta;
+        // Area por la que se filtra (p.ej. Hospitalizacion, Quirofano). Opcional:
+        // sin ella se devuelven los consumos de todas las areas de la cuenta.
+        const area = req.query.area;
+        // Nota de convencion del sistema: el flag `anestesico` esta invertido en BD;
+        // anestesico=1 es medicamento normal, anestesico=0 es anestesico.
         try {
+            const filtroArea = area ? { descripcion: { [Op.like]: `%${area}%` } } : {};
             const [med, qui, com] = await Promise.all([
                 db.detalle_consumo_medicamentos.findAll({
-                    where: { id_cuenta, estado: 1 },
-                    include: [{ model: db.medicamentos, attributes: ['nombre'] }],
-                    attributes: ['id', 'cantidad', 'precio_venta', 'reviewed_by', 'inconsistente']
+                    where: { id_cuenta, estado: 1, ...filtroArea },
+                    include: [{ model: db.medicamentos, attributes: ['nombre', 'anestesico'] }],
+                    attributes: ['id', 'cantidad', 'precio_venta', 'reviewed_by', 'inconsistente', 'descripcion']
                 }),
                 db.detalle_consumo_quirugicos.findAll({
-                    where: { id_cuenta, estado: 1, id_quirurgico: { [Op.ne]: null } },
+                    where: { id_cuenta, estado: 1, id_quirurgico: { [Op.ne]: null }, ...filtroArea },
                     include: [{ model: db.quirurgicos, attributes: ['nombre'] }],
-                    attributes: ['id', 'cantidad', 'precio_venta', 'reviewed_by', 'inconsistente']
+                    attributes: ['id', 'cantidad', 'precio_venta', 'reviewed_by', 'inconsistente', 'descripcion']
                 }),
                 db.detalle_consumo_comunes.findAll({
-                    where: { id_cuenta, estado: 1 },
+                    where: { id_cuenta, estado: 1, ...filtroArea },
                     include: [{ model: db.comunes, attributes: ['nombre'] }],
-                    attributes: ['id', 'cantidad', 'precio_venta', 'reviewed_by', 'inconsistente']
+                    attributes: ['id', 'cantidad', 'precio_venta', 'reviewed_by', 'inconsistente', 'descripcion']
                 })
             ]);
-            const armar = (arr, tipo, key) => arr.map(x => {
+            // "administrado en": el area viene embebida en la descripcion como
+            // "... En el area de <Area>".
+            const areaDe = (desc) => {
+                if (!desc) return '';
+                const partes = String(desc).split('En el area de ');
+                return partes.length > 1 ? partes[1].trim() : '';
+            };
+            const armar = (arr, tipo, key, rubroFn) => arr.map(x => {
                 const p = x.get({ plain: true });
                 return {
                     id: p.id,
                     tipo,
+                    rubro: rubroFn ? rubroFn(p) : tipo,
                     nombre: (p[key] && p[key].nombre) ? p[key].nombre : 'Sin nombre',
+                    administrado_en: areaDe(p.descripcion),
                     cantidad: p.cantidad,
                     precio_venta: p.precio_venta,
                     reviewed_by: p.reviewed_by,
                     inconsistente: p.inconsistente
                 };
             });
+            const rubroMed = (p) => (p.medicamento && p.medicamento.anestesico === 0) ? 'anestesico' : 'medicamento';
+            const medicamentos = armar(med, 'medicamento', 'medicamento', rubroMed);
             return res.json([
-                ...armar(med, 'medicamento', 'medicamento'),
-                ...armar(qui, 'quirurgico', 'quirurgico'),
-                ...armar(com, 'comun', 'comune')
+                ...medicamentos.filter(m => m.rubro === 'medicamento'),
+                ...medicamentos.filter(m => m.rubro === 'anestesico'),
+                ...armar(qui, 'quirurgico', 'quirurgico', () => 'quirurgico'),
+                ...armar(com, 'comun', 'comune', () => 'comun')
             ]);
         } catch (error) {
             console.log(error);
