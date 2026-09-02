@@ -96,10 +96,9 @@ module.exports = {
 
    let Oximetro = req.body.oximetro;
    let Cauterio = req.body.cauterio;
+   let Monitor = req.body.monitor;
 
     let PrecioServicios = 0;
-    let precioOximetro = 0;
-    let precioCauterio = 0;
 
     async function findServicio(descripcion, estado) {
       const servicios = await Servicios.findAll({
@@ -113,34 +112,16 @@ module.exports = {
       return servicios;
     }
 
-    if (Oximetro == true && Cauterio == true){
-      const oximetroService = await findServicio('oximetro', 1); 
-      const cauterioService = await findServicio('cauterio', 1); 
-      if (oximetroService) {
-          precioOximetro = parseFloat(oximetroService[0].precio);
-        }
-      if (cauterioService) {
-          precioCauterio = parseFloat(cauterioService[0].precio);
-        }
+    // Precio de cada servicio adicional que venga marcado. Antes el monitor NO
+    // se sumaba, por lo que el cobro guardado quedaba por debajo del mostrado.
+    const precioDeServicio = async (nombre) => {
+      const servicios = await findServicio(nombre, 1);
+      return (servicios && servicios[0]) ? parseFloat(servicios[0].precio) : 0;
+    };
 
-        PrecioServicios = precioOximetro + precioCauterio; //FIN IF
-    } else if (Oximetro == true){
-      const oximetroService = await findServicio('oximetro', 1);
-      if (oximetroService) {
-        precioOximetro = parseFloat(oximetroService[0].precio);;
-      }
-      PrecioServicios = precioOximetro;                     //FIN IF
-    } else if (Cauterio == true){
-      const cauterioService = await findServicio('cauterio', 1);
-      if (cauterioService) {
-        precioCauterio = parseFloat(cauterioService[0].precio);;
-      }
-      PrecioServicios = precioCauterio;                       //FIN IF 
-    } else if (Oximetro == false && Cauterio == false){
-      PrecioServicios = 0;
-      precioOximetro = 0;
-      precioCauterio = 0;
-    }
+    if (Oximetro == true) PrecioServicios += await precioDeServicio('oximetro');
+    if (Cauterio == true) PrecioServicios += await precioDeServicio('cauterio');
+    if (Monitor == true) PrecioServicios += await precioDeServicio('monitor');
 
     console.log('DATOS ---------------- ' + PrecioServicios + '-----------' + TotalCateg)
 
