@@ -24,6 +24,54 @@ const getPagination = (page, size) => {
   return { limit, offset };
 };
 
+// Mapea el nombre de categoria de sala a su id.
+const idCategoriaDesdeNombre = (categoria) => ({
+  'Cirugia menor': 1,
+  'Cirugia media': 2,
+  'Cirugia mayor': 3,
+  'Parto': 4,
+  'Legrado': 5
+}[categoria] || null);
+
+// Precio de un servicio adicional activo (oximetro / cauterio / monitor).
+const precioServicioActivo = async (nombre) => {
+  const servicios = await Servicios.findAll({
+    where: { descripcion: { [Op.like]: `%${nombre}%` }, estado: 1 }
+  });
+  return (servicios && servicios[0]) ? parseFloat(servicios[0].precio) : 0;
+};
+
+// Calcula el total de una sala segun categoria, tiempo y adicionales. Fuente
+// unica de verdad usada tanto al crear como al editar. Devuelve
+// { total, id_categoria } o null si la categoria no existe o esta desactivada.
+const calcularTotalSala = async ({ categoria, horas, minutos, oximetro, cauterio, monitor }) => {
+  const id_categoria = idCategoriaDesdeNombre(categoria);
+  if (!id_categoria) return null;
+  const cat = await Categoria.findOne({ where: { id: id_categoria, estado: 1 } });
+  if (!cat) return null;
+
+  const hora = parseFloat(horas);
+  const minuto = parseFloat(minutos);
+  const precio = parseFloat(cat.precio);
+  const cobroExtra = parseFloat(cat.cobro_extra);
+
+  let totalCateg;
+  if (hora == 2 && minuto > 30) {
+    totalCateg = precio + cobroExtra;
+  } else if (hora > 2) {
+    totalCateg = precio + ((hora - 2) * cobroExtra);
+  } else {
+    totalCateg = precio; // hora <= 2 && minuto <= 30
+  }
+
+  let adicionales = 0;
+  if (oximetro == true) adicionales += await precioServicioActivo('oximetro');
+  if (cauterio == true) adicionales += await precioServicioActivo('cauterio');
+  if (monitor == true) adicionales += await precioServicioActivo('monitor');
+
+  return { total: totalCateg + adicionales, id_categoria };
+};
+
 module.exports = {
   async create(req, res) {
 
@@ -52,93 +100,33 @@ module.exports = {
     const numero_cuenta = cuentaSeleccionada.dataValues.numero
     let totalCuenta = cuentaSeleccionada.dataValues.total || 0
 
-    let id_categoria = null ;
-    if (req.body.categoria == 'Cirugia menor'){
-      id_categoria = 1
-    } else if (req.body.categoria == 'Cirugia media'){
-      id_categoria = 2
-    } else if (req.body.categoria == 'Cirugia mayor'){
-      id_categoria = 3
-    } else if (req.body.categoria == 'Parto'){
-      id_categoria = 4
-    } else if (req.body.categoria == 'Legrado'){
-      id_categoria = 5
+    const calculo = await calcularTotalSala({
+      categoria: req.body.categoria,
+      horas: req.body.horas,
+      minutos: req.body.minutos,
+      oximetro: req.body.oximetro,
+      cauterio: req.body.cauterio,
+      monitor: req.body.monitor
+    });
+    if (!calculo) {
+      return res.status(402).json({ msg: 'La categoría de sala seleccionada no es válida o está desactivada' });
     }
 
-    const categorias = await Categoria.findAll({
-      where: {
-        id : id_categoria
-      }
-    })
-    let categoriaselect = null;
-    for (const categoria of categorias) {
-      if (categoria.dataValues.estado == 1) {
-        categoriaselect = categoria;
-        break;
-      }
-    }
-    if (!categoriaselect) {
-      return res.status(402).json({ msg: 'La cuenta seleccionada esta desactivada o no se encuentra registrada' });
-    }
-    let hora = parseFloat(req.body.horas)
-    let minuto = parseFloat(req.body.minutos)
-    let TotalCateg = null;
-
-    if (hora == 2 && minuto > 30 ) {
-      TotalCateg = (parseFloat(categoriaselect.dataValues.precio) + parseFloat(categoriaselect.dataValues.cobro_extra))
-    } else if (hora > 2 ){
-      let multi = (hora - 2)
-      let cobros_extra = (multi * parseFloat(categoriaselect.dataValues.cobro_extra))
-      TotalCateg = (parseFloat(categoriaselect.dataValues.precio) + cobros_extra)
-    } else if (hora <=2 && minuto <=30){
-      TotalCateg = parseFloat(categoriaselect.dataValues.precio)
-    }
-
-   let Oximetro = req.body.oximetro;
-   let Cauterio = req.body.cauterio;
-   let Monitor = req.body.monitor;
-
-    let PrecioServicios = 0;
-
-    async function findServicio(descripcion, estado) {
-      const servicios = await Servicios.findAll({
-        where: {
-          descripcion: {
-            [Op.like]: `%${descripcion}%`,
-          },
-          estado: estado,
-        },
-      });
-      return servicios;
-    }
-
-    // Precio de cada servicio adicional que venga marcado. Antes el monitor NO
-    // se sumaba, por lo que el cobro guardado quedaba por debajo del mostrado.
-    const precioDeServicio = async (nombre) => {
-      const servicios = await findServicio(nombre, 1);
-      return (servicios && servicios[0]) ? parseFloat(servicios[0].precio) : 0;
-    };
-
-    if (Oximetro == true) PrecioServicios += await precioDeServicio('oximetro');
-    if (Cauterio == true) PrecioServicios += await precioDeServicio('cauterio');
-    if (Monitor == true) PrecioServicios += await precioDeServicio('monitor');
-
-    console.log('DATOS ---------------- ' + PrecioServicios + '-----------' + TotalCateg)
-
-    let Total = (parseFloat(TotalCateg) + parseFloat(PrecioServicios));
+    const Total = calculo.total;
     let nuevoTotal = (parseFloat(totalCuenta) + parseFloat(Total))
     const datos = {
       descripcion: `Se le sumo el total del uso de la sala de operaciones a la cuenta (${numero_cuenta})`,
-      id_categoria: categoriaselect.dataValues.id,
+      id_categoria: calculo.id_categoria,
       horas: req.body.horas + ':' + req.body.minutos,
       total: Total,
+      oximetro: req.body.oximetro == true,
+      cauterio: req.body.cauterio == true,
+      monitor: req.body.monitor == true,
       id_cuenta: id_cuenta,
       createdAt: new Date(),
       updatedAt: restarHoras(new Date(), 6),
       created_by: req.user?.user ?? req.body.user.user
     };
-
-    console.log(datos)
 
     try {
       const nuevoDetalle = await SalaOperaciones.create(datos);
@@ -225,26 +213,52 @@ module.exports = {
     }
   },
 
-  // Edita el total (costo) de un servicio de sala de operaciones. Solo roles 1 y 3.
-  // Ajusta el total de la cuenta por la diferencia y deja un registro de auditoria
-  // en logs_ajuste_sala_operaciones (quien, cuando, monto anterior y nuevo, motivo).
+  // Edita una sala de operaciones ya cobrada. Solo roles 1 y 3. Permite corregir
+  // el menu completo (categoria, tiempo, adicionales) recalculando el costo, y/o
+  // fijar un total manual (para cobro extra o descuento). Ajusta el total de la
+  // cuenta por la diferencia y deja auditoria en logs_ajuste_sala_operaciones.
   async editarTotal(req, res) {
-    const { id, motivo } = req.body;
+    const { id, categoria, motivo } = req.body;
     const user = req.user?.user ?? req.body.user;
     const rol = parseInt(req.body.user_type);
-    const totalNuevo = parseFloat(req.body.total_nuevo);
 
     if (![1, 3].includes(rol)) {
       return res.status(403).json({ msg: 'No autorizado para editar la sala de operaciones' });
     }
-    if (!id || isNaN(totalNuevo) || totalNuevo < 0) {
-      return res.status(400).json({ msg: 'Datos inválidos: se requiere el servicio y un total válido' });
+    if (!id) {
+      return res.status(400).json({ msg: 'Datos inválidos: se requiere el servicio' });
     }
 
     const t = await db.sequelize.transaction();
     try {
       const servicio = await SalaOperaciones.findByPk(id, { transaction: t });
       if (!servicio) { await t.rollback(); return res.status(404).json({ msg: 'Servicio de sala de operaciones no encontrado' }); }
+
+      // Si viene el menu (categoria), recalcular el costo sugerido y actualizar
+      // la configuracion (categoria, horas, adicionales) del servicio.
+      let calculo = null;
+      if (categoria) {
+        calculo = await calcularTotalSala({
+          categoria,
+          horas: req.body.horas,
+          minutos: req.body.minutos,
+          oximetro: req.body.oximetro,
+          cauterio: req.body.cauterio,
+          monitor: req.body.monitor
+        });
+        if (!calculo) { await t.rollback(); return res.status(400).json({ msg: 'La categoría de sala seleccionada no es válida o está desactivada' }); }
+      }
+
+      // Total final: si mandan un total manual valido se respeta (cobro extra /
+      // descuento); si no, se usa el recalculado del menu.
+      const totalManual = parseFloat(req.body.total_nuevo);
+      const totalNuevo = !isNaN(totalManual)
+        ? totalManual
+        : (calculo ? calculo.total : parseFloat(servicio.total));
+      if (isNaN(totalNuevo) || totalNuevo < 0) {
+        await t.rollback();
+        return res.status(400).json({ msg: 'Total inválido' });
+      }
 
       const totalAnterior = parseFloat(servicio.total) || 0;
       const diff = totalNuevo - totalAnterior;
@@ -267,7 +281,16 @@ module.exports = {
         }
       }
 
-      await servicio.update({ total: totalNuevo, updated_by: user }, { transaction: t });
+      const updateServicio = { total: totalNuevo, updated_by: user };
+      if (calculo) {
+        updateServicio.id_categoria = calculo.id_categoria;
+        updateServicio.horas = `${req.body.horas}:${req.body.minutos}`;
+        updateServicio.oximetro = req.body.oximetro == true;
+        updateServicio.cauterio = req.body.cauterio == true;
+        updateServicio.monitor = req.body.monitor == true;
+      }
+
+      await servicio.update(updateServicio, { transaction: t });
       await cuenta.update({ total: nuevoTotalCuenta.toFixed(2) }, { transaction: t });
       await db.logs_ajuste_sala_operaciones.create({
         id_servicio: servicio.id,

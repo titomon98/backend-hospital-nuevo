@@ -35,7 +35,23 @@ module.exports = (sequelize, DataTypes) => {
     total: {
       type: DataTypes.DECIMAL(20, 6),
       allowNull: false
-    },     
+    },
+    // Adicionales seleccionados (para poder reeditar la sala con su menu completo).
+    oximetro: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+      defaultValue: false
+    },
+    cauterio: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+      defaultValue: false
+    },
+    monitor: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+      defaultValue: false
+    },
     id_cuenta: {
       type: DataTypes.INTEGER,
       allowNull: false,
