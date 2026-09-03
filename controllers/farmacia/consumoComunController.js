@@ -21,15 +21,17 @@ module.exports = {
           const size = parseInt(req.query.limit) || 20;
           let criterio = req.query.criterio || 'id';
           const order = req.query.order || 'ASC';
-          
-          if (criterio === "total" || criterio === "cantidad" || criterio === "descripcion")
-          {
-            orderConfig = [[criterio, order]]
+
+          let orderConfig;
+          if (criterio === "total" || criterio === "cantidad" || criterio === "descripcion") {
+            orderConfig = [[criterio, order]];
+          } else if (criterio === "comune.nombre" || criterio === "nombre") {
+            orderConfig = [[Comun, 'nombre', order]];
+          } else {
+            // Por defecto (o al ordenar por fecha) se ordena por el consumo en el
+            // orden en que se ingresó, no por la fecha del producto del catálogo.
+            orderConfig = [['id', order]];
           }
-          if (criterio === "comune.nombre") {
-            criterio = "nombre"
-          }
-          let orderConfig = [[Comun, criterio, order]]
       
           // 📘 Helpers
           const getPagination = (page, size) => {
