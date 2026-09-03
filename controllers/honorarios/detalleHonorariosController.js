@@ -212,12 +212,29 @@ module.exports = {
     const id_honorario = req.body.delete.id
     const responsable = req.body.delete.responsable
 
-    const honorario = await DetalleHonorarios.findByPk(id_honorario);
-    honorario.estado = 100
-    honorario.updated_by = responsable
-    await honorario.save();
+    const t = await db.sequelize.transaction();
+    try {
+      const honorario = await DetalleHonorarios.findByPk(id_honorario, { transaction: t });
+      if (!honorario) { await t.rollback(); return res.status(404).json({ msg: 'Honorario no encontrado' }); }
 
-    return res.send('Honorario eliminado correctamente')
+      // Al crear el honorario se sumo su total a la cuenta; al eliminarlo hay que
+      // restarlo. Solo si estaba activo (estado 1) para no restar dos veces.
+      if (parseInt(honorario.estado) === 1) {
+        const cuenta = await Cuenta.findByPk(honorario.id_cuenta, { transaction: t, lock: t.LOCK.UPDATE });
+        if (cuenta) {
+          const nuevoTotal = (parseFloat(cuenta.total) || 0) - (parseFloat(honorario.total) || 0);
+          await cuenta.update({ total: Math.max(0, nuevoTotal).toFixed(2) }, { transaction: t });
+        }
+      }
+
+      await honorario.update({ estado: 100, updated_by: responsable }, { transaction: t });
+      await t.commit();
+      return res.send('Honorario eliminado correctamente')
+    } catch (error) {
+      await t.rollback();
+      console.log(error);
+      return res.status(400).json({ msg: 'Ha ocurrido un error al eliminar el honorario' });
+    }
   },
 
   async updateTotal(req, res) {

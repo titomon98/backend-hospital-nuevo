@@ -313,6 +313,70 @@ module.exports = {
     }
   },
 
+  // Elimina por completo una sala de operaciones (p.ej. se asigno al paciente
+  // equivocado). Solo roles 1 y 3. Resta su total de la cuenta y deja auditoria
+  // en logs_ajuste_sala_operaciones (total_nuevo = 0).
+  async eliminarSala(req, res) {
+    const { id, motivo } = req.body;
+    const user = req.user?.user ?? req.body.user;
+    const rol = parseInt(req.body.user_type);
+
+    if (![1, 3].includes(rol)) {
+      return res.status(403).json({ msg: 'No autorizado para eliminar la sala de operaciones' });
+    }
+    if (!id) {
+      return res.status(400).json({ msg: 'Datos inválidos: se requiere el servicio' });
+    }
+
+    const t = await db.sequelize.transaction();
+    try {
+      const servicio = await SalaOperaciones.findByPk(id, { transaction: t });
+      if (!servicio) { await t.rollback(); return res.status(404).json({ msg: 'Servicio de sala de operaciones no encontrado' }); }
+
+      const totalAnterior = parseFloat(servicio.total) || 0;
+
+      let numeroExpediente = null;
+      let nombrePaciente = null;
+      let idExpediente = null;
+      const cuenta = await Cuenta.findByPk(servicio.id_cuenta, { transaction: t, lock: t.LOCK.UPDATE });
+      if (cuenta) {
+        idExpediente = cuenta.id_expediente;
+        const nuevoTotalCuenta = Math.max(0, (parseFloat(cuenta.total) || 0) - totalAnterior);
+        await cuenta.update({ total: nuevoTotalCuenta.toFixed(2) }, { transaction: t });
+        if (idExpediente) {
+          const expediente = await db.expedientes.findByPk(idExpediente, {
+            attributes: ['expediente', 'nombres', 'apellidos'], transaction: t
+          });
+          if (expediente) {
+            numeroExpediente = expediente.expediente;
+            nombrePaciente = `${expediente.nombres} ${expediente.apellidos}`;
+          }
+        }
+      }
+
+      await db.logs_ajuste_sala_operaciones.create({
+        id_servicio: servicio.id,
+        id_cuenta: servicio.id_cuenta,
+        id_expediente: idExpediente,
+        numero_expediente: numeroExpediente,
+        nombre_paciente: nombrePaciente,
+        total_anterior: totalAnterior,
+        total_nuevo: 0,
+        motivo: motivo ?? 'Eliminación de sala de operaciones',
+        created_by: user
+      }, { transaction: t });
+
+      await servicio.destroy({ transaction: t });
+
+      await t.commit();
+      return res.json({ ok: true, id: id, total_eliminado: totalAnterior });
+    } catch (error) {
+      await t.rollback();
+      console.log(error);
+      return res.status(400).json({ msg: 'Ha ocurrido un error al eliminar la sala de operaciones' });
+    }
+  },
+
   // Lista los ajustes de sala de operaciones para monitoreo en Gerencia.
   async listAjustes(req, res) {
     const busqueda = req.query.search;
