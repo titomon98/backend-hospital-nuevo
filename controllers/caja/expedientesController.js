@@ -2404,9 +2404,11 @@ module.exports = {
                 { where: { ocupante: id_expediente }, transaction: t }
             );
 
-            // Dejar el expediente como egresado (egreso normal = 7).
+            // Dejar el expediente como egresado (7). Se borró la cuenta y todos sus
+            // cargos, así que el paciente no debe nada: queda solvente (1) para poder
+            // reingresarlo después.
             await Expediente.update(
-                { estado: 7, solvencia: 0, updated_by: user },
+                { estado: 7, solvencia: 1, updated_by: user },
                 { where: { id: id_expediente }, transaction: t }
             );
 
