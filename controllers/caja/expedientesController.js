@@ -1038,6 +1038,39 @@ module.exports = {
             });
         }
     },
+    // Edición de SOLO los datos del paciente (usado en emergencia). No toca estado,
+    // encargado ni cónyuge, a diferencia de `update` que fuerza estado=1.
+    async updateDatosPaciente (req, res) {
+        const form = req.body.form || {};
+        if (!form.id) {
+            return res.status(400).json({ msg: 'Falta el id del expediente' });
+        }
+        try {
+            await Expediente.update({
+                nombres: form.nombre,
+                apellidos: form.apellidos,
+                casada: form.casada,
+                // La fecha de nacimiento es opcional (emergencia); placeholder si va vacía.
+                nacimiento: form.nacimiento || '0001-01-01',
+                cui: form.cui,
+                nacionalidad: form.nacionalidad,
+                telefono: form.telefono,
+                direccion: form.direccion,
+                genero: form.generos,
+                estado_civil: form.estado_civil,
+                profesion: form.profesion,
+                nombre_padre: form.nombre_padre,
+                nombre_madre: form.nombre_madre,
+                lugar_nacimiento: form.lugar_nacimiento,
+                updated_by: req.user?.user ?? form.user,
+            }, { where: { id: form.id } });
+            return res.status(200).json({ msg: 'Datos del paciente actualizados' });
+        } catch (error) {
+            console.log(error);
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        }
+    },
+
     updateMedico (req, res) {
         Expediente.update(
             { id_medico: req.body.form.assignedDoctor },
