@@ -86,6 +86,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DECIMAL(10,2),
       defaultValue: 0
     },
+    // Correlativo de la hoja de emergencia (reinicia cada año). Solo cuentas de emergencia.
+    numero_emergencia: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
     descuento: {
       type: DataTypes.DECIMAL(10,2)
     },

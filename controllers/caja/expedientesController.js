@@ -406,8 +406,20 @@ module.exports = {
             }
             console.log('Aqui vamos bien')
             Cuenta.create(datos_cuenta)
-            .then(cuenta => {
+            .then(async cuenta => {
                 cuenta.update({ numero: cuenta.id });
+
+                // Correlativo de la hoja de emergencia: siguiente número del año en
+                // curso (reinicia cada año). ponytail: sin lock; una colisión solo
+                // si se crean dos emergencias en el mismo instante (poco probable).
+                const anio = new Date().getFullYear();
+                const maxNum = await Cuenta.max('numero_emergencia', {
+                    where: {
+                        tipo_paciente: 'Emergencia',
+                        createdAt: { [Op.between]: [`${anio}-01-01 00:00:00`, `${anio}-12-31 23:59:59`] }
+                    }
+                });
+                await cuenta.update({ numero_emergencia: (parseInt(maxNum) || 0) + 1 });
 
                 DetalleHabitaciones.create({
                     id_cuenta: cuenta.id,
@@ -1954,18 +1966,22 @@ module.exports = {
                 horaIngreso = `${pad(gt.getHours())}:${pad(gt.getMinutes())}:${pad(gt.getSeconds())}`;
             }
 
-            // Reactivar expediente y actualizar la fecha/hora de ingreso reciente
-            await Expediente.update(
-                { estado: 1, solvencia: 0, fecha_ingreso_reciente: fechaIngreso, hora_ingreso_reciente: horaIngreso },
-                { where: { id: id_expediente } }
-            );
-
-            // Obtener la última cuenta (la que ya existe) y actualizar su fecha/hora
-            // de ingreso al momento del reingreso.
+            // Obtener la última cuenta (la que ya existe) para saber el área del
+            // paciente: si era de emergencia debe volver a emergencia (estado 5),
+            // no a hospitalización (estado 1).
             const cuenta = await Cuenta.findOne({
                 where: { id_expediente },
                 order: [['createdAt', 'DESC']],
             });
+            const esEmergencia = cuenta && cuenta.tipo_paciente === 'Emergencia';
+            const estadoReingreso = esEmergencia ? 5 : 1;
+            const destinoReingreso = esEmergencia ? 'Emergencia' : 'Hospitalización';
+
+            // Reactivar expediente al área correcta y actualizar la fecha/hora de ingreso.
+            await Expediente.update(
+                { estado: estadoReingreso, solvencia: 0, fecha_ingreso_reciente: fechaIngreso, hora_ingreso_reciente: horaIngreso },
+                { where: { id: id_expediente } }
+            );
             if (cuenta) {
                 await cuenta.update({ fecha_ingreso: fechaIngreso, hora_ingreso: horaIngreso });
             }
@@ -1988,7 +2004,7 @@ module.exports = {
             await Logs.create({
                 id_expediente,
                 origen: 'Egresado',
-                destino: 'Hospitalización',
+                destino: destinoReingreso,
                 motivo: 'Reingreso',
                 id_habitacionDestino: habitacion ? habitacion.id : null,
                 createdAt: new Date(),
