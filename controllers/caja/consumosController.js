@@ -765,12 +765,18 @@ module.exports = {
             const cuenta = await Cuenta.findOne({
                 where: { id_expediente: id },
                 order: [['createdAt', 'DESC']],
-                attributes: ['id', 'motivo', 'motivo_egreso', 'descripcion', 'otros', 'fecha_ingreso', 'hora_ingreso'],
+                attributes: ['id', 'motivo', 'motivo_egreso', 'descripcion', 'otros', 'fecha_ingreso', 'hora_ingreso', 'numero_emergencia', 'createdAt'],
             });
 
             if (!cuenta) {
                 return res.status(404).json({ msg: 'No se encontró cuenta para este expediente' });
             }
+
+            // Correlativo de la hoja de emergencia: NNN-AAAA (reinicia cada año).
+            const anioHoja = new Date(cuenta.createdAt).getFullYear();
+            const numeroHoja = cuenta.numero_emergencia
+                ? `${String(cuenta.numero_emergencia).padStart(3, '0')}-${anioHoja}`
+                : '';
 
             const id_cuenta = cuenta.id;
 
@@ -916,6 +922,7 @@ module.exports = {
             const totalAPagar      = subtotalConsumos + totalDerechoEmergencia + totalExamenes + totalHonorarios;
 
             return res.status(200).json({
+                numeroHoja,
                 nombre:       `${expediente.nombres ?? ''} ${expediente.apellidos ?? ''}`.trim(),
                 edad:         isNaN(edad) ? 0 : edad,
                 direccion:    expediente.direccion  ?? '',

@@ -406,8 +406,20 @@ module.exports = {
             }
             console.log('Aqui vamos bien')
             Cuenta.create(datos_cuenta)
-            .then(cuenta => {
+            .then(async cuenta => {
                 cuenta.update({ numero: cuenta.id });
+
+                // Correlativo de la hoja de emergencia: siguiente número del año en
+                // curso (reinicia cada año). ponytail: sin lock; una colisión solo
+                // si se crean dos emergencias en el mismo instante (poco probable).
+                const anio = new Date().getFullYear();
+                const maxNum = await Cuenta.max('numero_emergencia', {
+                    where: {
+                        tipo_paciente: 'Emergencia',
+                        createdAt: { [Op.between]: [`${anio}-01-01 00:00:00`, `${anio}-12-31 23:59:59`] }
+                    }
+                });
+                await cuenta.update({ numero_emergencia: (parseInt(maxNum) || 0) + 1 });
 
                 DetalleHabitaciones.create({
                     id_cuenta: cuenta.id,
