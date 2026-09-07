@@ -349,7 +349,9 @@ module.exports = {
             expediente: 'EXPEDIENTE INCOMPLETO',
             primer_ingreso: today,
             casada: form.casada,
-            nacimiento: form.nacimiento,
+            // En emergencia la fecha de nacimiento es opcional; si no viene se usa el
+            // placeholder de fecha desconocida (mismo que createFromEnfermeria).
+            nacimiento: form.nacimiento || '0001-01-01',
             cui: form.cui,
             nacionalidad: form.nacionalidad,
             telefono: form.telefono,
