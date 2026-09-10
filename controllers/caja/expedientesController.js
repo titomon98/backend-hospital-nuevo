@@ -1074,6 +1074,8 @@ module.exports = {
                 nombre_padre: form.nombre_padre,
                 nombre_madre: form.nombre_madre,
                 lugar_nacimiento: form.lugar_nacimiento,
+                // Médico tratante: solo se pisa si viene en el form (no borrar si no se editó).
+                ...(form.id_medico ? { id_medico: form.id_medico } : {}),
                 updated_by: req.user?.user ?? form.user,
             }, { where: { id: form.id } });
             return res.status(200).json({ msg: 'Datos del paciente actualizados' });
