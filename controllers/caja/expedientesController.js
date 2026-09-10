@@ -2354,7 +2354,7 @@ module.exports = {
     // siga siendo consistente.
     async editarIngresoActual(req, res) {
         const { id_expediente, fecha, hora, user, user_type } = req.body;
-        if (parseInt(user_type) !== 1) {
+        if (![1, 3].includes(parseInt(user_type))) {
             return res.status(403).json({ msg: 'Solo gerencia puede editar la fecha de ingreso' });
         }
         if (!id_expediente || !fecha || !hora) {
