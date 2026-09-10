@@ -2402,6 +2402,33 @@ module.exports = {
                 { where: { id_cuenta: cuenta.id, estado: 1, salida: null }, transaction: t }
             );
 
+            // Cambio de categoría del paciente (Hospitalización / Ambulatorio / Estudio de
+            // sueño / Quimioterapia): ajusta tipo_paciente y el costo_base de la habitación
+            // al costo que corresponde, para que el cobro posterior sea el correcto.
+            if (req.body.tipo_paciente !== undefined || req.body.estudioDeSueno !== undefined) {
+                const categoria = resolverCategoria(req.body);
+                const detalle = await DetalleHabitaciones.findOne({
+                    where: { id_cuenta: cuenta.id, estado: 1, salida: null },
+                    transaction: t,
+                });
+                if (detalle && detalle.id_habitacion) {
+                    const habitacion = await Habitaciones.findByPk(detalle.id_habitacion, { transaction: t });
+                    if (habitacion) {
+                        const costoPorCategoria = {
+                            'Ambulatorio': habitacion.costo_ambulatorio,
+                            'Estudio de sueño': habitacion.costo_estudio_de_sueno,
+                            'Quimioterapia': habitacion.costo_quimioterapia,
+                            'Hospitalización': habitacion.costo_diario,
+                        };
+                        await detalle.update(
+                            { costo_base: costoPorCategoria[categoria], updated_by: user },
+                            { transaction: t }
+                        );
+                    }
+                }
+                await cuenta.update({ tipo_paciente: categoria, updated_by: user }, { transaction: t });
+            }
+
             await t.commit();
             return res.status(200).json({ msg: 'La fecha y hora de ingreso se actualizaron correctamente' });
         } catch (error) {
