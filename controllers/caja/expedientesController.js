@@ -1990,7 +1990,12 @@ module.exports = {
                 { where: { id: id_expediente } }
             );
             // Al reingresar desde cuentas por cobrar se reutiliza la cuenta que ya existe:
-            // NO se toca su fecha_ingreso/hora_ingreso, debe conservar el ingreso original.
+            // NO se toca su fecha_ingreso/hora_ingreso (conserva el ingreso original), pero
+            // sí se limpia el egreso: al reingresar el paciente vuelve a estar activo, así que
+            // la fecha/hora de egreso deben quedar en null.
+            if (cuenta) {
+                await cuenta.update({ estado: 1, fecha_egreso: null, hora_egreso: null });
+            }
 
             // Buscar la habitación que tenía este paciente
             const habitacion = await Habitaciones.findOne({
