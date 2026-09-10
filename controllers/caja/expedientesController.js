@@ -421,11 +421,16 @@ module.exports = {
                 });
                 await cuenta.update({ numero_emergencia: (parseInt(maxNum) || 0) + 1 });
 
+                // Base de emergencia (primeras 2h) tomada del registro editable "Emergencia"
+                // del menú de habitaciones; si no existe, se conserva el valor histórico 250.
+                const emergRoom = await Habitaciones.findOne({ where: { tipo: 'Emergencia' } });
+                const baseEmergencia = emergRoom ? parseFloat(emergRoom.costo_diario) : 250.00;
                 DetalleHabitaciones.create({
                     id_cuenta: cuenta.id,
                     tipo_habitacion: "Emergencia",
+                    id_habitacion: emergRoom ? emergRoom.id : null,
                     estado: 1,
-                    costo_base: 250.00,
+                    costo_base: baseEmergencia,
                     ingreso: `${form.fecha}T${form.hora}`,
                     created_by: req.user?.user ?? req.body.user,
                 });
@@ -2155,25 +2160,31 @@ module.exports = {
             });
             const ids_cuenta_lab = cuentasLabEmerg.map(c => c.id);
  
-            // 3. Calcular costo de habitación tipo Emergencia: costo_base + Q25 por hora extra (luego de 2 horas)
+            // 3. Costo de habitación tipo Emergencia: costo_base (primeras 2h) + tarifa por
+            //    cada hora adicional. La tarifa/hora es editable en el registro "Emergencia"
+            //    del menú de habitaciones (costo_ambulatorio). Las horas se miden del ingreso
+            //    REAL de la cuenta al egreso, ambos anclados igual (tiempo.desdeFormulario)
+            //    para no depender de la zona del proceso ni de un detalle.ingreso desfasado.
+            const emergRoom = await Habitaciones.findOne({
+                where: { tipo: 'Emergencia' },
+                attributes: ['costo_ambulatorio'],
+            });
+            const tarifaHoraExtra = emergRoom ? parseFloat(emergRoom.costo_ambulatorio) : 25;
+
             const detallesHabitacion = await DetalleHabitaciones.findAll({
                 where: { id_cuenta, estado: 1 },
-                attributes: ['tipo_habitacion', 'costo_base', 'ingreso', 'salida'],
+                attributes: ['tipo_habitacion', 'costo_base'],
             });
- 
-            let costoEmergencia = 0;
-            const salidaDatetime = tiempo.desdeFormulario(fecha, hora);
 
+            const salidaDatetime  = tiempo.desdeFormulario(fecha, hora);
+            const ingresoDatetime = tiempo.desdeFormulario(cuenta.fecha_ingreso, cuenta.hora_ingreso);
+            const horasTotales = (salidaDatetime - ingresoDatetime) / (1000 * 60 * 60);
+            const horasExtra   = Math.floor(Math.max(horasTotales - 2, 0));
+
+            let costoEmergencia = 0;
             for (const detalle of detallesHabitacion) {
                 if (detalle.tipo_habitacion === 'Emergencia') {
-                    const fechaIngreso = tiempo.desdeBD(detalle.ingreso);
-                    const fechaSalida  = detalle.salida ? tiempo.desdeBD(detalle.salida) : salidaDatetime;
- 
-                    const diffMs       = fechaSalida - fechaIngreso;
-                    const horasTotales = diffMs / (1000 * 60 * 60);
-                    const horasExtra   = Math.floor(Math.max(horasTotales - 2, 0));
- 
-                    costoEmergencia += parseFloat(detalle.costo_base) + (horasExtra * 25);
+                    costoEmergencia += parseFloat(detalle.costo_base) + (horasExtra * tarifaHoraExtra);
                 }
             }
  
