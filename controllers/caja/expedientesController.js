@@ -1984,9 +1984,8 @@ module.exports = {
                 { estado: estadoReingreso, solvencia: 0, fecha_ingreso_reciente: fechaIngreso, hora_ingreso_reciente: horaIngreso },
                 { where: { id: id_expediente } }
             );
-            if (cuenta) {
-                await cuenta.update({ fecha_ingreso: fechaIngreso, hora_ingreso: horaIngreso });
-            }
+            // Al reingresar desde cuentas por cobrar se reutiliza la cuenta que ya existe:
+            // NO se toca su fecha_ingreso/hora_ingreso, debe conservar el ingreso original.
 
             // Buscar la habitación que tenía este paciente
             const habitacion = await Habitaciones.findOne({
