@@ -296,7 +296,7 @@ module.exports = {
 
         Cuenta.findAll({
             include: [
-                { model: Expediente },
+                { model: Expediente, include: [{ model: db.medicos, as: 'medico' }] },
                 { model: db.detalle_pago_cuentas }
             ],
             where: condition
