@@ -113,30 +113,28 @@ module.exports = {
             await cuenta.update({ total: parseFloat(cuenta.total || 0) + sumaTotal }, { transaction: t });
             await t.commit();
 
-            // Un solo pedido automatico con todas las lineas inventariadas.
-            // Fuera de la transaccion: si falla no revierte los consumos ya guardados.
-            if (lineasPedido.length > 0) {
-                try {
-                    const ahora = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guatemala' }));
-                    const dosDigitos = (n) => String(n).padStart(2, '0');
-                    const areaCodigo = { SALIDAQ: 'QUIROFANO', SALIDAH: 'HOSPITALIZACION', SALIDAI: 'INTENSIVO', SALIDAE: 'EMERGENCIA' }[movimiento] || 'AUTOMATICO';
-                    const codigoPedido = areaCodigo + '-' +
-                        dosDigitos(ahora.getDate()) + '-' + dosDigitos(ahora.getMonth() + 1) + '-' + ahora.getFullYear() + '-' +
-                        dosDigitos(ahora.getHours()) + '-' + dosDigitos(ahora.getMinutes()) + '-' + dosDigitos(ahora.getSeconds());
-                    await crearPedido({
-                        codigoPedido,
-                        fecha: ahora,
-                        id_usuario: req.user ? req.user.user_id : null,
-                        cantidadUnidades: unidadesPedido,
-                        picked: movimiento === 'SALIDAQ' ? 1 : 0,
-                        detalle: lineasPedido,
-                    });
-                } catch (e) {
-                    console.log('Error creando pedido automatico (batch):', e);
-                }
-            }
+            // Responder ya: los consumos quedaron guardados. El pedido de reposicion es
+            // best-effort y se crea en segundo plano para no demorar el guardado (era la
+            // causa de la lentitud); si falla no afecta los consumos.
+            res.send({ ok: true, guardados: consumos.length });
 
-            return res.send({ ok: true, guardados: consumos.length });
+            if (lineasPedido.length > 0) {
+                const ahora = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guatemala' }));
+                const dosDigitos = (n) => String(n).padStart(2, '0');
+                const areaCodigo = { SALIDAQ: 'QUIROFANO', SALIDAH: 'HOSPITALIZACION', SALIDAI: 'INTENSIVO', SALIDAE: 'EMERGENCIA' }[movimiento] || 'AUTOMATICO';
+                const codigoPedido = areaCodigo + '-' +
+                    dosDigitos(ahora.getDate()) + '-' + dosDigitos(ahora.getMonth() + 1) + '-' + ahora.getFullYear() + '-' +
+                    dosDigitos(ahora.getHours()) + '-' + dosDigitos(ahora.getMinutes()) + '-' + dosDigitos(ahora.getSeconds());
+                crearPedido({
+                    codigoPedido,
+                    fecha: ahora,
+                    id_usuario: req.user ? req.user.user_id : null,
+                    cantidadUnidades: unidadesPedido,
+                    picked: movimiento === 'SALIDAQ' ? 1 : 0,
+                    detalle: lineasPedido,
+                }).catch(e => console.log('Error creando pedido automatico (batch):', e));
+            }
+            return;
         } catch (error) {
             await t.rollback();
             console.log(error);
