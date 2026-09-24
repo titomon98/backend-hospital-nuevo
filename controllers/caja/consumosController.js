@@ -765,7 +765,7 @@ module.exports = {
             const cuenta = await Cuenta.findOne({
                 where: { id_expediente: id },
                 order: [['createdAt', 'DESC']],
-                attributes: ['id', 'motivo', 'motivo_egreso', 'descripcion', 'otros', 'fecha_ingreso', 'hora_ingreso', 'numero_emergencia', 'createdAt'],
+                attributes: ['id', 'motivo', 'motivo_egreso', 'descripcion', 'otros', 'fecha_ingreso', 'hora_ingreso', 'numero_emergencia', 'createdAt', 'created_by'],
             });
 
             if (!cuenta) {
@@ -796,6 +796,18 @@ module.exports = {
                     attributes: ['nombre'],
                 });
                 nombreMedico = medico?.nombre ?? 'NO ASIGNADO';
+            }
+
+            // Médico interno = el usuario que ingresó la emergencia (created_by de la cuenta).
+            let medicoInterno = cuenta.created_by ?? '';
+            if (cuenta.created_by) {
+                const usuario = await db.usuarios.findOne({
+                    where: { user: cuenta.created_by },
+                    attributes: ['nombre', 'apellidos'],
+                });
+                if (usuario) {
+                    medicoInterno = `${usuario.nombre ?? ''} ${usuario.apellidos ?? ''}`.trim() || cuenta.created_by;
+                }
             }
 
             const [
@@ -935,6 +947,7 @@ module.exports = {
                 tratamiento:   cuenta.otros         ?? '',
                 observaciones: cuenta.motivo_egreso ?? '',
                 medico:        nombreMedico,
+                medicoInterno: medicoInterno,
                 seHospitaliza: false,
 
                 examenes: nombresExamenes,
