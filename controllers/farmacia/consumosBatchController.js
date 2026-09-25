@@ -57,6 +57,13 @@ module.exports = {
             let unidadesPedido = 0;
             const lineasPedido = [];
 
+            // Descuenta existencia con piso en 0: nunca deja la existencia negativa
+            // (antes un decrement crudo podía dejarla en -1 si el stock estaba desfasado).
+            const descontar = (Model, id, cant) => Model.update(
+                { [columnaExistencia]: db.Sequelize.literal(`GREATEST(\`${columnaExistencia}\` - ${parseInt(cant) || 0}, 0)`) },
+                { where: { id }, transaction: t }
+            );
+
             for (const c of consumos) {
                 const cantidad = parseFloat(c.cantidad);
                 const precio = parseFloat(c.precio_venta);
@@ -81,7 +88,7 @@ module.exports = {
                         id_medicamento: c.id,
                         descripcion: `Consumo de medicamentos por la cuenta ${numero} En el area de ${area}`,
                     }, { transaction: t });
-                    await Medicamento.decrement(columnaExistencia, { by: parseInt(cantidad), where: { id: c.id }, transaction: t });
+                    await descontar(Medicamento, c.id, cantidad);
                     lineasPedido.push({ is_medicine: true, id_medicine: c.id, cantidad, nombre: c.nombre });
                     unidadesPedido += parseInt(cantidad);
                 } else if (c.tipo === '1') {
@@ -92,7 +99,7 @@ module.exports = {
                     }, { transaction: t });
                     // Los NO INVENTARIADOS no descuentan existencia ni generan pedido.
                     if (!noInventariado) {
-                        await Quirurgico.decrement(columnaExistencia, { by: parseInt(cantidad), where: { id: c.id }, transaction: t });
+                        await descontar(Quirurgico, c.id, cantidad);
                         lineasPedido.push({ is_quirurgico: true, id_quirurgico: c.id, cantidad, nombre: c.nombre });
                         unidadesPedido += parseInt(cantidad);
                     }
@@ -103,7 +110,7 @@ module.exports = {
                         descripcion: `Consumo de insumo común por la cuenta ${numero} En el area de ${area}`,
                     }, { transaction: t });
                     if (!noInventariado) {
-                        await Comun.decrement(columnaExistencia, { by: parseInt(cantidad), where: { id: c.id }, transaction: t });
+                        await descontar(Comun, c.id, cantidad);
                         lineasPedido.push({ is_comun: true, id_comun: c.id, cantidad, nombre: c.nombre });
                         unidadesPedido += parseInt(cantidad);
                     }
