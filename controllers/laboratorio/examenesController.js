@@ -557,7 +557,9 @@ module.exports = {
         const cuenta = await Cuenta.findAndCountAll({ where: { id_expediente: id } });
 
         if (!cuenta.rows || cuenta.rows.length === 0) {
-          return res.status(404).json({ msg: 'No se encontró ninguna cuenta para el expediente proporcionado.' });
+          // Sin cuenta de laboratorio: el paciente no tiene exámenes. Devolver lista vacía
+          // (no 404) para que el front limpie y no queden los del paciente anterior.
+          return res.status(200).json([]);
         }
         let dataResponse = [];
 
