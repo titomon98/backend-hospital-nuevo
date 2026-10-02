@@ -1,5 +1,6 @@
 'use strict'
 const Sequelize     = require('sequelize');
+const moment = require('moment');
 const db = require("../../models");
 const tiempo = require("../../utils/tiempo");
 const Logs = db.log_traslados;
@@ -178,8 +179,8 @@ module.exports = {
     deactivate (req, res) {
         Consumo.update(
             { estado: 0 },
-            { where: { 
-                id: req.body.id 
+            { where: {
+                id: req.body.id
             } }
         )
         .then(marca =>res.status(200).send('El registro ha sido desactivado'))
@@ -187,6 +188,108 @@ module.exports = {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         });
+    },
+
+    // Control de Servicios: historial de servicios cargados a pacientes (igual que
+    // Control de Consumos / Honorarios). Une consumo + cuenta + expediente + servicio.
+    async listControl (req, res) {
+        const Page = req.query.page - 1;
+        const Size = req.query.limit;
+        const Criterio = req.query.criterio || 'createdAt';
+        const Order = req.query.order || 'DESC';
+        const FechaDesde = req.query.fechaDesde;
+        const FechaHasta = req.query.fechaHasta;
+        const busqueda = req.query.search;
+
+        const limit = Size ? +Size : 5;
+        const offset = Page ? Page * limit : 0;
+
+        try {
+            const whereClause = {};
+            if (FechaDesde && FechaHasta) {
+                whereClause.createdAt = {
+                    [Op.between]: [
+                        moment(FechaDesde).startOf('day').toDate(),
+                        moment(FechaHasta).endOf('day').toDate()
+                    ]
+                };
+            }
+
+            const cuentaWhere = busqueda
+                ? { [Op.or]: [
+                    { numero: { [Op.like]: `%${busqueda}%` } },
+                    { '$cuenta.expediente.nombres$': { [Op.like]: `%${busqueda}%` } },
+                    { '$cuenta.expediente.apellidos$': { [Op.like]: `%${busqueda}%` } },
+                    { '$servicio.descripcion$': { [Op.like]: `%${busqueda}%` } }
+                ] }
+                : {};
+
+            const data = await Consumo.findAndCountAll({
+                include: [
+                    {
+                        model: Cuenta,
+                        attributes: ['numero'],
+                        include: [{ model: Expediente, attributes: ['nombres', 'apellidos'] }]
+                    },
+                    { model: Servicio, attributes: ['id', 'descripcion', 'unidadDeMedida'] }
+                ],
+                attributes: ['id', 'cantidad', 'subtotal', 'descripcion', 'createdAt', 'created_by', 'updated_by', 'estado'],
+                where: { ...whereClause, ...cuentaWhere },
+                order: [[Criterio, Order]],
+                limit,
+                offset,
+                subQuery: false
+            });
+
+            const totalItems = data.count;
+            const totalPages = Math.ceil(totalItems / limit);
+            const filas = data.rows.map(item => {
+                const r = item.get({ plain: true });
+                return {
+                    id: r.id,
+                    numero_cuenta: r.cuenta ? r.cuenta.numero : '',
+                    nombre_completo: r.cuenta && r.cuenta.expediente
+                        ? `${r.cuenta.expediente.nombres} ${r.cuenta.expediente.apellidos}` : '',
+                    nombre_servicio: r.servicio ? r.servicio.descripcion : (r.descripcion || ''),
+                    cantidad: r.cantidad,
+                    subtotal: r.subtotal,
+                    fecha_consumo: r.createdAt,
+                    created_by: r.created_by,
+                    updated_by: r.updated_by,
+                    estado: r.estado
+                };
+            });
+
+            res.send({
+                total: totalItems,
+                last_page: totalPages,
+                current_page: Page + 1,
+                from: Page,
+                to: totalPages,
+                data: filas
+            });
+        } catch (error) {
+            console.log(error);
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        }
+    },
+
+    // Elimina (desactiva) un servicio cargado. No hay inventario que reponer; al
+    // quedar estado=0 deja de sumar en los totales (que se calculan en vivo).
+    async deactivateControl (req, res) {
+        try {
+            const id = req.body.delete.id;
+            const responsable = req.body.delete.responsable;
+            const consumo = await Consumo.findByPk(id);
+            if (!consumo) return res.status(404).send('El servicio no existe');
+            consumo.estado = 0;
+            consumo.updated_by = responsable;
+            await consumo.save();
+            return res.send('Servicio eliminado correctamente');
+        } catch (error) {
+            console.log(error);
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        }
     },
     
     get(req, res) {

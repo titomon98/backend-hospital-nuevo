@@ -31,6 +31,8 @@ module.exports = (router) => {
     router.put('/consumos/update', consumosController.update);
     router.put('/consumos/activate', consumosController.activate);
     router.put('/consumos/deactivate', consumosController.deactivate);
+    router.get('/consumos/listControl', consumosController.listControl);
+    router.put('/consumos/deactivateControl', consumosController.deactivateControl);
     router.get('/consumos/getSearch', consumosController.getSearch);
     router.get('/consumos/getId', consumosController.getId);
     router.get('/consumos/getById/:id',consumosController.obtenerConsumosPorIdCuenta);
