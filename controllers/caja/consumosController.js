@@ -857,7 +857,7 @@ module.exports = {
                 attributes: [
                     'id', 'nombres', 'apellidos', 'nacimiento', 'telefono',
                     'direccion', 'fecha_ingreso_reciente', 'hora_ingreso_reciente',
-                    'id_medico'
+                    'id_medico', 'nombre_factura', 'nit_factura'
                 ],
             });
 
@@ -1039,6 +1039,8 @@ module.exports = {
             return res.status(200).json({
                 numeroHoja,
                 idEmergencia: cuenta.id,
+                nombreFactura: expediente.nombre_factura ?? '',
+                nitFactura:    expediente.nit_factura    ?? '',
                 nombre:       `${expediente.nombres ?? ''} ${expediente.apellidos ?? ''}`.trim(),
                 edad:         isNaN(edad) ? 0 : edad,
                 direccion:    expediente.direccion  ?? '',

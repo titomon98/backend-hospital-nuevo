@@ -2438,6 +2438,25 @@ module.exports = {
         }
     },
 
+    // Guarda los datos de facturacion del paciente (nombre y NIT). Se usa al generar
+    // el recibo provisional de emergencia cuando el expediente aun no los tiene.
+    async updateFactura(req, res) {
+        const { id, nombre_factura, nit_factura, user } = req.body;
+        if (!id) {
+            return res.status(400).json({ msg: 'Falta el expediente' });
+        }
+        try {
+            await Expediente.update(
+                { nombre_factura: nombre_factura ?? null, nit_factura: nit_factura ?? null, updated_by: user },
+                { where: { id } }
+            );
+            return res.status(200).json({ msg: 'Datos de facturación actualizados' });
+        } catch (error) {
+            console.log(error);
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        }
+    },
+
     // SOLO GERENCIA (rol 1). Elimina el reingreso/hospitalizacion ACTUAL de un
     // paciente (caso de error, ej. hora de ingreso mal registrada): saca al paciente
     // del hospital sin cobrar nada. Repone al inventario los consumos activos, borra

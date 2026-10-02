@@ -131,6 +131,7 @@ module.exports = (router) => {
     router.get('/expedientes/listPacientesActivos', expedientesController.listPacientesActivos);
     router.get('/expedientes/getCuentasExpediente/:id', expedientesController.getCuentasExpediente);
     router.put('/expedientes/editarIngresoActual', expedientesController.editarIngresoActual);
+    router.put('/expedientes/updateFactura', expedientesController.updateFactura);
     router.delete('/expedientes/eliminarCuentaActual', expedientesController.eliminarCuentaActual);
     router.get('/expedientes/listEliminaciones', expedientesController.listEliminaciones);
     router.put('/expedientes/setSeguro', expedientesController.setSeguro);
