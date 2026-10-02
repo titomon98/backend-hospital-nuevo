@@ -935,6 +935,7 @@ module.exports = {
 
             return res.status(200).json({
                 numeroHoja,
+                idEmergencia: cuenta.id,
                 nombre:       `${expediente.nombres ?? ''} ${expediente.apellidos ?? ''}`.trim(),
                 edad:         isNaN(edad) ? 0 : edad,
                 direccion:    expediente.direccion  ?? '',
