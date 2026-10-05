@@ -1238,7 +1238,9 @@ module.exports = {
                     const salida  = detalle.salida ? tiempo.desdeBD(detalle.salida) : tiempo.ahora();
                     const ingreso = tiempo.desdeBD(detalle.ingreso);
                     const diffHoras  = (salida - ingreso) / (1000 * 60 * 60);
-                    const horasExtra = Math.max(0, Math.floor(diffHoras) - 6);
+                    // Tras 6 horas de uso, cada hora extra INICIADA se cobra (ceil):
+                    // a partir del minuto 6:01 ya se cobra la 7a hora.
+                    const horasExtra = Math.ceil(Math.max(0, diffHoras - 6));
                     costo = costoBase + (horasExtra * 50);
                 } else {
                     const dias = calcularDiasHabitacion(detalle.ingreso, detalle.salida);

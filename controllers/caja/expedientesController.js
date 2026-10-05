@@ -1800,7 +1800,9 @@ module.exports = {
             if (esAmbulatorio) {
                 const diffMs    = salida - fechaIngreso;
                 const diffHoras = diffMs / (1000 * 60 * 60);
-                const horasExtra = Math.max(0, Math.floor(diffHoras) - 6);
+                // Tras 6 horas de uso, cada hora extra INICIADA se cobra (ceil):
+                // a partir del minuto 6:01 ya se cobra la 7a hora.
+                const horasExtra = Math.ceil(Math.max(0, diffHoras - 6));
                 return costoBase + (horasExtra * 50);
             } else {
                 const minutosIngreso = fechaIngreso.getUTCHours() * 60 + fechaIngreso.getUTCMinutes();
