@@ -751,7 +751,7 @@ module.exports = {
 
                 DetalleHabitaciones.findAll({
                     where: { id_cuenta, estado: 1 },
-                    attributes: ['tipo_habitacion', 'costo_base', 'ingreso', 'salida'],
+                    attributes: ['tipo_habitacion', 'costo_base', 'ingreso', 'salida', 'id_habitacion'],
                 }),
             ]);
 
@@ -818,11 +818,38 @@ module.exports = {
                 return Math.max(dias, 1);
             }
 
+            // Habitaciones para detectar ambulatorio (costo_base == costo_ambulatorio).
+            const idsHabitacionSumario = [...new Set(detallesHabitacion.map(d => d.id_habitacion).filter(Boolean))];
+            const habitacionesMapSumario = {};
+            if (idsHabitacionSumario.length > 0) {
+                const habsSumario = await Habitaciones.findAll({
+                    where: { id: idsHabitacionSumario },
+                    attributes: ['id', 'costo_ambulatorio'],
+                });
+                habsSumario.forEach(h => { habitacionesMapSumario[h.id] = h; });
+            }
+
             let costoTotal = 0.0;
             let costoIntensivo = 0.0;
             for (const detalle of detallesHabitacion) {
-                const dias = calcularDiasHabitacion(detalle.ingreso, detalle.salida);
-                const costoTotalInterno = parseFloat(detalle.costo_base) * dias;
+                const costoBase = parseFloat(detalle.costo_base || 0);
+                const hab = habitacionesMapSumario[detalle.id_habitacion];
+                const esAmbulatorio = hab && Math.abs(parseFloat(hab.costo_ambulatorio) - costoBase) < 0.01;
+
+                let costoTotalInterno;
+                if (esAmbulatorio) {
+                    // Ambulatorio: costo_base cubre 6 horas; luego cada hora o fraccion
+                    // extra se cobra (ceil) a Q50.
+                    const salida  = detalle.salida ? tiempo.desdeBD(detalle.salida) : tiempo.ahora();
+                    const ingreso = tiempo.desdeBD(detalle.ingreso);
+                    const diffHoras = (salida - ingreso) / (1000 * 60 * 60);
+                    const horasExtra = Math.ceil(Math.max(0, diffHoras - 6));
+                    costoTotalInterno = costoBase + (horasExtra * 50);
+                } else {
+                    const dias = calcularDiasHabitacion(detalle.ingreso, detalle.salida);
+                    costoTotalInterno = costoBase * dias;
+                }
+
                 if (detalle.tipo_habitacion === 'Intensivo') {
                     costoIntensivo += costoTotalInterno;
                 } else {
