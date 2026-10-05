@@ -538,13 +538,19 @@ module.exports = {
                 return res.status(400).json({ msg: 'No se encontró ninguna cuenta para este expediente' });
             }
 
+            const expediente = await Expediente.findByPk(id, { attributes: ['nombres', 'apellidos'] });
+            const nombrePaciente = expediente
+                ? `${expediente.nombres ?? ''} ${expediente.apellidos ?? ''}`.trim()
+                : '';
+
             const cuenta_lab = await Cuenta_Lab.findAll({
                 where: { id_expediente: id },
                 order: [['createdAt', 'DESC']]
             });
 
             const historial = {
-                Consumo: [], 
+                nombrePaciente,
+                Consumo: [],
                 'Consumo Comun': [],
                 'Consumo Medicamentos': [],
                 'Consumo Quirurgicos': [],
