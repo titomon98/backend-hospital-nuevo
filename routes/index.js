@@ -31,6 +31,7 @@ module.exports = (app) => {
     router.use(auth);
 
     router.post('/autenticar', authController.autenticar);
+    router.post('/cambiarPassword', authController.cambiarPassword);
 
     //Modulos por carpeta (todas estas rutas quedan protegidas por el auth de arriba).
     cajaRoutes(router);

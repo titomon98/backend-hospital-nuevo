@@ -110,5 +110,33 @@ module.exports = {
             console.log(err);
         }
     },
+
+    // Cada usuario cambia SU propia contraseña: el id sale del token (req.user),
+    // nunca del body, y se exige la contraseña actual.
+    async cambiarPassword (req, res) {
+        try {
+            const { actual, nueva } = req.body;
+            if (!actual || !nueva) {
+                return res.status(400).json({ msg: 'Ingrese la contraseña actual y la nueva' });
+            }
+            if (String(nueva).length < 6) {
+                return res.status(400).json({ msg: 'La nueva contraseña debe tener al menos 6 caracteres' });
+            }
+            const usuario = await Usuario.findByPk(req.user.user_id);
+            if (!usuario) {
+                return res.status(404).json({ msg: 'Usuario no encontrado' });
+            }
+            // 400 (no 401) para no confundirlo con un token vencido.
+            if (!(await bcrypt.compare(actual, usuario.password))) {
+                return res.status(400).json({ msg: 'La contraseña actual es incorrecta' });
+            }
+            const hash = bcrypt.hashSync(nueva, bcrypt.genSaltSync(10));
+            await usuario.update({ password: hash });
+            return res.status(200).json({ msg: 'Contraseña actualizada correctamente' });
+        } catch (err) {
+            console.log(err);
+            return res.status(500).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+        }
+    },
 };
 
