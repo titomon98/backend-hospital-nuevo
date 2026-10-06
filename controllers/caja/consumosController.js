@@ -788,7 +788,7 @@ module.exports = {
             // Cálculo de días según reglas de corte a las 2PM
             function calcularDiasHabitacion(ingreso, salida) {
                 // Anclado a UTC para no depender de la zona del proceso (ver utils/tiempo).
-                const fechaIngreso = tiempo.desdeBD(ingreso);
+                const fechaIngreso = tiempo.ingresoDesdeBD(ingreso);
                 const fechaSalida  = salida ? tiempo.desdeBD(salida) : tiempo.ahora();
 
                 const minutosIngreso = fechaIngreso.getUTCHours() * 60 + fechaIngreso.getUTCMinutes();
@@ -841,7 +841,7 @@ module.exports = {
                     // Ambulatorio: costo_base cubre 6 horas; luego cada hora o fraccion
                     // extra se cobra (ceil) a Q50.
                     const salida  = detalle.salida ? tiempo.desdeBD(detalle.salida) : tiempo.ahora();
-                    const ingreso = tiempo.desdeBD(detalle.ingreso);
+                    const ingreso = tiempo.ingresoDesdeBD(detalle.ingreso);
                     const diffHoras = (salida - ingreso) / (1000 * 60 * 60);
                     const horasExtra = Math.ceil(Math.max(0, diffHoras - 6));
                     costoTotalInterno = costoBase + (horasExtra * 50);
@@ -1021,7 +1021,7 @@ module.exports = {
                 if (detalle.tipo_habitacion === 'Emergencia') {
                     // Ingreso y salida anclados a UTC (ver utils/tiempo); antes
                     // se restaba ingreso crudo contra un "ahora" en GMT-6.
-                    const fechaIngreso = tiempo.desdeBD(detalle.ingreso);
+                    const fechaIngreso = tiempo.ingresoDesdeBD(detalle.ingreso);
                     const fechaSalida  = detalle.salida ? tiempo.desdeBD(detalle.salida) : tiempo.ahora();
 
                     const diffMs = fechaSalida - fechaIngreso;
@@ -1230,7 +1230,7 @@ module.exports = {
 
             function calcularDiasHabitacion(ingreso, salida) {
                 // Anclado a UTC para no depender de la zona del proceso (ver utils/tiempo).
-                const fechaIngreso = tiempo.desdeBD(ingreso);
+                const fechaIngreso = tiempo.ingresoDesdeBD(ingreso);
                 const fechaSalida  = salida ? tiempo.desdeBD(salida) : tiempo.ahora();
                 const minutosIngreso = fechaIngreso.getUTCHours() * 60 + fechaIngreso.getUTCMinutes();
                 const MIN_7AM = 7  * 60;
@@ -1263,7 +1263,7 @@ module.exports = {
                 if (esAmbulatorio) {
                     // Anclado a UTC (ver utils/tiempo).
                     const salida  = detalle.salida ? tiempo.desdeBD(detalle.salida) : tiempo.ahora();
-                    const ingreso = tiempo.desdeBD(detalle.ingreso);
+                    const ingreso = tiempo.ingresoDesdeBD(detalle.ingreso);
                     const diffHoras  = (salida - ingreso) / (1000 * 60 * 60);
                     // Tras 6 horas de uso, cada hora extra INICIADA se cobra (ceil):
                     // a partir del minuto 6:01 ya se cobra la 7a hora.

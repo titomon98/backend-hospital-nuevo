@@ -172,7 +172,8 @@ module.exports = {
             id_habitacion: habitacion.id,
             estado: 1,
             costo_base: habitacion.costo_diario,
-            ingreso: restarHoras(new Date(), 6),
+            // UTC real, igual que el resto de rutas de ingreso (ver utils/tiempo).
+            ingreso: new Date(),
             salida: null,
             createdAt: new Date(),
             updatedAt: restarHoras(new Date(), 6),

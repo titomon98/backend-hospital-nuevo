@@ -1790,7 +1790,7 @@ module.exports = {
         function calcularCostoHabitacion(detalle, fechaEgreso, habitacion) {
             // Ingreso y salida se interpretan anclados a UTC para que el calculo
             // no dependa de la zona horaria del proceso (ver utils/tiempo).
-            const fechaIngreso = tiempo.desdeBD(detalle.ingreso);
+            const fechaIngreso = tiempo.ingresoDesdeBD(detalle.ingreso);
             const salida       = new Date(fechaEgreso);
 
             const costoBase    = parseFloat(detalle.costo_base);

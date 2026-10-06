@@ -5,19 +5,26 @@
  *
  * Guatemala es GMT-6 y NO observa horario de verano.
  *
- * En la base, `detalle_habitaciones.ingreso` y `salida` se guardan como el
- * wall-clock de Guatemala escrito tal cual sobre UTC (p.ej. las 20:00 GT
- * quedan como 20:00Z). Para que el calculo de horas de EXACTAMENTE lo mismo
- * sin importar la zona horaria del proceso de Node (UTC, GMT-6, etc.), TODO se
- * ancla a UTC: las fechas se leen con getUTC.../setUTC... y se comparan con
- * getTime(). Asi se elimina la mezcla de UTC y GMT-6 que corrompia los totales.
+ * Como se guardan en `detalle_habitaciones` (verificado contra produccion,
+ * cuyo proceso de Node corre en America/Guatemala):
+ *   - `ingreso`: UTC REAL. Las rutas de ingreso lo escriben con new Date(...)
+ *     (p.ej. las 08:20 GT quedan como 14:20).
+ *   - `salida`: wall-clock de Guatemala escrito tal cual sobre UTC (lo escribe
+ *     desdeFormulario; p.ej. las 22:00 GT quedan como 22:00).
  *
- * NOTA: este helper NO cambia como se escriben las fechas; solo unifica como se
- * interpretan al calcular horas.
+ * Todos los calculos trabajan en el marco "wall-clock GT anclado a UTC": se leen
+ * con getUTC.../setUTC... y se comparan con getTime(), sin depender de la zona
+ * del proceso. Por eso el ingreso se convierte a ese marco con ingresoDesdeBD,
+ * y la salida y ahora() ya vienen en el.
  */
 
-// Fecha ya guardada en la BD (viene como wall-clock-GT sobre UTC): se usa tal cual.
+const OFFSET_GT_MS = 6 * 60 * 60 * 1000;
+
+// `salida` guardada en la BD (ya es wall-clock GT sobre UTC): se usa tal cual.
 const desdeBD = (valor) => new Date(valor);
+
+// `ingreso` guardado en la BD (UTC real) -> wall-clock GT sobre UTC (-6h).
+const ingresoDesdeBD = (valor) => new Date(new Date(valor).getTime() - OFFSET_GT_MS);
 
 // "Ahora" en wall-clock de Guatemala, anclado a UTC (misma convencion que la BD).
 const ahora = () => {
@@ -35,4 +42,4 @@ const desdeFormulario = (fecha, hora) => {
   return new Date(`${fecha}T${h}Z`);
 };
 
-module.exports = { desdeBD, ahora, desdeFormulario };
+module.exports = { desdeBD, ingresoDesdeBD, ahora, desdeFormulario };
