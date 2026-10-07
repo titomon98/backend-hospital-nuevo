@@ -35,9 +35,123 @@ const Personal = db.personals;
 
 const Op = db.Sequelize.Op;
 
+// Cálculo de días según reglas de corte a las 2PM
+function calcularDiasHabitacion(ingreso, salida) {
+    // Anclado a UTC para no depender de la zona del proceso (ver utils/tiempo).
+    const fechaIngreso = tiempo.ingresoDesdeBD(ingreso);
+    const fechaSalida  = salida ? tiempo.desdeBD(salida) : tiempo.ahora();
+
+    const minutosIngreso = fechaIngreso.getUTCHours() * 60 + fechaIngreso.getUTCMinutes();
+    const MIN_7AM = 7  * 60;
+    const MIN_2PM = 14 * 60;
+
+    let dias = 0;
+
+    const primerCorte2PM = new Date(fechaIngreso);
+    primerCorte2PM.setUTCHours(14, 0, 0, 0);
+
+    if (minutosIngreso < MIN_7AM) {
+        dias += 1;
+    } else if (minutosIngreso < MIN_2PM) {
+        // sin cargo extra
+    } else {
+        dias += 1;
+        primerCorte2PM.setUTCDate(primerCorte2PM.getUTCDate() + 1);
+    }
+
+    if (fechaSalida > primerCorte2PM) {
+        const diffMs   = fechaSalida - primerCorte2PM;
+        const periodos = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+        dias += periodos;
+    }
+
+    return Math.max(dias, 1);
+}
+
+// Costo de un detalle de habitación. Ambulatorio (costo_base == costo_ambulatorio de
+// la habitación): costo_base cubre 6 horas, luego Q50 por hora o fracción. Si no, por días.
+function costoDetalleHabitacion(detalle, hab) {
+    const costoBase = parseFloat(detalle.costo_base || 0);
+    const esAmbulatorio = hab && Math.abs(parseFloat(hab.costo_ambulatorio) - costoBase) < 0.01;
+    if (esAmbulatorio) {
+        const salida  = detalle.salida ? tiempo.desdeBD(detalle.salida) : tiempo.ahora();
+        const ingreso = tiempo.ingresoDesdeBD(detalle.ingreso);
+        const diffHoras = (salida - ingreso) / (1000 * 60 * 60);
+        const horasExtra = Math.ceil(Math.max(0, diffHoras - 6));
+        return { costo: costoBase + (horasExtra * 50), cantidad: 1, nota: `ambulatorio, ${horasExtra} hora(s) extra a Q50` };
+    }
+    const dias = calcularDiasHabitacion(detalle.ingreso, detalle.salida);
+    return { costo: costoBase * dias, cantidad: dias, nota: `${dias} día(s)` };
+}
+
 // Servicios de oxigeno (por hora o por cilindro), por descripcion del servicio.
 const esOxigeno = (c) => ((c.servicio && c.servicio.descripcion) || c.descripcion || '')
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes('oxig');
+
+// Fechas para reportes, en hora de Guatemala. createdAt e ingreso de habitación se
+// guardan en UTC real; salida de habitación ya es hora GT (ver utils/tiempo).
+const fmtUTC = (d) => (d ? moment.utc(d).utcOffset(-360).format('DD/MM/YYYY HH:mm') : '');
+const fmtGT  = (d) => (d ? moment.utc(d).format('DD/MM/YYYY HH:mm') : '');
+const ESTADOS_DENTRO = [1, 3, 4, 5, 91, 93, 94, 95];
+const ESTADO_CUENTA = { 1: 'ABIERTA', 10: 'CUENTA PARCIAL PENDIENTE DE PAGO', 0: 'CERRADA' };
+
+// Barrido de TODO lo cargado a una cuenta, una fila por cargo, con fecha y hora.
+// Mismos filtros que getDataSumario, para que el total coincida con la cuenta.
+async function itemsDeCuenta(id_cuenta) {
+    const [servicios, comunes, medicamentos, quirurgicos, sala, honorarios, detalles] = await Promise.all([
+        Consumo.findAll({ where: { id_cuenta }, include: [{ model: Servicio, attributes: ['descripcion', 'precio'] }] }),
+        MovimientoComun.findAll({ where: { id_cuenta, estado: 1 }, include: [{ model: Comun, attributes: ['nombre'] }] }),
+        MovimientoMedicamentos.findAll({ where: { id_cuenta, estado: 1 }, include: [{ model: Medicamento, attributes: ['nombre', 'anestesico'], required: true }] }),
+        MovimientoQuirurgico.findAll({ where: { id_cuenta, estado: 1 }, include: [{ model: Quirurgico, attributes: ['nombre'] }, { model: db.paquetes, attributes: ['nombre'] }] }),
+        SalaOperaciones.findAll({ where: { id_cuenta }, include: [{ model: Categoria, attributes: ['categoria'] }] }),
+        Honorario.findAll({ where: { id_cuenta, estado: 1 }, include: [{ model: Medico, attributes: ['nombre'] }] }),
+        DetalleHabitaciones.findAll({ where: { id_cuenta, estado: 1 }, order: [['ingreso', 'ASC']] }),
+    ]);
+
+    const idsHab = [...new Set(detalles.map(d => d.id_habitacion).filter(Boolean))];
+    const habs = idsHab.length ? await Habitaciones.findAll({ where: { id: idsHab }, attributes: ['id', 'numero', 'costo_ambulatorio'] }) : [];
+    const habMap = Object.fromEntries(habs.map(h => [h.id, h]));
+
+    const num = (v) => parseFloat(v) || 0;
+    const items = [];
+    const add = (fecha, categoria, descripcion, cantidad, precio, total) =>
+        items.push({ fecha, categoria, descripcion: descripcion || '', cantidad: num(cantidad), precio: num(precio), total: num(total) });
+
+    for (const d of detalles) {
+        const hab = habMap[d.id_habitacion];
+        const c = costoDetalleHabitacion(d, hab);
+        const salida = d.salida ? fmtGT(d.salida) : 'sigue ocupada';
+        add(fmtUTC(d.ingreso), d.tipo_habitacion === 'Intensivo' ? 'INTENSIVO' : 'HABITACIÓN',
+            `${d.tipo_habitacion || ''}${hab ? ' No. ' + hab.numero : ''} (ingreso ${fmtUTC(d.ingreso)}, salida ${salida}; ${c.nota})`,
+            c.cantidad, d.costo_base, c.costo);
+    }
+    for (const m of medicamentos) {
+        // Flag invertido por convencion del sistema: anestesico=0 es anestesico, 1 es medicamento.
+        add(fmtUTC(m.createdAt), Number(m.medicamento.anestesico) === 0 ? 'ANESTÉSICOS' : 'MEDICAMENTOS', m.medicamento.nombre, m.cantidad, m.precio_venta, m.total);
+    }
+    for (const q of quirurgicos) {
+        const nombre = q.quirurgico ? q.quirurgico.nombre : `PAQUETE ${q.paquete ? q.paquete.nombre : ''}`.trim();
+        add(fmtUTC(q.createdAt), 'MATERIAL MÉDICO QUIRÚRGICO', nombre, q.cantidad, q.precio_venta, q.total);
+    }
+    for (const c of comunes) {
+        add(fmtUTC(c.createdAt), 'MATERIAL COMÚN', c.comune ? c.comune.nombre : c.descripcion, c.cantidad, c.precio_venta, c.total);
+    }
+    for (const c of servicios) {
+        const desc = c.servicio ? c.servicio.descripcion : c.descripcion;
+        const precio = num(c.cantidad) ? num(c.subtotal) / num(c.cantidad) : (c.servicio ? c.servicio.precio : 0);
+        add(fmtUTC(c.createdAt), esOxigeno(c) ? 'OXÍGENO' : 'SERVICIOS', desc, c.cantidad, precio, c.subtotal);
+    }
+    for (const o of sala) {
+        const desc = [o.categoria_sala_operacione?.categoria, o.descripcion, o.horas ? `${o.horas} hora(s)` : ''].filter(Boolean).join(' - ');
+        add(fmtUTC(o.createdAt), 'SALA DE OPERACIONES', desc, 1, o.total, o.total);
+    }
+    for (const h of honorarios) {
+        const interno = h.descripcion === 'pago a medico interno por emergencia';
+        add(fmtUTC(h.createdAt || h.updatedAt), interno ? 'EMERGENCIAS MÉDICO INTERNO' : 'HONORARIOS',
+            `${h.medico ? h.medico.nombre : ''}${h.descripcion ? ' - ' + h.descripcion : ''}`, 1, h.total, h.total);
+    }
+    return items;
+}
 
 module.exports = {
 
@@ -650,6 +764,72 @@ module.exports = {
         }
     },
 
+    // Detalle completo para Excel/PDF. ?todas=1 -> todas las cuentas del expediente
+    // (historial); si no, solo la cuenta mas reciente (cuenta parcial).
+    async detalleCompleto(req, res) {
+        const { id } = req.params;
+        const todas = req.query.todas === '1';
+        try {
+            const expediente = await Expediente.findByPk(id);
+            if (!expediente) return res.status(404).json({ msg: 'Expediente no encontrado' });
+
+            const cuentas = await Cuenta.findAll({ where: { id_expediente: id }, order: [['createdAt', todas ? 'ASC' : 'DESC']] });
+            const seleccion = todas ? cuentas : cuentas.slice(0, 1);
+
+            const detalleCuentas = [];
+            for (const c of seleccion) {
+                const items = await itemsDeCuenta(c.id);
+                detalleCuentas.push({
+                    id: c.id,
+                    numero: c.numero,
+                    ingreso: `${c.fecha_ingreso ?? ''} ${c.hora_ingreso ?? ''}`.trim(),
+                    egreso: c.fecha_egreso ? `${c.fecha_egreso} ${c.hora_egreso ?? ''}`.trim() : '',
+                    estado: ESTADO_CUENTA[c.estado] ?? String(c.estado),
+                    totalPagado: parseFloat(c.total_pagado) || 0,
+                    totalRegistrado: parseFloat(c.total) || 0,
+                    items,
+                    total: items.reduce((a, i) => a + i.total, 0),
+                });
+            }
+
+            // Laboratorio: va por cuenta de laboratorio, no por cuenta del hospital.
+            const labs = await Cuenta_Lab.findAll({ where: todas ? { id_expediente: id } : { id_expediente: id, estado: 1 }, attributes: ['id'] });
+            const examenes = labs.length ? await Examenes.findAll({
+                where: { id_cuenta: { [Op.in]: labs.map(l => l.id) } },
+                include: [{ model: ExamenAlmacenado, attributes: ['nombre'] }],
+                order: [['createdAt', 'ASC']],
+            }) : [];
+            const itemsLab = examenes.map(e => ({
+                fecha: fmtUTC(e.createdAt), categoria: 'LABORATORIO', descripcion: e.examenes_almacenado?.nombre ?? '',
+                cantidad: 1, precio: parseFloat(e.total) || 0, total: parseFloat(e.total) || 0,
+            }));
+
+            const dentro = ESTADOS_DENTRO.includes(Number(expediente.estado));
+            const ultima = cuentas[0] && todas ? cuentas[cuentas.length - 1] : cuentas[0];
+            const totalCuentas = detalleCuentas.reduce((a, c) => a + c.total, 0);
+            const totalLab = itemsLab.reduce((a, i) => a + i.total, 0);
+
+            return res.status(200).json({
+                paciente: {
+                    nombre: `${expediente.nombres ?? ''} ${expediente.apellidos ?? ''}`.trim(),
+                    expediente: expediente.expediente ?? '',
+                    situacion: dentro ? 'DENTRO DEL HOSPITAL' : 'FUERA DEL HOSPITAL (EGRESADO)',
+                    egreso: !dentro && ultima?.fecha_egreso ? `${ultima.fecha_egreso} ${ultima.hora_egreso ?? ''}`.trim() : '',
+                },
+                generado: moment.utc().utcOffset(-360).format('DD/MM/YYYY HH:mm'),
+                cuentas: detalleCuentas,
+                examenes: itemsLab,
+                totalCuentas,
+                totalLab,
+                totalGeneral: totalCuentas + totalLab,
+                totalPagado: detalleCuentas.reduce((a, c) => a + c.totalPagado, 0),
+            });
+        } catch (error) {
+            console.error('Error al obtener el detalle completo:', error);
+            return res.status(500).json({ msg: 'Error al obtener el detalle de la cuenta', error: error.message });
+        }
+    },
+
     async getDataSumario(req, res) {
         const { id } = req.params;
         
@@ -789,39 +969,6 @@ module.exports = {
             let formato = fecha_ingreso.fecha_ingreso_reciente + 'T' + fecha_ingreso.hora_ingreso_reciente;
             const fechaFormateada = formato;
 
-            // Cálculo de días según reglas de corte a las 2PM
-            function calcularDiasHabitacion(ingreso, salida) {
-                // Anclado a UTC para no depender de la zona del proceso (ver utils/tiempo).
-                const fechaIngreso = tiempo.ingresoDesdeBD(ingreso);
-                const fechaSalida  = salida ? tiempo.desdeBD(salida) : tiempo.ahora();
-
-                const minutosIngreso = fechaIngreso.getUTCHours() * 60 + fechaIngreso.getUTCMinutes();
-                const MIN_7AM = 7  * 60;
-                const MIN_2PM = 14 * 60;
-
-                let dias = 0;
-
-                const primerCorte2PM = new Date(fechaIngreso);
-                primerCorte2PM.setUTCHours(14, 0, 0, 0);
-
-                if (minutosIngreso < MIN_7AM) {
-                    dias += 1;
-                } else if (minutosIngreso < MIN_2PM) {
-                    // sin cargo extra
-                } else {
-                    dias += 1;
-                    primerCorte2PM.setUTCDate(primerCorte2PM.getUTCDate() + 1);
-                }
-
-                if (fechaSalida > primerCorte2PM) {
-                    const diffMs   = fechaSalida - primerCorte2PM;
-                    const periodos = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
-                    dias += periodos;
-                }
-
-                return Math.max(dias, 1);
-            }
-
             // Habitaciones para detectar ambulatorio (costo_base == costo_ambulatorio).
             const idsHabitacionSumario = [...new Set(detallesHabitacion.map(d => d.id_habitacion).filter(Boolean))];
             const habitacionesMapSumario = {};
@@ -836,23 +983,7 @@ module.exports = {
             let costoTotal = 0.0;
             let costoIntensivo = 0.0;
             for (const detalle of detallesHabitacion) {
-                const costoBase = parseFloat(detalle.costo_base || 0);
-                const hab = habitacionesMapSumario[detalle.id_habitacion];
-                const esAmbulatorio = hab && Math.abs(parseFloat(hab.costo_ambulatorio) - costoBase) < 0.01;
-
-                let costoTotalInterno;
-                if (esAmbulatorio) {
-                    // Ambulatorio: costo_base cubre 6 horas; luego cada hora o fraccion
-                    // extra se cobra (ceil) a Q50.
-                    const salida  = detalle.salida ? tiempo.desdeBD(detalle.salida) : tiempo.ahora();
-                    const ingreso = tiempo.ingresoDesdeBD(detalle.ingreso);
-                    const diffHoras = (salida - ingreso) / (1000 * 60 * 60);
-                    const horasExtra = Math.ceil(Math.max(0, diffHoras - 6));
-                    costoTotalInterno = costoBase + (horasExtra * 50);
-                } else {
-                    const dias = calcularDiasHabitacion(detalle.ingreso, detalle.salida);
-                    costoTotalInterno = costoBase * dias;
-                }
+                const costoTotalInterno = costoDetalleHabitacion(detalle, habitacionesMapSumario[detalle.id_habitacion]).costo;
 
                 if (detalle.tipo_habitacion === 'Intensivo') {
                     costoIntensivo += costoTotalInterno;

@@ -38,6 +38,7 @@ module.exports = (router) => {
     router.get('/consumos/getById/:id',consumosController.obtenerConsumosPorIdCuenta);
     router.get('/consumos/historial/:id',consumosController.historialCuenta);
     router.get('/consumos/sumario/:id',consumosController.getDataSumario);
+    router.get('/consumos/detalleCompleto/:id',consumosController.detalleCompleto);
     router.get('/consumos/hojaEmergencia/:id', consumosController.getHojaEmergencia);
     router.get('/consumos/cuentaParcial/:id', consumosController.getCuentaParcial);
 
