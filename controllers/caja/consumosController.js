@@ -97,12 +97,15 @@ const ESTADO_CUENTA = { 1: 'ABIERTA', 10: 'CUENTA PARCIAL PENDIENTE DE PAGO', 0:
 
 // Barrido de TODO lo cargado a una cuenta, una fila por cargo, con fecha y hora.
 // Mismos filtros que getDataSumario, para que el total coincida con la cuenta.
+// Cada item trae los datos de su seccion del Excel (clase, habitacion, sala...).
+const SERVICIOS_PERSONAL_SALA = [9, 10, 11, 12, 13, 14]; // igual que esServicioPersonal del frontend
 async function itemsDeCuenta(id_cuenta) {
+    const conClase = (model, attrs) => [{ model, attributes: attrs, include: [{ model: db.presentaciones, attributes: ['nombre'] }] }];
     const [servicios, comunes, medicamentos, quirurgicos, sala, honorarios, detalles] = await Promise.all([
-        Consumo.findAll({ where: { id_cuenta }, include: [{ model: Servicio, attributes: ['descripcion', 'precio'] }] }),
-        MovimientoComun.findAll({ where: { id_cuenta, estado: 1 }, include: [{ model: Comun, attributes: ['nombre'] }] }),
-        MovimientoMedicamentos.findAll({ where: { id_cuenta, estado: 1 }, include: [{ model: Medicamento, attributes: ['nombre', 'anestesico'], required: true }] }),
-        MovimientoQuirurgico.findAll({ where: { id_cuenta, estado: 1 }, include: [{ model: Quirurgico, attributes: ['nombre'] }, { model: db.paquetes, attributes: ['nombre'] }] }),
+        Consumo.findAll({ where: { id_cuenta }, include: [{ model: Servicio, attributes: ['id', 'descripcion', 'precio'] }] }),
+        MovimientoComun.findAll({ where: { id_cuenta, estado: 1 }, include: conClase(Comun, ['nombre']) }),
+        MovimientoMedicamentos.findAll({ where: { id_cuenta, estado: 1 }, include: [{ ...conClase(Medicamento, ['nombre', 'anestesico'])[0], required: true }] }),
+        MovimientoQuirurgico.findAll({ where: { id_cuenta, estado: 1 }, include: [...conClase(Quirurgico, ['nombre']), { model: db.paquetes, attributes: ['nombre'] }] }),
         SalaOperaciones.findAll({ where: { id_cuenta }, include: [{ model: Categoria, attributes: ['categoria'] }] }),
         Honorario.findAll({ where: { id_cuenta, estado: 1 }, include: [{ model: Medico, attributes: ['nombre'] }] }),
         DetalleHabitaciones.findAll({ where: { id_cuenta, estado: 1 }, order: [['ingreso', 'ASC']] }),
@@ -113,42 +116,52 @@ async function itemsDeCuenta(id_cuenta) {
     const habMap = Object.fromEntries(habs.map(h => [h.id, h]));
 
     const num = (v) => parseFloat(v) || 0;
+    const clase = (prod) => (prod && prod.presentacione && prod.presentacione.nombre) || '';
     const items = [];
-    const add = (fecha, categoria, descripcion, cantidad, precio, total) =>
-        items.push({ fecha, categoria, descripcion: descripcion || '', cantidad: num(cantidad), precio: num(precio), total: num(total) });
+    const add = (it) => items.push({ clase: '', cantidad: 1, ...it, cantidad: num(it.cantidad ?? 1), precio: num(it.precio ?? it.total), total: num(it.total) });
 
     for (const d of detalles) {
         const hab = habMap[d.id_habitacion];
         const c = costoDetalleHabitacion(d, hab);
-        const salida = d.salida ? fmtGT(d.salida) : 'sigue ocupada';
-        add(fmtUTC(d.ingreso), d.tipo_habitacion === 'Intensivo' ? 'INTENSIVO' : 'HABITACIÓN',
-            `${d.tipo_habitacion || ''}${hab ? ' No. ' + hab.numero : ''} (ingreso ${fmtUTC(d.ingreso)}, salida ${salida}; ${c.nota})`,
-            c.cantidad, d.costo_base, c.costo);
+        add({
+            fecha: fmtUTC(d.ingreso), categoria: d.tipo_habitacion === 'Intensivo' ? 'INTENSIVO' : 'HABITACIÓN',
+            descripcion: `${d.tipo_habitacion || ''} (${c.nota})`,
+            entrada: fmtUTC(d.ingreso), salida: d.salida ? fmtGT(d.salida) : 'Sigue ocupada',
+            tipo: d.tipo_habitacion || '', numero: hab ? hab.numero : '', nota: c.nota,
+            cantidad: c.cantidad, precio: d.costo_base, total: c.costo,
+        });
     }
     for (const m of medicamentos) {
         // Flag invertido por convencion del sistema: anestesico=0 es anestesico, 1 es medicamento.
-        add(fmtUTC(m.createdAt), Number(m.medicamento.anestesico) === 0 ? 'ANESTÉSICOS' : 'MEDICAMENTOS', m.medicamento.nombre, m.cantidad, m.precio_venta, m.total);
+        add({ fecha: fmtUTC(m.createdAt), categoria: Number(m.medicamento.anestesico) === 0 ? 'ANESTÉSICOS' : 'MEDICAMENTOS',
+              descripcion: m.medicamento.nombre, clase: clase(m.medicamento), cantidad: m.cantidad, precio: m.precio_venta, total: m.total });
     }
     for (const q of quirurgicos) {
         const nombre = q.quirurgico ? q.quirurgico.nombre : `PAQUETE ${q.paquete ? q.paquete.nombre : ''}`.trim();
-        add(fmtUTC(q.createdAt), 'MATERIAL MÉDICO QUIRÚRGICO', nombre, q.cantidad, q.precio_venta, q.total);
+        add({ fecha: fmtUTC(q.createdAt), categoria: 'MATERIAL MÉDICO QUIRÚRGICO', descripcion: nombre,
+              clase: q.quirurgico ? clase(q.quirurgico) : 'Paquete', cantidad: q.cantidad, precio: q.precio_venta, total: q.total });
     }
     for (const c of comunes) {
-        add(fmtUTC(c.createdAt), 'MATERIAL COMÚN', c.comune ? c.comune.nombre : c.descripcion, c.cantidad, c.precio_venta, c.total);
+        add({ fecha: fmtUTC(c.createdAt), categoria: 'MATERIAL COMÚN', descripcion: c.comune ? c.comune.nombre : c.descripcion,
+              clase: clase(c.comune), cantidad: c.cantidad, precio: c.precio_venta, total: c.total });
     }
     for (const c of servicios) {
         const desc = c.servicio ? c.servicio.descripcion : c.descripcion;
         const precio = num(c.cantidad) ? num(c.subtotal) / num(c.cantidad) : (c.servicio ? c.servicio.precio : 0);
-        add(fmtUTC(c.createdAt), esOxigeno(c) ? 'OXÍGENO' : 'SERVICIOS', desc, c.cantidad, precio, c.subtotal);
+        const categoria = esOxigeno(c) ? 'OXÍGENO'
+            : (c.servicio && SERVICIOS_PERSONAL_SALA.includes(Number(c.servicio.id)) ? 'PERSONAL DE SALA DE OPERACIONES' : 'OTROS SERVICIOS');
+        add({ fecha: fmtUTC(c.createdAt), categoria, descripcion: desc, cantidad: c.cantidad, precio, total: c.subtotal });
     }
     for (const o of sala) {
-        const desc = [o.categoria_sala_operacione?.categoria, o.descripcion, o.horas ? `${o.horas} hora(s)` : ''].filter(Boolean).join(' - ');
-        add(fmtUTC(o.createdAt), 'SALA DE OPERACIONES', desc, 1, o.total, o.total);
+        add({ fecha: fmtUTC(o.createdAt), categoria: 'SALA DE OPERACIONES',
+              descripcion: [o.categoria_sala_operacione?.categoria, o.descripcion].filter(Boolean).join(' - '),
+              sala: o.categoria_sala_operacione?.categoria ?? o.descripcion ?? '',
+              duracion: o.horas ? `${num(o.horas)} hora(s)` : '', total: o.total });
     }
     for (const h of honorarios) {
         const interno = h.descripcion === 'pago a medico interno por emergencia';
-        add(fmtUTC(h.createdAt || h.updatedAt), interno ? 'EMERGENCIAS MÉDICO INTERNO' : 'HONORARIOS',
-            `${h.medico ? h.medico.nombre : ''}${h.descripcion ? ' - ' + h.descripcion : ''}`, 1, h.total, h.total);
+        add({ fecha: fmtUTC(h.createdAt || h.updatedAt), categoria: interno ? 'EMERGENCIAS MÉDICO INTERNO' : 'HONORARIOS',
+              descripcion: `${h.medico ? h.medico.nombre : ''}${h.descripcion ? '/' + h.descripcion : ''}`, total: h.total });
     }
     return items;
 }
@@ -801,6 +814,7 @@ module.exports = {
             }) : [];
             const itemsLab = examenes.map(e => ({
                 fecha: fmtUTC(e.createdAt), categoria: 'LABORATORIO', descripcion: e.examenes_almacenado?.nombre ?? '',
+                orden: e.numero_muestra || e.id, clase: '',
                 cantidad: 1, precio: parseFloat(e.total) || 0, total: parseFloat(e.total) || 0,
             }));
 
@@ -813,6 +827,7 @@ module.exports = {
                 paciente: {
                     nombre: `${expediente.nombres ?? ''} ${expediente.apellidos ?? ''}`.trim(),
                     expediente: expediente.expediente ?? '',
+                    medico: expediente.id_medico ? ((await Medico.findByPk(expediente.id_medico, { attributes: ['nombre'] }))?.nombre ?? '') : '',
                     situacion: dentro ? 'DENTRO DEL HOSPITAL' : 'FUERA DEL HOSPITAL (EGRESADO)',
                     egreso: !dentro && ultima?.fecha_egreso ? `${ultima.fecha_egreso} ${ultima.hora_egreso ?? ''}`.trim() : '',
                 },
