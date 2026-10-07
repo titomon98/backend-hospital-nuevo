@@ -35,6 +35,10 @@ const Personal = db.personals;
 
 const Op = db.Sequelize.Op;
 
+// Servicios de oxigeno (por hora o por cilindro), por descripcion del servicio.
+const esOxigeno = (c) => ((c.servicio && c.servicio.descripcion) || c.descripcion || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes('oxig');
+
 module.exports = {
 
     async create(req, res) {
@@ -977,7 +981,8 @@ module.exports = {
                 }),
                 Consumo.findAll({
                     where: { id_cuenta },
-                    attributes: ['subtotal'],
+                    include: [{ model: Servicio, attributes: ['descripcion'] }],
+                    attributes: ['subtotal', 'descripcion'],
                 }),
                 ids_cuenta_lab.length
                     ? Examenes.findAll({
@@ -1048,7 +1053,10 @@ module.exports = {
             const totalAnestesicos       = sumar(consumosAnestesicos,   'total');
             const totalQuirurgico        = sumar(consumosQuirurgicos,   'total');
             const totalComun             = sumar(consumosComunes,       'total');
-            const totalOtros             = sumar(consumosServicios,     'subtotal');
+            // El oxigeno (servicio) va en su propio rubro, fuera de OTROS.
+            const serviciosOxigeno       = consumosServicios.filter(esOxigeno);
+            const totalOxigeno           = sumar(serviciosOxigeno,      'subtotal');
+            const totalOtros             = sumar(consumosServicios.filter(c => !esOxigeno(c)), 'subtotal');
             const totalExamenes          = sumar(examenes,              'total');
             const totalHonorarios        = sumar(honorarios,            'total');
             const totalDerechoEmergencia = sumar(honorariosEmergencia,  'total') + costoEmergencia;
@@ -1066,7 +1074,7 @@ module.exports = {
 
             const toFixed2 = (n) => parseFloat((isNaN(n) ? 0 : n).toFixed(2));
 
-            const subtotalConsumos = totalMedicamentos + totalQuirurgico + totalAnestesicos + totalComun + totalOtros;
+            const subtotalConsumos = totalMedicamentos + totalQuirurgico + totalAnestesicos + totalComun + totalOxigeno + totalOtros;
             const totalAPagar      = subtotalConsumos + totalDerechoEmergencia + totalExamenes + totalHonorarios;
 
             return res.status(200).json({
@@ -1095,6 +1103,7 @@ module.exports = {
                 totalQuirurgico:         toFixed2(totalQuirurgico),
                 totalAnestesicos:        toFixed2(totalAnestesicos),
                 totalComun:              toFixed2(totalComun),
+                totalOxigeno:            toFixed2(totalOxigeno),
                 totalOtros:              toFixed2(totalOtros),
                 totalExamenes:           toFixed2(totalExamenes),
                 totalHonorarios:         toFixed2(totalHonorarios),
