@@ -57,7 +57,69 @@ const cantidadRealDe = (det, consumos) => {
     return c ? parseInt(c.cantidad) : parseInt(det.cantidad);
 };
 
+// Elimina UNA aplicacion de paquete de una cuenta: el cargo (fila con id_paquete)
+// y los consumos que genero (incluidos y excedentes), repone inventario de
+// quirofano y descuenta de cuenta.total lo que se cobro. Se identifican por
+// id_cargo_paquete; las aplicaciones anteriores a esa columna, por cuenta + hora
+// exacta + descripcion del paquete.
+async function eliminarPaqueteDeCuenta(idCargo, responsable) {
+    return db.sequelize.transaction(async (t) => {
+        const cargo = await MovimientoQuirurgico.findOne({ where: { id: idCargo, estado: 1 }, transaction: t, lock: t.LOCK.UPDATE });
+        if (!cargo || !cargo.id_paquete || cargo.id_quirurgico) {
+            const e = new Error('El cargo de paquete no existe o ya fue eliminado');
+            e.status = 404;
+            throw e;
+        }
+
+        const resto = (cargo.descripcion || '').replace(/^Paquete: /, '');
+        const legado = {
+            id_cargo_paquete: null,
+            id_cuenta: cargo.id_cuenta,
+            createdAt: cargo.createdAt,
+            descripcion: { [Op.in]: ['Incluido en paquete: ' + resto, 'Excedente de paquete: ' + resto] },
+        };
+        // Sin la columna no se distinguen dos aplicaciones guardadas en el mismo segundo.
+        const gemelo = await MovimientoQuirurgico.count({
+            where: { id: { [Op.ne]: cargo.id }, id_cuenta: cargo.id_cuenta, id_paquete: cargo.id_paquete, createdAt: cargo.createdAt, descripcion: cargo.descripcion, estado: 1 },
+            transaction: t,
+        });
+        const where = gemelo
+            ? { estado: 1, id_cargo_paquete: cargo.id }
+            : { estado: 1, [Op.or]: [{ id_cargo_paquete: cargo.id }, legado] };
+
+        const tablas = [
+            { modelo: MovimientoMedicamentos, producto: Medicamento, col: 'id_medicamento', siempreInventariado: true },
+            { modelo: MovimientoComun, producto: Comun, col: 'id_comun' },
+            { modelo: MovimientoQuirurgico, producto: Quirurgico, col: 'id_quirurgico' },
+        ];
+
+        let totalCobrado = parseFloat(cargo.total) || 0;
+        let eliminados = 0;
+        for (const tb of tablas) {
+            const filas = await tb.modelo.findAll({ where: { ...where, [tb.col]: { [Op.ne]: null } }, transaction: t, lock: t.LOCK.UPDATE });
+            for (const f of filas) {
+                const prod = await tb.producto.findByPk(f[tb.col], { transaction: t, lock: t.LOCK.UPDATE });
+                if (prod && (tb.siempreInventariado || prod.inventariado === 'INVENTARIADO')) {
+                    await prod.increment('existencia_actual_quirofano', { by: parseInt(f.cantidad) || 0, transaction: t });
+                }
+                totalCobrado += parseFloat(f.total) || 0;
+                await f.update({ estado: 0, updated_by: responsable }, { transaction: t });
+                eliminados++;
+            }
+        }
+
+        await cargo.update({ estado: 0, updated_by: responsable }, { transaction: t });
+        const cuenta = await Cuenta.findByPk(cargo.id_cuenta, { transaction: t, lock: t.LOCK.UPDATE });
+        if (cuenta) {
+            await cuenta.update({ total: Math.max(0, (parseFloat(cuenta.total) || 0) - totalCobrado).toFixed(2) }, { transaction: t });
+        }
+        return { eliminados, totalCobrado };
+    });
+}
+
 module.exports = {
+    eliminarPaqueteDeCuenta,
+
     // Devuelve existencia_actual e inventariado de varios insumos de una sola vez
     // (por lotes de ids por tipo), para cargar un paquete sin hacer N llamadas.
     async getExistenciasInsumos(req, res) {
@@ -215,8 +277,9 @@ module.exports = {
                 comArr.forEach(p => { prodMap.comun[p.id] = p; });
                 quiArr.forEach(p => { prodMap.quirurgico[p.id] = p; });
 
-                // 1) Cargo unico del paquete como consumo quirurgico.
-                await MovimientoQuirurgico.create({
+                // 1) Cargo unico del paquete como consumo quirurgico. Su id liga a
+                //    todos los consumos de esta aplicacion (id_cargo_paquete).
+                const cargo = await MovimientoQuirurgico.create({
                     id_quirurgico: null,
                     id_paquete: paquete.id,
                     descripcion: 'Paquete: ' + paquete.nombre + ' En el area de Quirofano',
@@ -265,6 +328,7 @@ module.exports = {
                             total: 0,
                             estado: 1,
                             id_cuenta: cuenta.id,
+                            id_cargo_paquete: cargo.id,
                             createdAt: ahora,
                             updatedAt: ahora,
                             created_by: usuario
@@ -283,6 +347,7 @@ module.exports = {
                             total: totalExc.toFixed(2),
                             estado: 1,
                             id_cuenta: cuenta.id,
+                            id_cargo_paquete: cargo.id,
                             createdAt: ahora,
                             updatedAt: ahora,
                             created_by: usuario

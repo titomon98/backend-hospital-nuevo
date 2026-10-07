@@ -69,6 +69,11 @@ module.exports = (sequelize, DataTypes) => {
     inconsistente: {
       type: DataTypes.INTEGER,
     },
+    // Cargo de paquete (detalle_consumo_quirugicos.id) que genero este consumo.
+    id_cargo_paquete: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true

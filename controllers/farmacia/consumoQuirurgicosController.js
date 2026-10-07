@@ -9,6 +9,7 @@ const Expediente = db.expedientes;
 const Op = db.Sequelize.Op;
 const moment = require('moment');
 const { crearPedidoAutomatico } = require('../enfermeria/pedidosController');
+const { eliminarPaqueteDeCuenta } = require('./paquetesController');
 
 module.exports = {
     async get(req, res) {
@@ -321,6 +322,19 @@ module.exports = {
       const quirurgico_id = req.body.delete.quirurgico_id
       const cantidad_eliminada = req.body.delete.cantidad
       const responsable = req.body.delete.responsable
+
+      // La fila de un paquete no tiene quirurgico: se elimina el paquete completo
+      // (esa aplicacion, con sus consumos).
+      const fila = await Movimiento.findByPk(id_consumo);
+      if (fila && fila.id_paquete && !fila.id_quirurgico) {
+        try {
+          const r = await eliminarPaqueteDeCuenta(fila.id, responsable);
+          return res.send(`Paquete eliminado junto con ${r.eliminados} consumo(s)`);
+        } catch (e) {
+          console.log(e);
+          return res.status(e.status || 400).json({ msg: e.status ? e.message : 'No se pudo eliminar el paquete' });
+        }
+      }
 
       const medicamento = await Quirurgico.findByPk(quirurgico_id);
       if (!medicamento) {
