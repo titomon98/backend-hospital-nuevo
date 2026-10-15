@@ -1020,6 +1020,8 @@ module.exports = {
                 nombremedico,
                 numerohabitacion,
                 fechaFormateada,
+                fechaEgreso: cuentaSeleccionada.fecha_egreso ?? null,
+                horaEgreso:  cuentaSeleccionada.hora_egreso  ?? null,
                 costoTotal,
                 costoIntensivo
             };
@@ -1462,6 +1464,9 @@ module.exports = {
                 numerohabitacion,
                 tipoServicio,
                 fechaFormateada,
+                // Fecha/hora de egreso (hora GT) para los informes de cuenta total.
+                fechaEgreso: cuenta.fecha_egreso ?? null,
+                horaEgreso:  cuenta.hora_egreso  ?? null,
                 costoTotal:     parseFloat(costoTotal.toFixed(2)),
                 costoIntensivo: parseFloat(costoIntensivo.toFixed(2)),
                 consumos:               consumos.map(i => ({ ...i.toJSON(), subtotal: parseFloat(i.subtotal || 0) || 0 })),

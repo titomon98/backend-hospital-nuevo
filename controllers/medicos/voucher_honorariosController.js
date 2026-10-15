@@ -114,8 +114,11 @@ module.exports = {
                 where: {
                     id_medico: idMedico,
                     estado: 1,
-                    createdAt: { [Op.between]: [inicioDia, finDia] }
+                    // todos=1 (voucher): todos los pendientes, para pagar hoy
+                    // honorarios ingresados en otra fecha.
+                    ...(req.query.todos === '1' ? {} : { createdAt: { [Op.between]: [inicioDia, finDia] } })
                 },
+                order: [['createdAt', 'ASC']],
                 attributes: ['id', 'id_cuenta', 'total', 'lugar', 'createdAt'],
                 raw: true,
             });
