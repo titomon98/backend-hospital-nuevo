@@ -186,6 +186,16 @@ async function itemsDeCuenta(id_cuenta) {
     return items;
 }
 
+// Descuento aprobado de una cuenta (solicitud_descuento = 1): porcentaje sobre el total,
+// igual que al aprobarlo en cuentasController.DiscountRequest.
+const descuentoDe = (cuenta) => {
+    const pct = cuenta && Number(cuenta.solicitud_descuento) === 1 ? (parseFloat(cuenta.descuento) || 0) : 0;
+    return {
+        descuentoPorcentaje: pct,
+        descuentoAplicado: Math.round((parseFloat(cuenta && cuenta.total) || 0) * pct) / 100,
+    };
+};
+
 module.exports = {
     itemsDeCuenta,
 
@@ -1045,6 +1055,7 @@ module.exports = {
                 fechaFormateada,
                 fechaEgreso: cuentaSeleccionada.fecha_egreso ?? null,
                 horaEgreso:  cuentaSeleccionada.hora_egreso  ?? null,
+                ...descuentoDe(cuentaSeleccionada),
                 costoTotal,
                 costoIntensivo
             };
@@ -1451,6 +1462,7 @@ module.exports = {
                 // Fecha/hora de egreso (hora GT) para los informes de cuenta total.
                 fechaEgreso: cuenta.fecha_egreso ?? null,
                 horaEgreso:  cuenta.hora_egreso  ?? null,
+                ...descuentoDe(cuenta),
                 costoTotal:     parseFloat(costoTotal.toFixed(2)),
                 costoIntensivo: parseFloat(costoIntensivo.toFixed(2)),
                 consumos:               consumos.map(i => ({ ...i.toJSON(), subtotal: parseFloat(i.subtotal || 0) || 0 })),
