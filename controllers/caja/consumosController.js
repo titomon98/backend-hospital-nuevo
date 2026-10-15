@@ -187,6 +187,7 @@ async function itemsDeCuenta(id_cuenta) {
 }
 
 module.exports = {
+    itemsDeCuenta,
 
     async create(req, res) {
         try {
