@@ -10,6 +10,20 @@ const PagoSeguro = db.lab_pago_seguros;
 const Op = db.Sequelize.Op;
 const examenes = db.examenes_realizados;
 
+// Si el paciente ya egreso y en la caja del hospital solo faltaba el laboratorio,
+// al cobrarlo aqui se cierra tambien su cuenta del hospital.
+const { cerrarCuentaSiSolvente } = require('../caja/cuentasController');
+async function cerrarHospitalTrasLaboratorio(idLabCuenta) {
+    const lab = await Cuenta.findByPk(idLabCuenta, { attributes: ['id_expediente'] });
+    if (!lab || !lab.id_expediente) return;
+    const expediente = await Expediente.findByPk(lab.id_expediente, { attributes: ['estado'] });
+    if (!expediente || [1, 3, 4, 5].includes(Number(expediente.estado))) return; // sigue internado
+    const cuentas = await db.cuentas.findAll({
+        where: { id_expediente: lab.id_expediente, estado: 1, fecha_egreso: { [Op.ne]: null } }
+    });
+    for (const c of cuentas) await cerrarCuentaSiSolvente(c);
+}
+
 module.exports = {
     create(req, res) {
         let form = req.body
@@ -384,6 +398,7 @@ module.exports = {
             )
             .then((cuenta) =>{
                 console.log(cuenta)
+                cerrarHospitalTrasLaboratorio(req.body.id).catch((e) => console.error(e))
                 Expediente.update(
                     {solvencia: 0},
                     {where: {

@@ -54,27 +54,80 @@ async function totalesPorCategoria(cuenta) {
         where: { id_cuenta: cuenta.id, estado: { [Op.ne]: 100 } }
     }) || 0);
 
-    let laboratorio = 0;
+    // Laboratorio que entro al total de esta cuenta: las lab_cuentas de la admision
+    // que seguian abiertas al egresar (el egreso suma los examenes de las abiertas),
+    // aunque el laboratorio las haya cobrado despues. Sin egreso: las abiertas hoy.
     const expediente = await db.expedientes.findByPk(cuenta.id_expediente, { attributes: ['fecha_ingreso_reciente'] });
     const desdeIngreso = expediente ? expediente.fecha_ingreso_reciente : null;
-    const labCuenta = await db.lab_cuentas.findOne({
+    const labs = await db.lab_cuentas.findAll({
         where: {
             id_expediente: cuenta.id_expediente,
-            estado: 1,
+            estado: { [Op.in]: [0, 1] },
             ...(desdeIngreso ? { createdAt: { [Op.gte]: desdeIngreso } } : {})
-        },
-        order: [['createdAt', 'DESC']]
+        }
     });
-    if (labCuenta) {
-        laboratorio = parseFloat(await db.examenes_realizados.sum('total', { where: { id_cuenta: labCuenta.id } }) || 0);
+    // fecha/hora de egreso son hora GT; createdAt/updatedAt son UTC real (+6h).
+    const egresoUTC = cuenta.fecha_egreso
+        ? new Date(`${cuenta.fecha_egreso}T${cuenta.hora_egreso || '23:59:59'}Z`).getTime() + 6 * 3600 * 1000
+        : null;
+    const incluidas = labs.filter(l => (egresoUTC === null || isNaN(egresoUTC))
+        ? Number(l.estado) === 1
+        : new Date(l.createdAt).getTime() <= egresoUTC &&
+          (Number(l.estado) === 1 || new Date(l.updatedAt).getTime() >= egresoUTC));
+
+    let laboratorio = 0;
+    let laboratorioAbierto = 0;
+    for (const l of incluidas) {
+        const examenes = parseFloat(await db.examenes_realizados.sum('total', { where: { id_cuenta: l.id } }) || 0);
+        laboratorio += examenes;
+        if (Number(l.estado) === 1) laboratorioAbierto += Math.max(0, examenes - (parseFloat(l.total_pagado) || 0));
     }
+    // Abonos a laboratorio hechos antes en la caja del hospital (cobro anterior).
+    const laboratorioPendiente = Math.max(0, laboratorioAbierto - (parseFloat(cuenta.pagado_laboratorio) || 0));
 
     const total = parseFloat(cuenta.total) || 0;
     const hospital = Math.max(0, total - honorarios - laboratorio);
-    return { hospital, honorarios, laboratorio };
+    return { hospital, honorarios, laboratorio, laboratorioPendiente };
+}
+
+// Desglose de cobro: hospital y honorarios se cobran en la caja del hospital;
+// laboratorio en la caja del laboratorio (aqui solo se informa su estado).
+async function desgloseDe(cuenta) {
+    const tot = await totalesPorCategoria(cuenta);
+    const cat = (total, pagado) => ({
+        total: +(Number(total) || 0).toFixed(2),
+        pagado: +(Number(pagado) || 0).toFixed(2),
+        pendiente: +Math.max(0, (Number(total) || 0) - (Number(pagado) || 0)).toFixed(2)
+    });
+    const hospital = cat(tot.hospital, cuenta.pagado_hospital);
+    const honorarios = cat(tot.honorarios, cuenta.pagado_honorarios);
+    const laboratorio = {
+        total: +tot.laboratorio.toFixed(2),
+        pendiente: +tot.laboratorioPendiente.toFixed(2),
+        pagado: +Math.max(0, tot.laboratorio - tot.laboratorioPendiente).toFixed(2)
+    };
+    const pendientes = [
+        ...(hospital.pendiente > 0 ? ['hospital'] : []),
+        ...(honorarios.pendiente > 0 ? ['honorarios'] : []),
+        ...(laboratorio.pendiente > 0 ? ['laboratorio'] : [])
+    ];
+    return { id_cuenta: cuenta.id, hospital, honorarios, laboratorio, pendientes, solvente: pendientes.length === 0 };
+}
+
+// Cierra la cuenta (estado 0, expediente solvente) solo si hospital, honorarios y
+// laboratorio estan pagados. Lo llama tambien la caja del laboratorio al cobrar.
+async function cerrarCuentaSiSolvente(cuenta, transaction) {
+    const d = await desgloseDe(cuenta);
+    if (d.solvente && Number(cuenta.estado) !== 0) {
+        await cuenta.update({ estado: 0 }, { transaction });
+        await Expediente.update({ solvencia: 1 }, { where: { id: cuenta.id_expediente }, transaction });
+    }
+    return d;
 }
 
 module.exports = {
+    desgloseDe,
+    cerrarCuentaSiSolvente,
     create(req, res) {
         let form = req.body
         const datos = {
@@ -200,9 +253,13 @@ module.exports = {
                 }
             ],
             where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
-        .then(data => {
-
-        console.log('data: '+JSON.stringify(data.rows))
+        .then(async data => {
+        // Estado de pago por fila: que falta pagar (hospital, honorarios, laboratorio).
+        const filas = await Promise.all(data.rows.map(async c => {
+            const d = await desgloseDe(c);
+            return { ...c.toJSON(), pendientes_pago: d.pendientes };
+        }));
+        data = { count: data.count, rows: filas };
         const response = getPagingData(data, page, limit);
 
         console.log('response: '+JSON.stringify(response))
@@ -1084,40 +1141,31 @@ module.exports = {
         }
     },
 
-    // Cobro separado: desglose por categoria (Hospital / Honorarios / Laboratorio)
-    // con total, pagado y pendiente de cada una. El paciente es solvente cuando las
-    // tres quedan en pendiente <= 0.
+    // Cobro separado: hospital y honorarios (caja del hospital) y el estado del
+    // laboratorio (se cobra en su caja). Solvente cuando las tres estan pagadas.
     async desgloseCobro(req, res) {
         try {
             const cuenta = await Cuenta.findByPk(req.params.id);
             if (!cuenta) return res.status(404).json({ msg: 'Cuenta no encontrada' });
-            const tot = await totalesPorCategoria(cuenta);
-            const cat = (total, pagado) => ({
-                total: +(Number(total) || 0).toFixed(2),
-                pagado: +(Number(pagado) || 0).toFixed(2),
-                pendiente: +Math.max(0, (Number(total) || 0) - (Number(pagado) || 0)).toFixed(2)
-            });
-            const hospital = cat(tot.hospital, cuenta.pagado_hospital);
-            const honorarios = cat(tot.honorarios, cuenta.pagado_honorarios);
-            const laboratorio = cat(tot.laboratorio, cuenta.pagado_laboratorio);
-            const solvente = hospital.pendiente <= 0 && honorarios.pendiente <= 0 && laboratorio.pendiente <= 0;
-            return res.json({ id_cuenta: cuenta.id, hospital, honorarios, laboratorio, solvente });
+            return res.json(await desgloseDe(cuenta));
         } catch (error) {
             console.log(error);
             return res.status(400).json({ msg: 'Error al obtener el desglose de cobro' });
         }
     },
 
-    // Abona a UNA categoria del cobro separado. Incrementa pagado_<categoria>,
-    // registra el pago (con su categoria y metodos) y recalcula total_pagado y
-    // pendiente_de_pago. Si las tres categorias quedan cubiertas, cierra la cuenta
-    // (estado 0) y marca al expediente como solvente.
+    // Abona a hospital y/o honorarios en un solo pago. El monto se aplica primero a
+    // hospital y el resto a honorarios (en el orden elegido); se registra un pago
+    // por categoria con sus metodos. La cuenta se cierra solo si hospital,
+    // honorarios y laboratorio quedan pagados.
     async cobrarCategoria(req, res) {
-        const categoriasValidas = ['hospital', 'honorarios', 'laboratorio'];
-        const { id, categoria, id_expediente, id_seguro } = req.body;
+        const validas = ['hospital', 'honorarios'];
+        const pedidas = Array.isArray(req.body.categorias) ? req.body.categorias : [req.body.categoria];
+        const categorias = validas.filter(c => pedidas.includes(c));
+        const { id, id_seguro } = req.body;
         const monto = parseFloat(req.body.monto) || 0;
-        if (!id || !categoriasValidas.includes(categoria)) {
-            return res.status(400).json({ msg: 'Datos de cobro inválidos' });
+        if (!id || !categorias.length) {
+            return res.status(400).json({ msg: 'Seleccione hospital y/o honorarios para abonar' });
         }
         if (monto <= 0) {
             return res.status(400).json({ msg: 'El monto a abonar debe ser mayor a cero' });
@@ -1127,80 +1175,75 @@ module.exports = {
             const cuenta = await Cuenta.findByPk(id, { transaction: t, lock: t.LOCK.UPDATE });
             if (!cuenta) { await t.rollback(); return res.status(404).json({ msg: 'Cuenta no encontrada' }); }
 
-            const tot = await totalesPorCategoria(cuenta);
-            const columna = 'pagado_' + categoria;
-            const totalCategoria = Number(tot[categoria]) || 0;
-            const pagadoActual = parseFloat(cuenta[columna]) || 0;
-            const pendienteCategoria = Math.max(0, totalCategoria - pagadoActual);
-
-            if (monto > pendienteCategoria + 0.001) {
+            const antes = await desgloseDe(cuenta);
+            const pendienteElegido = categorias.reduce((a, c) => a + antes[c].pendiente, 0);
+            if (monto > pendienteElegido + 0.001) {
                 await t.rollback();
-                return res.status(400).json({ msg: `El abono (Q${monto.toFixed(2)}) excede lo pendiente de ${categoria} (Q${pendienteCategoria.toFixed(2)})` });
+                return res.status(400).json({ msg: `El abono (Q${monto.toFixed(2)}) excede lo pendiente (Q${pendienteElegido.toFixed(2)})` });
             }
 
-            const nuevoPagadoCategoria = pagadoActual + monto;
-            const pagH = (categoria === 'hospital' ? nuevoPagadoCategoria : parseFloat(cuenta.pagado_hospital) || 0);
-            const pagO = (categoria === 'honorarios' ? nuevoPagadoCategoria : parseFloat(cuenta.pagado_honorarios) || 0);
-            const pagL = (categoria === 'laboratorio' ? nuevoPagadoCategoria : parseFloat(cuenta.pagado_laboratorio) || 0);
+            // Reparto del monto por categoria y de los metodos de pago en el mismo orden.
+            const metodos = ['efectivo', 'tarjeta', 'deposito', 'cheque', 'seguro', 'transferencia'];
+            const disponible = Object.fromEntries(metodos.map(m => [m, parseFloat(req.body[m]) || 0]));
+            let resto = monto;
+            const reparto = [];
+            for (const c of categorias) {
+                const aplica = Math.min(resto, antes[c].pendiente);
+                resto -= aplica;
+                if (aplica <= 0) continue;
+                let falta = aplica;
+                const usa = {};
+                for (const m of metodos) {
+                    const v = Math.min(falta, disponible[m]);
+                    usa[m] = +v.toFixed(2);
+                    disponible[m] -= v;
+                    falta -= v;
+                }
+                reparto.push({ categoria: c, monto: aplica, usa });
+            }
 
-            const totalCuenta = tot.hospital + tot.honorarios + tot.laboratorio;
-            const totalPagado = pagH + pagO + pagL;
-            const pendienteGlobal = Math.max(0, totalCuenta - totalPagado);
-
-            const pendHosp = Math.max(0, tot.hospital - pagH);
-            const pendHono = Math.max(0, tot.honorarios - pagO);
-            const pendLab = Math.max(0, tot.laboratorio - pagL);
-            const solvente = pendHosp <= 0 && pendHono <= 0 && pendLab <= 0;
-
+            const cambios = {};
+            for (const r of reparto) {
+                cambios['pagado_' + r.categoria] = (parseFloat(cuenta['pagado_' + r.categoria]) || 0) + r.monto;
+            }
+            const pagH = cambios.pagado_hospital ?? (parseFloat(cuenta.pagado_hospital) || 0);
+            const pagO = cambios.pagado_honorarios ?? (parseFloat(cuenta.pagado_honorarios) || 0);
+            const pendienteCaja = Math.max(0, antes.hospital.total + antes.honorarios.total - pagH - pagO);
             await cuenta.update({
-                [columna]: nuevoPagadoCategoria,
-                total_pagado: totalPagado.toFixed(2),
-                pendiente_de_pago: pendienteGlobal.toFixed(2),
-                ...(solvente ? { estado: 0 } : {})
+                ...cambios,
+                total_pagado: (pagH + pagO + (parseFloat(cuenta.pagado_laboratorio) || 0)).toFixed(2),
+                pendiente_de_pago: pendienteCaja.toFixed(2)
             }, { transaction: t });
 
-            const detalle = await detallePagoCuentas.create({
-                efectivo: req.body.efectivo || 0,
-                tarjeta: req.body.tarjeta || 0,
-                recargoTarjeta: req.body.recargoTarjeta || 0,
-                deposito: req.body.deposito || 0,
-                cheque: req.body.cheque || 0,
-                seguro: req.body.seguro || 0,
-                transferencia: req.body.transferencia || 0,
-                total: monto,
-                tipo: solvente ? 'finiquito' : 'abono',
-                categoria: categoria,
-                id_cuenta: id
-            }, { transaction: t });
+            const despues = await cerrarCuentaSiSolvente(cuenta, t);
 
-            // Registro de seguro (igual que en el finiquito clasico).
-            if (parseInt(req.body.seguro) > 0 && id_seguro) {
-                await Seguro.update({ solvente: 0 }, { where: { id: id_seguro }, transaction: t });
-                await PagoSeguro.create({
-                    id_detalle_pago_cuenta: detalle.id,
-                    monto: req.body.seguro,
-                    id_seguro: id_seguro,
-                    total: req.body.seguro,
-                    pagado: 0,
-                    por_pagar: req.body.seguro
+            let recargo = parseFloat(req.body.recargoTarjeta) || 0;
+            for (const r of reparto) {
+                const detalle = await detallePagoCuentas.create({
+                    ...r.usa,
+                    recargoTarjeta: recargo,
+                    total: r.monto,
+                    tipo: despues.solvente ? 'finiquito' : 'abono',
+                    categoria: r.categoria,
+                    id_cuenta: id
                 }, { transaction: t });
-            }
-
-            if (solvente && id_expediente) {
-                await Expediente.update({ solvencia: 1 }, { where: { id: id_expediente }, transaction: t });
+                recargo = 0; // el recargo de tarjeta se registra una sola vez
+                // Registro de seguro (igual que en el finiquito clasico).
+                if (r.usa.seguro > 0 && id_seguro) {
+                    await Seguro.update({ solvente: 0 }, { where: { id: id_seguro }, transaction: t });
+                    await PagoSeguro.create({
+                        id_detalle_pago_cuenta: detalle.id,
+                        monto: r.usa.seguro,
+                        id_seguro: id_seguro,
+                        total: r.usa.seguro,
+                        pagado: 0,
+                        por_pagar: r.usa.seguro
+                    }, { transaction: t });
+                }
             }
 
             await t.commit();
-            return res.json({
-                ok: true,
-                solvente,
-                categoria,
-                desglose: {
-                    hospital: { total: +tot.hospital.toFixed(2), pagado: +pagH.toFixed(2), pendiente: +pendHosp.toFixed(2) },
-                    honorarios: { total: +tot.honorarios.toFixed(2), pagado: +pagO.toFixed(2), pendiente: +pendHono.toFixed(2) },
-                    laboratorio: { total: +tot.laboratorio.toFixed(2), pagado: +pagL.toFixed(2), pendiente: +pendLab.toFixed(2) }
-                }
-            });
+            return res.json({ ok: true, solvente: despues.solvente, categorias, desglose: despues });
         } catch (error) {
             await t.rollback();
             console.log(error);
