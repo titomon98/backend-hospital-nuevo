@@ -2138,7 +2138,10 @@ module.exports = {
 
     async egresoEmergencia(req, res) {
         const { id, fecha, hora, user } = req.body;
-        const { motivo, diagnostico, tratamiento, observaciones } = req.body.egreso;
+        const { motivo, diagnostico, tratamiento, observaciones } = req.body.egreso || {};
+        if (!fecha || !hora) {
+            return res.status(400).json({ msg: 'Ingrese la fecha y la hora de egreso' });
+        }
  
         try {
             // 1. Obtener la cuenta activa del expediente
@@ -2261,9 +2264,11 @@ module.exports = {
                 { where: { id_cuenta, estado: 1, salida: null } }
             );
  
-            // 7. Actualizar Expediente: estado 7 (alta médica) y solvencia 0
+            // 7. Actualizar Expediente: estado de egreso (7 alta medica por defecto; la caja
+            //    puede indicar 0 fallecido, 8 contraindicado, 9 referido) y solvencia 0
+            const estadoEgreso = [0, 7, 8, 9].includes(Number(req.body.estado)) ? Number(req.body.estado) : 7;
             await Expediente.update({
-                estado:     7,
+                estado:     estadoEgreso,
                 solvencia:  0,
                 updated_by: user,
             }, {

@@ -36,10 +36,9 @@ const Personal = db.personals;
 const Op = db.Sequelize.Op;
 
 // Cálculo de días según reglas de corte a las 2PM
-function calcularDiasHabitacion(ingreso, salida) {
+function calcularDiasHabitacion(ingreso, fechaSalida) {
     // Anclado a UTC para no depender de la zona del proceso (ver utils/tiempo).
     const fechaIngreso = tiempo.ingresoDesdeBD(ingreso);
-    const fechaSalida  = salida ? tiempo.desdeBD(salida) : tiempo.ahora();
 
     const minutosIngreso = fechaIngreso.getUTCHours() * 60 + fechaIngreso.getUTCMinutes();
     const MIN_7AM = 7  * 60;
@@ -68,20 +67,40 @@ function calcularDiasHabitacion(ingreso, salida) {
     return Math.max(dias, 1);
 }
 
-// Costo de un detalle de habitación. Ambulatorio (costo_base == costo_ambulatorio de
-// la habitación): costo_base cubre 6 horas, luego Q50 por hora o fracción. Si no, por días.
-function costoDetalleHabitacion(detalle, hab) {
+// Costo de un detalle de habitación.
+// - Emergencia: costo_base cubre 2 horas; cada hora completa extra a la tarifa de
+//   emergencia (igual que egresoEmergencia).
+// - Ambulatorio (costo_base == costo_ambulatorio de la habitación): costo_base cubre
+//   6 horas, luego Q50 por hora o fracción.
+// - Resto: por días (corte 2 PM).
+// El tiempo corre hasta la salida del detalle; si no tiene, hasta el egreso de la
+// cuenta (opciones.finCuenta) y solo si tampoco hay egreso, hasta ahora.
+function costoDetalleHabitacion(detalle, hab, opciones = {}) {
     const costoBase = parseFloat(detalle.costo_base || 0);
+    const fin = detalle.salida ? tiempo.desdeBD(detalle.salida) : (opciones.finCuenta || tiempo.ahora());
+    const ingreso = tiempo.ingresoDesdeBD(detalle.ingreso);
+    const diffHoras = (fin - ingreso) / (1000 * 60 * 60);
+    if (detalle.tipo_habitacion === 'Emergencia') {
+        const tarifa = opciones.tarifaEmergencia ?? 25;
+        const horasExtra = Math.floor(Math.max(0, diffHoras - 2));
+        return { costo: costoBase + horasExtra * tarifa, cantidad: 1, nota: `emergencia, ${horasExtra} hora(s) extra a Q${tarifa}` };
+    }
     const esAmbulatorio = hab && Math.abs(parseFloat(hab.costo_ambulatorio) - costoBase) < 0.01;
     if (esAmbulatorio) {
-        const salida  = detalle.salida ? tiempo.desdeBD(detalle.salida) : tiempo.ahora();
-        const ingreso = tiempo.ingresoDesdeBD(detalle.ingreso);
-        const diffHoras = (salida - ingreso) / (1000 * 60 * 60);
         const horasExtra = Math.ceil(Math.max(0, diffHoras - 6));
         return { costo: costoBase + (horasExtra * 50), cantidad: 1, nota: `ambulatorio, ${horasExtra} hora(s) extra a Q50` };
     }
-    const dias = calcularDiasHabitacion(detalle.ingreso, detalle.salida);
+    const dias = calcularDiasHabitacion(detalle.ingreso, fin);
     return { costo: costoBase * dias, cantidad: dias, nota: `${dias} día(s)` };
+}
+
+// Opciones de cálculo para una cuenta: fin del tiempo (egreso) y tarifa de emergencia.
+async function opcionesCosto(cuenta) {
+    const emergRoom = await Habitaciones.findOne({ where: { tipo: 'Emergencia' }, attributes: ['costo_ambulatorio'] });
+    return {
+        finCuenta: cuenta && cuenta.fecha_egreso ? tiempo.desdeFormulario(cuenta.fecha_egreso, cuenta.hora_egreso) : null,
+        tarifaEmergencia: emergRoom ? parseFloat(emergRoom.costo_ambulatorio) : 25,
+    };
 }
 
 // Servicios de oxigeno (por hora o por cilindro), por descripcion del servicio.
@@ -100,6 +119,7 @@ const ESTADO_CUENTA = { 1: 'ABIERTA', 10: 'CUENTA PARCIAL PENDIENTE DE PAGO', 0:
 // Cada item trae los datos de su seccion del Excel (clase, habitacion, sala...).
 const SERVICIOS_PERSONAL_SALA = [9, 10, 11, 12, 13, 14]; // igual que esServicioPersonal del frontend
 async function itemsDeCuenta(id_cuenta) {
+    const opc = await opcionesCosto(await Cuenta.findByPk(id_cuenta, { attributes: ['fecha_egreso', 'hora_egreso'] }));
     const conClase = (model, attrs) => [{ model, attributes: attrs, include: [{ model: db.presentaciones, attributes: ['nombre'] }] }];
     const [servicios, comunes, medicamentos, quirurgicos, sala, honorarios, detalles] = await Promise.all([
         Consumo.findAll({ where: { id_cuenta }, include: [{ model: Servicio, attributes: ['id', 'descripcion', 'precio'] }] }),
@@ -122,7 +142,7 @@ async function itemsDeCuenta(id_cuenta) {
 
     for (const d of detalles) {
         const hab = habMap[d.id_habitacion];
-        const c = costoDetalleHabitacion(d, hab);
+        const c = costoDetalleHabitacion(d, hab, opc);
         add({
             fecha: fmtUTC(d.ingreso), categoria: d.tipo_habitacion === 'Intensivo' ? 'INTENSIVO' : 'HABITACIÓN',
             descripcion: `${d.tipo_habitacion || ''} (${c.nota})`,
@@ -997,8 +1017,9 @@ module.exports = {
 
             let costoTotal = 0.0;
             let costoIntensivo = 0.0;
+            const opcSumario = await opcionesCosto(cuentaSeleccionada);
             for (const detalle of detallesHabitacion) {
-                const costoTotalInterno = costoDetalleHabitacion(detalle, habitacionesMapSumario[detalle.id_habitacion]).costo;
+                const costoTotalInterno = costoDetalleHabitacion(detalle, habitacionesMapSumario[detalle.id_habitacion], opcSumario).costo;
 
                 if (detalle.tipo_habitacion === 'Intensivo') {
                     costoIntensivo += costoTotalInterno;
@@ -1385,51 +1406,11 @@ module.exports = {
                 habs.forEach(h => { habitacionesMap[h.id] = h; });
             }
 
-            function calcularDiasHabitacion(ingreso, salida) {
-                // Anclado a UTC para no depender de la zona del proceso (ver utils/tiempo).
-                const fechaIngreso = tiempo.ingresoDesdeBD(ingreso);
-                const fechaSalida  = salida ? tiempo.desdeBD(salida) : tiempo.ahora();
-                const minutosIngreso = fechaIngreso.getUTCHours() * 60 + fechaIngreso.getUTCMinutes();
-                const MIN_7AM = 7  * 60;
-                const MIN_2PM = 14 * 60;
-                let dias = 0;
-                const primerCorte2PM = new Date(fechaIngreso);
-                primerCorte2PM.setUTCHours(14, 0, 0, 0);
-                if (minutosIngreso < MIN_7AM) {
-                    dias += 1;
-                } else if (minutosIngreso >= MIN_2PM) {
-                    dias += 1;
-                    primerCorte2PM.setUTCDate(primerCorte2PM.getUTCDate() + 1);
-                }
-                if (fechaSalida > primerCorte2PM) {
-                    const diffMs   = fechaSalida - primerCorte2PM;
-                    const periodos = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
-                    dias += periodos;
-                }
-                return Math.max(dias, 1);
-            }
-
             let costoTotal = 0.0;
             let costoIntensivo = 0.0;
+            const opcParcial = await opcionesCosto(cuenta);
             for (const detalle of detallesHabitacion) {
-                const costoBase = parseFloat(detalle.costo_base || 0);
-                const hab = habitacionesMap[detalle.id_habitacion];
-                const esAmbulatorio = hab && Math.abs(parseFloat(hab.costo_ambulatorio) - costoBase) < 0.01;
-
-                let costo;
-                if (esAmbulatorio) {
-                    // Anclado a UTC (ver utils/tiempo).
-                    const salida  = detalle.salida ? tiempo.desdeBD(detalle.salida) : tiempo.ahora();
-                    const ingreso = tiempo.ingresoDesdeBD(detalle.ingreso);
-                    const diffHoras  = (salida - ingreso) / (1000 * 60 * 60);
-                    // Tras 6 horas de uso, cada hora extra INICIADA se cobra (ceil):
-                    // a partir del minuto 6:01 ya se cobra la 7a hora.
-                    const horasExtra = Math.ceil(Math.max(0, diffHoras - 6));
-                    costo = costoBase + (horasExtra * 50);
-                } else {
-                    const dias = calcularDiasHabitacion(detalle.ingreso, detalle.salida);
-                    costo = costoBase * dias;
-                }
+                const costo = costoDetalleHabitacion(detalle, habitacionesMap[detalle.id_habitacion], opcParcial).costo;
 
                 if (detalle.tipo_habitacion === 'Intensivo') {
                     costoIntensivo += costo;
