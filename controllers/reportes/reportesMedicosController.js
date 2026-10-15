@@ -12,17 +12,27 @@ module.exports = {
     async reporteHonorarios(req, res) {
       const { fechaInicio, fechaFin } = req.query;
       try {
+        // Dias del corte en hora de Guatemala. createdAt esta en UTC real (+6h); el
+        // pago (voucher) guarda updatedAt ya en hora GT.
+        const inicioUTC = new Date(`${fechaInicio}T06:00:00Z`);
+        const finUTC = new Date(new Date(`${fechaFin}T06:00:00Z`).getTime() + 24 * 3600 * 1000 - 1000);
         const honorarios = await HonorariosMedicos.findAll({
             where: {
-              createdAt: {
-                    [Op.between]: [
-                        `${fechaInicio} 00:00:00`,
-                        `${fechaFin} 23:59:59`,
-                    ],
-                },
+                [Op.or]: [
+                    // ingresados en el periodo
+                    { createdAt: { [Op.between]: [inicioUTC, finUTC] } },
+                    // pagados en el periodo, aunque se hayan ingresado otro dia
+                    { estado: 0, updatedAt: { [Op.between]: [`${fechaInicio} 00:00:00`, `${fechaFin} 23:59:59`] } },
+                ],
             },
-            attributes: ['id_cuenta', 'id_medico', 'estado', 'descripcion', 'lugar', 'total', 'updatedAt'],
+            attributes: ['id', 'id_cuenta', 'id_medico', 'estado', 'descripcion', 'lugar', 'total', 'createdAt', 'updatedAt'],
         });
+
+        // Pagado EN el periodo (updatedAt del pago, hora GT). Si se pago despues, en el
+        // corte de su dia de ingreso sale como sin pagar; asi el dinero cuenta una sola vez.
+        const pagoDesde = new Date(`${fechaInicio}T00:00:00Z`).getTime();
+        const pagoHasta = new Date(`${fechaFin}T23:59:59Z`).getTime();
+        const pagadoEnPeriodo = (h) => Number(h.estado) === 0 && new Date(h.updatedAt).getTime() >= pagoDesde && new Date(h.updatedAt).getTime() <= pagoHasta;
 
         const idsCuentas = honorarios.map((item) => item.id_cuenta);
         const cuentas = await Cuentas.findAll({
@@ -80,7 +90,7 @@ module.exports = {
                 lugar: detalle.lugar,
                 descripcion: detalle.descripcion,
                 total_honorario: parseFloat(detalle.total),
-                estado: detalle.estado === 1 ? 'Sin pagar' : 'Pagado',
+                estado: pagadoEnPeriodo(detalle) ? 'Pagado' : 'Sin pagar',
                 fecha: new Intl.DateTimeFormat('es-ES', {
                     day: '2-digit',
                     month: '2-digit',
