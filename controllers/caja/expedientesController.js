@@ -1840,20 +1840,6 @@ module.exports = {
         if (cuentas.length > 0) {
             const id_cuenta = cuentas[0].id;
 
-            // Todas las lab_cuentas activas de la admision actual (creadas desde el ultimo
-            // ingreso), para no cobrar examenes de una admision anterior tras un reingreso.
-            // Antes se tomaba solo la ultima (findOne), dejando sin cobrar los examenes
-            // agendados en otros momentos de la misma hospitalizacion.
-            const expedienteEgreso = await Expediente.findByPk(req.body.id, { attributes: ['fecha_ingreso_reciente'] });
-            const desdeIngresoLab = expedienteEgreso ? expedienteEgreso.fecha_ingreso_reciente : null;
-            const cuentasLabSeleccionadas = await Cuenta_Lab.findAll({
-                where: {
-                    id_expediente: req.body.id,
-                    estado: 1,
-                    ...(desdeIngresoLab ? { createdAt: { [Op.gte]: desdeIngresoLab } } : {}),
-                },
-            });
-            const ids_cuenta_lab = cuentasLabSeleccionadas.map(c => c.id);
 
             // Obtener detalles de habitación incluyendo la habitación para saber el tipo de costo
             const detallesHabitacion = await DetalleHabitaciones.findAll({
@@ -1904,9 +1890,9 @@ module.exports = {
                     attributes: ['total'],
                 }),
                 MovimientoQuirurgico.findAll({ where: { id_cuenta, estado: 1 }, attributes: ['total'] }),
-                ids_cuenta_lab.length > 0
-                    ? Examenes.findAll({ where: { id_cuenta: { [Op.in]: ids_cuenta_lab } }, attributes: ['total'] })
-                    : [],
+                // Los examenes son de lab_cuentas y se cobran en la caja del laboratorio:
+                // no entran al total de la cuenta del hospital.
+                [],
                 SalaOperaciones.findAll({ where: { id_cuenta }, attributes: ['total'] }),
                 Honorario.findAll({ where: { id_cuenta, estado: 1 }, attributes: ['total'] }),
             ]);
@@ -1925,7 +1911,6 @@ module.exports = {
                 sumar(consumosMedicamentos, 'total')    +
                 sumar(consumosAnestesicos,  'total')    +
                 sumar(consumosQuirurgicos,  'total')    +
-                sumar(examenes,             'total')    +
                 sumar(salaOperaciones,      'total')    +
                 sumar(honorarios,           'total')    +
                 costoHabitacion;
@@ -2156,19 +2141,6 @@ module.exports = {
  
             const id_cuenta = cuenta.id;
  
-            // 2. Obtener TODAS las cuentas de lab activas de la admision actual (creadas
-            //    desde el ultimo ingreso), para no cobrar lab de una previa pero sin dejar
-            //    fuera examenes agendados en otros momentos de esta misma admision.
-            const expedienteEmerg = await Expediente.findByPk(id, { attributes: ['fecha_ingreso_reciente'] });
-            const desdeIngresoLabE = expedienteEmerg ? expedienteEmerg.fecha_ingreso_reciente : null;
-            const cuentasLabEmerg = await Cuenta_Lab.findAll({
-                where: {
-                    id_expediente: id,
-                    estado: 1,
-                    ...(desdeIngresoLabE ? { createdAt: { [Op.gte]: desdeIngresoLabE } } : {}),
-                },
-            });
-            const ids_cuenta_lab = cuentasLabEmerg.map(c => c.id);
  
             // 3. Costo de habitación tipo Emergencia: costo_base (primeras 2h) + tarifa por
             //    cada hora adicional. La tarifa/hora es editable en el registro "Emergencia"
@@ -2221,9 +2193,9 @@ module.exports = {
                     attributes: ['total'],
                 }),
                 MovimientoQuirurgico.findAll({ where: { id_cuenta, estado: 1 }, attributes: ['total'] }),
-                ids_cuenta_lab.length > 0
-                    ? Examenes.findAll({ where: { id_cuenta: { [Op.in]: ids_cuenta_lab } }, attributes: ['total'] })
-                    : [],
+                // Los examenes son de lab_cuentas y se cobran en la caja del laboratorio:
+                // no entran al total de la cuenta del hospital.
+                [],
                 Honorario.findAll({ where: { id_cuenta, estado: 1 }, attributes: ['total'] }),
             ]);
  
@@ -2240,7 +2212,6 @@ module.exports = {
                 sumar(consumosMedicamentos, 'total')    +
                 sumar(consumosAnestesicos,  'total')    +
                 sumar(consumosQuirurgicos,  'total')    +
-                sumar(examenes,             'total')    +
                 sumar(honorarios,           'total');
  
             // 5. Actualizar Cuenta: totales + campos clínicos del egreso + fecha/hora de salida

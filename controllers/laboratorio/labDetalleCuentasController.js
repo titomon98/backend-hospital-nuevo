@@ -89,39 +89,9 @@ module.exports = {
                 }
             });
 
-            // 2) Laboratorio de pacientes HOSPITALIZADOS: su lab se cobra dentro de la
-            //    cuenta de hospital y la lab_cuenta queda abierta (estado 1). Se incluye
-            //    el lab cuya cuenta de hospital se cortó hoy, para que el corte de
-            //    laboratorio refleje TODO el laboratorio del día.
-            const cuentasHospi = await db.cuentas.findAll({
-                attributes: ['id_expediente'],
-                include: [{ model: Expediente, attributes: ['id', 'fecha_ingreso_reciente'] }],
-                where: {
-                    [Op.and]: [
-                        { estado: 0 },
-                        Sequelize.where(Sequelize.fn('DATE', Sequelize.col('cuentas.updatedAt')), fecha),
-                    ]
-                }
-            });
-
-            const vistos = new Set(labCaja.map(l => l.id));
-            const labHospi = [];
-            for (const ch of cuentasHospi) {
-                const desde = ch.expediente ? ch.expediente.fecha_ingreso_reciente : null;
-                const labs = await Cuenta.findAll({
-                    include: [{ model: ExamenesRealizados }, { model: Expediente }],
-                    where: {
-                        id_expediente: ch.id_expediente,
-                        estado: 1,
-                        ...(desde ? { createdAt: { [Op.gte]: desde } } : {})
-                    }
-                });
-                for (const l of labs) {
-                    if (!vistos.has(l.id)) { vistos.add(l.id); labHospi.push(l); }
-                }
-            }
-
-            res.send([...labCaja, ...labHospi]);
+            // El laboratorio de pacientes hospitalizados tambien se cobra en la caja del
+            // laboratorio (ya no dentro de la cuenta del hospital): el corte es solo lo cobrado aqui.
+            res.send(labCaja);
         } catch (error) {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });

@@ -13,29 +13,17 @@ const MovimientoQuirurgico = db.detalle_consumo_quirugicos;
 const Medicamento = db.medicamentos;
 const DetalleHabitacion = db.detalle_habitaciones
 
-// Calcula el desglose de una cuenta para el corte/tabla: honorarios y laboratorio
-// (que se suman al total al egresar) y el total de hospital = total_pagado - ambos.
+// Calcula el desglose de una cuenta para el corte/tabla: honorarios, laboratorio cobrado
+// aqui con el cobro anterior y el total de hospital = total_pagado - ambos.
 // Devuelve strings con 2 decimales. Se usa en listPay y listCortesPerDate.
 async function desgloseCuenta(c, plain) {
     const honorarios = await db.detalle_honorarios.sum('total', {
         where: { id_cuenta: c.id, estado: { [Op.ne]: 100 } }
     }) || 0;
 
-    let laboratorio = 0;
-    const desdeIngreso = plain.expediente ? plain.expediente.fecha_ingreso_reciente : null;
-    const labCuenta = await db.lab_cuentas.findOne({
-        where: {
-            id_expediente: c.id_expediente,
-            estado: 1,
-            ...(desdeIngreso ? { createdAt: { [Op.gte]: desdeIngreso } } : {})
-        },
-        order: [['createdAt', 'DESC']]
-    });
-    if (labCuenta) {
-        laboratorio = await db.examenes_realizados.sum('total', {
-            where: { id_cuenta: labCuenta.id }
-        }) || 0;
-    }
+    // El laboratorio se cobra en su caja (lab_cuentas); aqui solo cuenta lo que se
+    // haya cobrado de laboratorio en la caja del hospital con el cobro anterior.
+    const laboratorio = parseFloat(plain.pagado_laboratorio) || 0;
 
     const totalPagado = parseFloat(plain.total_pagado) || 0;
     return {
@@ -54,9 +42,8 @@ async function totalesPorCategoria(cuenta) {
         where: { id_cuenta: cuenta.id, estado: { [Op.ne]: 100 } }
     }) || 0);
 
-    // Laboratorio que entro al total de esta cuenta: las lab_cuentas de la admision
-    // que seguian abiertas al egresar (el egreso suma los examenes de las abiertas),
-    // aunque el laboratorio las haya cobrado despues. Sin egreso: las abiertas hoy.
+    // La cuenta del hospital no incluye laboratorio (los examenes viven en lab_cuentas y
+    // se cobran en su caja). Aqui solo se informa el laboratorio de la admision.
     const expediente = await db.expedientes.findByPk(cuenta.id_expediente, { attributes: ['fecha_ingreso_reciente'] });
     const desdeIngreso = expediente ? expediente.fecha_ingreso_reciente : null;
     const labs = await db.lab_cuentas.findAll({
@@ -66,18 +53,9 @@ async function totalesPorCategoria(cuenta) {
             ...(desdeIngreso ? { createdAt: { [Op.gte]: desdeIngreso } } : {})
         }
     });
-    // fecha/hora de egreso son hora GT; createdAt/updatedAt son UTC real (+6h).
-    const egresoUTC = cuenta.fecha_egreso
-        ? new Date(`${cuenta.fecha_egreso}T${cuenta.hora_egreso || '23:59:59'}Z`).getTime() + 6 * 3600 * 1000
-        : null;
-    const incluidas = labs.filter(l => (egresoUTC === null || isNaN(egresoUTC))
-        ? Number(l.estado) === 1
-        : new Date(l.createdAt).getTime() <= egresoUTC &&
-          (Number(l.estado) === 1 || new Date(l.updatedAt).getTime() >= egresoUTC));
-
     let laboratorio = 0;
     let laboratorioAbierto = 0;
-    for (const l of incluidas) {
+    for (const l of labs) {
         const examenes = parseFloat(await db.examenes_realizados.sum('total', { where: { id_cuenta: l.id } }) || 0);
         laboratorio += examenes;
         if (Number(l.estado) === 1) laboratorioAbierto += Math.max(0, examenes - (parseFloat(l.total_pagado) || 0));
@@ -85,8 +63,7 @@ async function totalesPorCategoria(cuenta) {
     // Abonos a laboratorio hechos antes en la caja del hospital (cobro anterior).
     const laboratorioPendiente = Math.max(0, laboratorioAbierto - (parseFloat(cuenta.pagado_laboratorio) || 0));
 
-    const total = parseFloat(cuenta.total) || 0;
-    const hospital = Math.max(0, total - honorarios - laboratorio);
+    const hospital = Math.max(0, (parseFloat(cuenta.total) || 0) - honorarios);
     return { hospital, honorarios, laboratorio, laboratorioPendiente };
 }
 
@@ -372,21 +349,9 @@ module.exports = {
                     where: { id_cuenta: c.id, estado: { [Op.ne]: 100 } }
                 }) || 0;
 
-                let laboratorio = 0;
-                const desdeIngreso = plain.expediente ? plain.expediente.fecha_ingreso_reciente : null;
-                const labCuenta = await db.lab_cuentas.findOne({
-                    where: {
-                        id_expediente: c.id_expediente,
-                        estado: 1,
-                        ...(desdeIngreso ? { createdAt: { [Op.gte]: desdeIngreso } } : {})
-                    },
-                    order: [['createdAt', 'DESC']]
-                });
-                if (labCuenta) {
-                    laboratorio = await db.examenes_realizados.sum('total', {
-                        where: { id_cuenta: labCuenta.id }
-                    }) || 0;
-                }
+                // Laboratorio: se cobra en su caja (lab_cuentas), no en esta cuenta. Solo se
+                // descuenta lo cobrado de laboratorio aqui con el cobro anterior.
+                const laboratorio = parseFloat(plain.pagado_laboratorio) || 0;
 
                 const totalPagado = parseFloat(plain.total_pagado) || 0;
                 const totalHospital = Math.max(0, totalPagado - parseFloat(honorarios) - parseFloat(laboratorio));

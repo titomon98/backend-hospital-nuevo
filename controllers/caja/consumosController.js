@@ -856,7 +856,8 @@ module.exports = {
                 examenes: itemsLab,
                 totalCuentas,
                 totalLab,
-                totalGeneral: totalCuentas + totalLab,
+                // El laboratorio se cobra en su caja: no entra al total del hospital.
+                totalGeneral: totalCuentas,
                 totalPagado: detalleCuentas.reduce((a, c) => a + c.totalPagado, 0),
             });
         } catch (error) {
@@ -1244,7 +1245,8 @@ module.exports = {
             const toFixed2 = (n) => parseFloat((isNaN(n) ? 0 : n).toFixed(2));
 
             const subtotalConsumos = totalMedicamentos + totalQuirurgico + totalAnestesicos + totalComun + totalOxigeno + totalOtros;
-            const totalAPagar      = subtotalConsumos + totalDerechoEmergencia + totalExamenes + totalHonorarios;
+            // Laboratorio se informa aparte (se paga en su caja); no entra al total del hospital.
+            const totalAPagar      = subtotalConsumos + totalDerechoEmergencia + totalHonorarios;
 
             return res.status(200).json({
                 numeroHoja,
