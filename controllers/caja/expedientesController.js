@@ -2374,11 +2374,19 @@ module.exports = {
 
             await cuenta.update({ fecha_ingreso: fecha, hora_ingreso: hora, updated_by: user }, { transaction: t });
 
-            // Detalle de habitacion activo (mismo formato que reingreso/asignacion).
-            await DetalleHabitaciones.update(
-                { ingreso: new Date(fecha + ' ' + hora), updated_by: user },
-                { where: { id_cuenta: cuenta.id, estado: 1, salida: null }, transaction: t }
-            );
+            // El ingreso del paciente es el del PRIMER detalle de habitacion de la cuenta
+            // (los siguientes son traslados). Antes solo se tocaba el detalle sin salida,
+            // y si ya habia egreso la cuenta cambiaba pero la habitacion seguia cobrando
+            // desde la fecha vieja.
+            const primerDetalle = await DetalleHabitaciones.findOne({
+                where: { id_cuenta: cuenta.id, estado: 1 },
+                order: [['ingreso', 'ASC']],
+                transaction: t,
+            });
+            if (primerDetalle) {
+                // Mismo formato que reingreso/asignacion.
+                await primerDetalle.update({ ingreso: new Date(fecha + ' ' + hora), updated_by: user }, { transaction: t });
+            }
 
             // Cambio de categoría del paciente (Hospitalización / Ambulatorio / Estudio de
             // sueño / Quimioterapia): ajusta tipo_paciente y el costo_base de la habitación
