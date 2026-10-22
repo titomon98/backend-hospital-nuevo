@@ -6,8 +6,8 @@
 //   node scripts/recalcular_cuentas.js 74 75 77            -> solo muestra
 //   node scripts/recalcular_cuentas.js 74 75 77 --aplicar  -> guarda el total nuevo
 //
-// Lo ya pagado (total - pendiente_de_pago) se respeta: el pendiente nuevo es
-// recalculado - pagado, minimo 0. Si lo pagado pasa del total nuevo, lo avisa
+// Lo ya pagado es lo que usa la caja (pagado_hospital + pagado_honorarios, ver
+// desgloseDe en cuentasController): el pendiente nuevo es recalculado - pagado, minimo 0. Si lo pagado pasa del total nuevo, lo avisa
 // (saldo a favor del paciente) y no lo resuelve.
 process.chdir(require('path').join(__dirname, '..'));
 require('dotenv').config();
@@ -25,7 +25,7 @@ const q2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
     const c = await db.cuentas.findByPk(id);
     if (!c) { console.log(`cuenta ${id}: no existe`); continue; }
     const total = q2(c.total);
-    const pagado = q2(total - (parseFloat(c.pendiente_de_pago) || 0));
+    const pagado = q2((parseFloat(c.pagado_hospital) || 0) + (parseFloat(c.pagado_honorarios) || 0));
     const nuevo = q2((await itemsDeCuenta(id)).reduce((a, i) => a + i.total, 0));
     const pendiente = q2(Math.max(0, nuevo - pagado));
     const aFavor = q2(Math.max(0, pagado - nuevo));
