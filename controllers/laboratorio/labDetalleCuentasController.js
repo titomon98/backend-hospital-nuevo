@@ -91,7 +91,18 @@ module.exports = {
 
             // El laboratorio de pacientes hospitalizados tambien se cobra en la caja del
             // laboratorio (ya no dentro de la cuenta del hospital): el corte es solo lo cobrado aqui.
-            res.send(labCaja);
+            // Numero de factura de cada cuenta (si existe), igual que el corte del hospital.
+            const ids = labCaja.map((c) => c.id);
+            const facturas = ids.length
+                ? await db.facturas.findAll({ where: { id_cuenta_laboratorio: ids }, attributes: ['id', 'numero', 'id_cuenta_laboratorio'], order: [['id', 'ASC']] })
+                : [];
+            const facturaDe = {};
+            facturas.forEach((f) => { facturaDe[f.id_cuenta_laboratorio] = f.numero; }); // la mas reciente gana
+            // Pagos de cada cuenta, para el desglose por metodo de pago del corte.
+            const pagos = ids.length ? await db.lab_detalle_pago_cuentas.findAll({ where: { id_lab_cuenta: ids } }) : [];
+            const pagosDe = {};
+            pagos.forEach((p) => { (pagosDe[p.id_lab_cuenta] = pagosDe[p.id_lab_cuenta] || []).push(p.toJSON()); });
+            res.send(labCaja.map((c) => ({ ...c.toJSON(), numero_factura: facturaDe[c.id] || null, detalle_pago: pagosDe[c.id] || [] })));
         } catch (error) {
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
