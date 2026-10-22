@@ -232,11 +232,20 @@ module.exports = {
             where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
         .then(async data => {
         // Estado de pago por fila: que falta pagar (hospital, honorarios, laboratorio).
-        const filas = await Promise.all(data.rows.map(async c => {
+        // Una cuenta egresada que ya esta pagada completa (hospital, honorarios y
+        // laboratorio) se cierra aqui y deja de listarse: cubre los cobros hechos
+        // por flujos que no la cerraban y las cuentas corregidas a mano.
+        // ponytail: efecto en un GET; si se unifica el cierre en todos los cobros, quitar.
+        const filas = [];
+        for (const c of data.rows) {
             const d = await desgloseDe(c);
-            return { ...c.toJSON(), pendientes_pago: d.pendientes };
-        }));
-        data = { count: data.count, rows: filas };
+            if (d.solvente && c.fecha_egreso) {
+                await cerrarCuentaSiSolvente(c);
+                continue;
+            }
+            filas.push({ ...c.toJSON(), pendientes_pago: d.pendientes });
+        }
+        data = { count: data.count - (data.rows.length - filas.length), rows: filas };
         const response = getPagingData(data, page, limit);
 
         console.log('response: '+JSON.stringify(response))

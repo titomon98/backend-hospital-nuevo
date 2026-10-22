@@ -42,6 +42,7 @@ module.exports = (router) => {
     router.put('/lab_cuentas/update', labCuentasController.update);
     router.put('/lab_cuentas/activate', labCuentasController.activate);
     router.put('/lab_cuentas/deactivate', labCuentasController.deactivate);
+    router.put('/lab_cuentas/cobrarPaciente', labCuentasController.cobrarPaciente);
     router.get('/lab_cuentas/getSearch', labCuentasController.getSearch);
     router.post('/lab_cuentas/requestDiscount', labCuentasController.DiscountRequest);
     router.get('/lab_cuentas/listDiscount', labCuentasController.listNoPayDiscountRequest);
