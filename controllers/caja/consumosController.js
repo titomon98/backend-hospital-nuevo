@@ -1029,9 +1029,13 @@ module.exports = {
 
             let costoTotal = 0.0;
             let costoIntensivo = 0.0;
+            // Dias de estancia = dias cobrados (corte 2 PM), no resta de fechas.
+            let diasEstancia = 0;
             const opcSumario = await opcionesCosto(cuentaSeleccionada);
             for (const detalle of detallesHabitacion) {
-                const costoTotalInterno = costoDetalleHabitacion(detalle, habitacionesMapSumario[detalle.id_habitacion], opcSumario).costo;
+                const cobro = costoDetalleHabitacion(detalle, habitacionesMapSumario[detalle.id_habitacion], opcSumario);
+                const costoTotalInterno = cobro.costo;
+                diasEstancia += cobro.cantidad;
 
                 if (detalle.tipo_habitacion === 'Intensivo') {
                     costoIntensivo += costoTotalInterno;
@@ -1057,7 +1061,8 @@ module.exports = {
                 horaEgreso:  cuentaSeleccionada.hora_egreso  ?? null,
                 ...descuentoDe(cuentaSeleccionada),
                 costoTotal,
-                costoIntensivo
+                costoIntensivo,
+                diasEstancia
             };
 
             return res.status(200).json(reporte);
@@ -1422,9 +1427,13 @@ module.exports = {
 
             let costoTotal = 0.0;
             let costoIntensivo = 0.0;
+            // Dias de estancia = dias cobrados (corte 2 PM), no resta de fechas.
+            let diasEstancia = 0;
             const opcParcial = await opcionesCosto(cuenta);
             for (const detalle of detallesHabitacion) {
-                const costo = costoDetalleHabitacion(detalle, habitacionesMap[detalle.id_habitacion], opcParcial).costo;
+                const cobro = costoDetalleHabitacion(detalle, habitacionesMap[detalle.id_habitacion], opcParcial);
+                const costo = cobro.costo;
+                diasEstancia += cobro.cantidad;
 
                 if (detalle.tipo_habitacion === 'Intensivo') {
                     costoIntensivo += costo;
@@ -1465,6 +1474,7 @@ module.exports = {
                 ...descuentoDe(cuenta),
                 costoTotal:     parseFloat(costoTotal.toFixed(2)),
                 costoIntensivo: parseFloat(costoIntensivo.toFixed(2)),
+                diasEstancia,
                 consumos:               consumos.map(i => ({ ...i.toJSON(), subtotal: parseFloat(i.subtotal || 0) || 0 })),
                 consumosComunes:        consumosComunes.map(i => ({ ...i.toJSON(), total: parseFloat(i.total || 0) || 0 })),
                 consumosMedicamentos:   consumosMedicamentos.map(i => ({ ...i.toJSON(), total: parseFloat(i.total || 0) || 0 })),
