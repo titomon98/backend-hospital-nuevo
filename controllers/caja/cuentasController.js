@@ -103,6 +103,58 @@ async function cerrarCuentaSiSolvente(cuenta, transaction) {
     return d;
 }
 
+// Reingreso tras una cuenta parcial: cierra la habitacion de `cuenta` en el corte y
+// abre una cuenta NUEVA en cero con la misma habitacion y tarifa desde ese corte.
+// (detalle_habitaciones: salida en wall-clock GT, ingreso en UTC real.)
+async function abrirCuentaDesdeCorte(cuenta, fechaCorte, horaCorte, usuario, t) {
+    const salidaCorte = tiempo.desdeFormulario(fechaCorte, horaCorte);
+    const detalleAnterior = await DetalleHabitacion.findOne({
+        where: { id_cuenta: cuenta.id, estado: 1 },
+        order: [['ingreso', 'DESC']],
+        transaction: t
+    });
+    await DetalleHabitacion.update(
+        { salida: salidaCorte },
+        { where: { id_cuenta: cuenta.id, estado: 1, salida: null }, transaction: t }
+    );
+    const nueva = await Cuenta.create({
+        numero: 1,
+        fecha_ingreso: fechaCorte,
+        hora_ingreso: horaCorte,
+        motivo: cuenta.motivo ?? null,
+        motivo_egreso: null,
+        descripcion: null,
+        otros: null,
+        total: 0,
+        estado: 1,
+        total_pagado: 0,
+        pendiente_de_pago: 0,
+        descuento: 0,
+        solicitud_descuento: 3,
+        subtotal: 0,
+        tipo: cuenta.tipo,
+        tipo_paciente: cuenta.tipo_paciente ?? null,
+        id_expediente: cuenta.id_expediente,
+        created_by: usuario,
+        updated_by: usuario,
+    }, { transaction: t });
+    await nueva.update({ numero: nueva.id }, { transaction: t });
+    if (detalleAnterior) {
+        await DetalleHabitacion.create({
+            id_cuenta: nueva.id,
+            id_habitacion: detalleAnterior.id_habitacion,
+            tipo_habitacion: detalleAnterior.tipo_habitacion,
+            estado: 1,
+            costo_base: detalleAnterior.costo_base,
+            ingreso: new Date(salidaCorte.getTime() + 6 * 60 * 60 * 1000),
+            salida: null,
+            created_by: usuario,
+            updated_by: usuario,
+        }, { transaction: t });
+    }
+    return nueva;
+}
+
 module.exports = {
     desgloseDe,
     cerrarCuentaSiSolvente,
@@ -284,17 +336,12 @@ module.exports = {
         const { limit, offset } = getPagination(page, size);
         var condition = { estado:10}
 
-        const estadosIncluidos = [91, 93, 94, 95];
 
         Cuenta.findAndCountAll({ 
             include: [
                 {
                     model: Expediente,
-                    where: {
-                       estado: {
-                         [Op.in]: estadosIncluidos
-                       }
-                    },
+                    // La cuenta congelada (10) se cobra aqui aunque el paciente siga en su area.
                     required: true
                 }
             ],
@@ -1017,66 +1064,64 @@ module.exports = {
         
     },
 
-    // Manda la cuenta actual a "cuenta parcial": se congela su total (TotalApagar) y se
-    // CORTA el tiempo en este momento (fecha/hora_egreso de la cuenta), para que la
-    // habitacion deje de correr en esta cuenta. Al pagarla, la cuenta nueva arranca
-    // desde este corte. Idempotente: un segundo clic no vuelve a sumar 90 ni mueve el corte.
+    // "Pagar cuenta parcial" desde el area: congela lo que el paciente debe hasta ahora
+    // (la cuenta actual pasa a estado 10 con su total, para cobrarse en caja) y en el
+    // mismo momento lo reingresa: abre una cuenta NUEVA en cero, con la misma habitacion,
+    // desde este corte. El paciente sigue en su area con la cuenta nueva.
+    // Transaccional e idempotente (un segundo clic no congela ni abre otra cuenta).
     async ingresoParcialPago(req, res) {
-        const { id } = req.params;
-
+        const { id } = req.params; // id del expediente
+        const usuario = req.user?.user ?? null;
+        if (!(parseFloat(req.body.TotalApagar) > 0)) {
+            // Sin total calculado no se congela nada (antes dejaba la cuenta en Q0).
+            return res.status(400).json({ msg: 'Genere primero la cuenta parcial para calcular el total a pagar' });
+        }
+        const t = await db.sequelize.transaction();
         try {
-            const expediente = await Expediente.findByPk(id);
-
-            if (!expediente) {
-                return res.status(404).json({ msg: 'Expediente no encontrado' });
-            }
-
-            // Buscar la última cuenta del expediente
-            const ultimaCuenta = await Cuenta.findOne({
-                where: { id_expediente: id },
+            const cuenta = await Cuenta.findOne({
+                where: { id_expediente: id, estado: 1 },
                 order: [['createdAt', 'DESC']],
+                transaction: t,
+                lock: t.LOCK.UPDATE,
             });
-            if (!ultimaCuenta) {
-                return res.status(404).json({ msg: 'El paciente no tiene cuenta' });
+            if (!cuenta) {
+                await t.rollback();
+                return res.status(404).json({ msg: 'El paciente no tiene una cuenta activa' });
             }
-            if (Number(ultimaCuenta.estado) === 10) {
-                return res.status(200).json({ msg: 'La cuenta ya está en cuenta parcial', data: expediente });
-            }
-            // Sin total calculado (la pantalla no genero la cuenta parcial) no se manda nada:
-            // antes dejaba la cuenta en Q0 y no se podia cobrar.
-            if (!(parseFloat(req.body.TotalApagar) > 0)) {
-                return res.status(400).json({ msg: 'Genere primero la cuenta parcial para calcular el total a pagar' });
+            // Un segundo clic llega despues del primero: la cuenta activa ya es la nueva,
+            // recien abierta y en cero; no se vuelve a congelar.
+            const recienAbierta = Number(cuenta.total) === 0 && (Date.now() - new Date(cuenta.createdAt).getTime()) < 60 * 1000;
+            if (recienAbierta) {
+                await t.rollback();
+                return res.status(200).json({ msg: 'La cuenta ya está en cuenta parcial' });
             }
 
             const corte = tiempo.ahora().toISOString(); // wall-clock GT
-            await Promise.all([
-                // El +90 solo se aplica si aun no esta en parcial, en el mismo UPDATE.
-                Expediente.update(
-                    { estado: db.sequelize.literal('estado + 90'), updated_by: req.user?.user ?? expediente.updated_by },
-                    { where: { id, estado: { [Op.lt]: 90 } } }
-                ),
-                Cuenta.update({
-                    estado: 10,
-                    updated_by: req.user?.user ?? ultimaCuenta.updated_by,
-                    pendiente_de_pago: req.body.TotalApagar,
-                    total: req.body.TotalApagar,
-                    fecha_egreso: corte.slice(0, 10),
-                    hora_egreso: corte.slice(11, 19),
-                }, { where: { id: ultimaCuenta.id, estado: { [Op.ne]: 10 } } }),
-            ]);
+            const fechaCorte = corte.slice(0, 10);
+            const horaCorte = corte.slice(11, 19);
+            await cuenta.update({
+                estado: 10,
+                total: req.body.TotalApagar,
+                pendiente_de_pago: req.body.TotalApagar,
+                fecha_egreso: fechaCorte,
+                hora_egreso: horaCorte,
+                updated_by: usuario,
+            }, { transaction: t });
+            const nueva = await abrirCuentaDesdeCorte(cuenta, fechaCorte, horaCorte, usuario, t);
 
-            return res.status(200).json({ msg: 'Expediente actualizado', data: expediente });
+            await t.commit();
+            return res.status(200).json({ msg: 'Cuenta parcial generada', id_cuenta_parcial: cuenta.id, id_cuenta_nueva: nueva.id });
         } catch (error) {
+            await t.rollback();
             console.log(error);
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         }
     },
 
-    // Paga la cuenta parcial y "reingresa" al paciente: la cuenta pagada se cierra con
-    // su pago registrado (corte y metodos de pago) y se abre una cuenta NUEVA en cero,
-    // con la misma habitacion, que arranca en el corte de la parcial. Asi los consumos
-    // y la habitacion empiezan de nuevo (la regla de dias cobra el dia aunque no sea
-    // completo). Todo en una transaccion e idempotente.
+    // Cobro en caja de la cuenta parcial congelada: registra el pago (corte y metodos de
+    // pago) y la cierra. El paciente ya tiene su cuenta nueva desde el corte.
+    // Cuentas parciales del flujo anterior (expediente en 9x, sin cuenta nueva): al pagar
+    // se abre la cuenta nueva y el paciente vuelve a su area (estado - 90).
     async pagarCuentaParcial(req, res) {
         const { id } = req.params;
         const usuario = req.user?.user ?? req.body.user ?? null;
@@ -1131,8 +1176,7 @@ module.exports = {
                 }
             }
 
-            // 2) Cerrar la cuenta pagada. El corte es el de la parcial (o ahora, si es una
-            //    cuenta parcial vieja sin corte).
+            // 2) Cerrar la cuenta parcial pagada.
             const ahoraGT = tiempo.ahora().toISOString();
             const fechaCorte = cuenta.fecha_egreso || ahoraGT.slice(0, 10);
             const horaCorte = (cuenta.fecha_egreso && cuenta.hora_egreso) || ahoraGT.slice(11, 19);
@@ -1149,69 +1193,19 @@ module.exports = {
                 updated_by: usuario
             }, { transaction: t });
 
-            // La habitacion de la cuenta pagada termina en el corte (salida = wall-clock GT).
-            const salidaCorte = tiempo.desdeFormulario(fechaCorte, horaCorte);
-            const detalleAnterior = await DetalleHabitacion.findOne({
-                where: { id_cuenta: cuenta.id, estado: 1 },
-                order: [['ingreso', 'DESC']],
-                transaction: t
-            });
-            await DetalleHabitacion.update(
-                { salida: salidaCorte },
-                { where: { id_cuenta: cuenta.id, estado: 1, salida: null }, transaction: t }
-            );
-
-            // 3) Cuenta NUEVA en cero desde el corte.
-            const nuevaCuenta = await Cuenta.create({
-                numero: 1,
-                fecha_ingreso: fechaCorte,
-                hora_ingreso: horaCorte,
-                motivo: cuenta.motivo ?? null,
-                descripcion: null,
-                otros: null,
-                total: 0,
-                estado: 1,
-                total_pagado: 0,
-                pendiente_de_pago: 0,
-                descuento: 0,
-                solicitud_descuento: 3,
-                subtotal: 0,
-                tipo: cuenta.tipo,
-                tipo_paciente: cuenta.tipo_paciente ?? null,
-                id_expediente: cuenta.id_expediente,
-                created_by: usuario,
-                updated_by: usuario,
-            }, { transaction: t });
-            await nuevaCuenta.update({ numero: nuevaCuenta.id }, { transaction: t });
-
-            // Misma habitacion y tarifa; ingreso en UTC real (convencion de detalle_habitaciones).
-            if (detalleAnterior) {
-                await DetalleHabitacion.create({
-                    id_cuenta: nuevaCuenta.id,
-                    id_habitacion: detalleAnterior.id_habitacion,
-                    tipo_habitacion: detalleAnterior.tipo_habitacion,
-                    estado: 1,
-                    costo_base: detalleAnterior.costo_base,
-                    ingreso: new Date(salidaCorte.getTime() + 6 * 60 * 60 * 1000),
-                    salida: null,
-                    created_by: usuario,
-                    updated_by: usuario,
-                }, { transaction: t });
+            // 3) Flujo anterior: si el paciente no tiene cuenta activa, se le abre ahora y
+            //    vuelve a su area.
+            const activa = await Cuenta.findOne({ where: { id_expediente: cuenta.id_expediente, estado: 1 }, transaction: t });
+            if (!activa) {
+                await abrirCuentaDesdeCorte(cuenta, fechaCorte, horaCorte, usuario, t);
+                await Expediente.update(
+                    { estado: db.sequelize.literal('estado - 90'), updated_by: usuario },
+                    { where: { id: cuenta.id_expediente, estado: { [Op.gte]: 90 } }, transaction: t }
+                );
             }
 
-            // 4) El paciente vuelve a su area (solo si esta en parcial, 9x) con el nuevo ingreso.
-            await Expediente.update(
-                {
-                    estado: db.sequelize.literal('estado - 90'),
-                    fecha_ingreso_reciente: fechaCorte,
-                    hora_ingreso_reciente: horaCorte,
-                    updated_by: usuario
-                },
-                { where: { id: cuenta.id_expediente, estado: { [Op.gte]: 90 } }, transaction: t }
-            );
-
             await t.commit();
-            return res.status(201).json({ msg: 'Pago procesado y nueva cuenta creada', data: nuevaCuenta });
+            return res.status(201).json({ msg: 'Cuenta parcial pagada' });
         } catch (error) {
             await t.rollback();
             console.log(error);
