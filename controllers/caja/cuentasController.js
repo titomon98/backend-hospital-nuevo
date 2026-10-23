@@ -648,12 +648,16 @@ module.exports = {
                     total_pagado: req.body.total_pagado,
                     pendiente_de_pago: req.body.pendiente_de_pago
                 },
-                { where: { 
-                    id: req.body.id
+                // Idempotente: solo se finiquita una cuenta que no este cerrada.
+                { where: {
+                    id: req.body.id,
+                    estado: { [Op.ne]: 0 }
                 } }
             )
-            .then((cuenta) =>{
-                console.log(cuenta)
+            .then(([actualizadas]) =>{
+                if (!actualizadas) {
+                    return res.status(409).json({ msg: 'Esta cuenta ya fue pagada' });
+                }
                 Expediente.update(
                     {solvencia: 1},
                     {where: {
@@ -729,16 +733,31 @@ module.exports = {
                 return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
             });
         } else {
+            // Idempotente: el abono solo se aplica si lo pagado sigue siendo lo que vio la
+            // pantalla (total_pagado - este abono). Un segundo clic ya no cuadra y no
+            // duplica el pago en el corte.
+            const pagadoAntes = parseFloat(req.body.total_pagado) - (parseFloat(req.body.total) || 0);
+            // Sin total_pagado en la peticion (otros usos del endpoint) no se puede comparar.
+            const condicionPagado = Number.isFinite(pagadoAntes)
+                ? (pagadoAntes < 0.005
+                    ? { [Op.or]: [{ total_pagado: pagadoAntes.toFixed(2) }, { total_pagado: null }] }
+                    : { total_pagado: pagadoAntes.toFixed(2) })
+                : {};
             Cuenta.update(
                 { 
                     total_pagado: req.body.total_pagado,
                     pendiente_de_pago: req.body.pendiente_de_pago
                 },
                 { where: { 
-                    id: req.body.id
+                    id: req.body.id,
+                    estado: { [Op.ne]: 0 },
+                    ...condicionPagado
                 } }
             )
-            .then(cuenta =>{
+            .then(([actualizadas]) =>{
+                if (!actualizadas) {
+                    return res.status(409).json({ msg: 'La cuenta cambió o este abono ya se registró. Actualice e intente de nuevo.' });
+                }
                 detallePagoCuentas.create(
                     {
                         efectivo: req.body.efectivo,
@@ -869,16 +888,20 @@ module.exports = {
                     const nuevoTotalPagado = parseFloat(cuenta.total_pagado) + descuentoAplicado;
                     const nuevoPendienteDePago = parseFloat(cuenta.pendiente_de_pago) - descuentoAplicado;                    
         
+                    // Idempotente: solo se aprueba un descuento que sigue pendiente (2); una
+                    // segunda aprobacion ya no lo descuenta otra vez.
                     return Cuenta.update({
                         solicitud_descuento: 1,
                         descuento: form.descuento,
                         total_pagado: parseFloat(nuevoTotalPagado),
                         pendiente_de_pago: parseFloat(nuevoPendienteDePago)
                     }, {
-                        where: { id: form.id }
+                        where: { id: form.id, solicitud_descuento: 2 }
                     });
                 })
-                .then(cuenta => res.status(200).send('El registro ha sido actualizado'))
+                .then(([actualizadas]) => actualizadas
+                    ? res.status(200).send('El registro ha sido actualizado')
+                    : res.status(409).json({ msg: 'Este descuento ya fue resuelto' }))
                 .catch(error => {
                     console.log(error);
                     return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde'   

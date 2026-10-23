@@ -457,12 +457,16 @@ module.exports = {
                     pendiente_de_pago: req.body.pendiente_de_pago,
                     fecha_corte: nuevaFecha
                 },
-                { where: { 
-                    id: req.body.id
+                // Idempotente: solo se finiquita una cuenta abierta.
+                { where: {
+                    id: req.body.id,
+                    estado: 1
                 } }
             )
-            .then((cuenta) =>{
-                console.log(cuenta)
+            .then(([actualizadas]) =>{
+                if (!actualizadas) {
+                    return res.status(409).json({ msg: 'Esta cuenta ya fue pagada' });
+                }
                 cerrarHospitalTrasLaboratorio(req.body.id).catch((e) => console.error(e))
                 Expediente.update(
                     {solvencia: 0},
@@ -562,16 +566,28 @@ module.exports = {
                 return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
             });
         } else {
+            // Idempotente: el abono solo se aplica si lo pagado sigue siendo lo que vio la pantalla.
+            const pagadoAntes = parseFloat(req.body.total_pagado) - (parseFloat(req.body.total) || 0);
+            const condicionPagado = Number.isFinite(pagadoAntes)
+                ? (pagadoAntes < 0.005
+                    ? { [Op.or]: [{ total_pagado: pagadoAntes.toFixed(2) }, { total_pagado: null }] }
+                    : { total_pagado: pagadoAntes.toFixed(2) })
+                : {};
             Cuenta.update(
                 { 
                     total_pagado: req.body.total_pagado,
                     pendiente_de_pago: req.body.pendiente_de_pago
                 },
-                { where: { 
-                    id: req.body.id
+                { where: {
+                    id: req.body.id,
+                    estado: 1,
+                    ...condicionPagado
                 } }
             )
-            .then(cuenta =>{
+            .then(([actualizadas]) =>{
+                if (!actualizadas) {
+                    return res.status(409).json({ msg: 'La cuenta cambió o este abono ya se registró. Actualice e intente de nuevo.' });
+                }
                 detallePagoCuentas.create(
                     {
                         efectivo: req.body.efectivo,

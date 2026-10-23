@@ -197,6 +197,9 @@ function resolverCategoria(form) {
     return 'Hospitalización';
 }
 
+// Estados de expediente con el paciente dentro del hospital (incluye cuenta parcial 9x).
+const ESTADOS_INTERNADO = [1, 3, 4, 5, 91, 93, 94, 95];
+
 module.exports = {
     create(req, res) {
         const restarHoras = (fecha, horas) => {
@@ -506,6 +509,14 @@ module.exports = {
             createdAt: new Date(),
             updatedAt: restarHoras(new Date(), 6),
             created_by: req.user?.user ?? req.body.user
+        }
+        // Idempotente: si esta cuenta ya tiene esa habitacion abierta (sin salida), un
+        // segundo clic no crea otro detalle (se cobraria la habitacion doble).
+        const yaAsignada = await DetalleHabitaciones.findOne({
+            where: { id_cuenta: form.cuenta, id_habitacion: habitacion.id, estado: 1, salida: null }
+        })
+        if (yaAsignada) {
+            return res.status(409).json({ msg: 'La habitación ya está asignada a este paciente' })
         }
         await DetalleHabitaciones.create(createHabitacion)
         // Guardar la categoría del paciente en la cuenta (para el corte).
@@ -1143,6 +1154,14 @@ module.exports = {
             };
 
             const moment = require('moment');
+
+            // Idempotente: si el expediente ya esta en el estado pedido (segundo clic), no se
+            // repite el cobro de habitacion ni el cierre de la cuenta.
+            // ponytail: chequeo de lectura, no atomico; el interceptor del frontend cubre clics simultaneos.
+            const actual = await Expediente.findByPk(req.body.id, { attributes: ['estado'] });
+            if (actual && req.body.estado !== undefined && typeof req.body.nombre_encargado === 'undefined' && Number(actual.estado) === Number(req.body.estado)) {
+                return res.status(200).json({ msg: 'Estado actualizado correctamente' });
+            }
 
             // 🔹 PROCESO DE COBRO
             if (req.body.estado)
@@ -1972,10 +1991,15 @@ module.exports = {
             const destinoReingreso = esEmergencia ? 'Emergencia' : 'Hospitalización';
 
             // Reactivar expediente al área correcta y actualizar la fecha/hora de ingreso.
-            await Expediente.update(
+            // Idempotente: solo reingresa a un paciente que esta fuera del hospital; un
+            // segundo clic ya no duplica el reingreso ni el log.
+            const [reactivados] = await Expediente.update(
                 { estado: estadoReingreso, solvencia: 0, fecha_ingreso_reciente: fechaIngreso, hora_ingreso_reciente: horaIngreso },
-                { where: { id: id_expediente } }
+                { where: { id: id_expediente, estado: { [Op.notIn]: ESTADOS_INTERNADO } } }
             );
+            if (!reactivados) {
+                return res.status(409).json({ msg: 'El paciente ya fue reingresado' });
+            }
             // Al reingresar desde cuentas por cobrar se reutiliza la cuenta que ya existe:
             // NO se toca su fecha_ingreso/hora_ingreso (conserva el ingreso original), pero
             // sí se limpia el egreso: al reingresar el paciente vuelve a estar activo, así que
@@ -2046,13 +2070,19 @@ module.exports = {
             }
 
             // 1) Reactivar el expediente al area, con la fecha/hora de ingreso y el medico.
-            await Expediente.update({
+            //    Idempotente: solo si esta fuera del hospital; un segundo clic no crea
+            //    una segunda cuenta.
+            const [reactivados] = await Expediente.update({
                 estado: estadoArea,
                 solvencia: 0,
                 fecha_ingreso_reciente: form.fecha,
                 hora_ingreso_reciente: form.hora,
                 id_medico: form.assignedDoctor
-            }, { where: { id: id_expediente }, transaction: t });
+            }, { where: { id: id_expediente, estado: { [Op.notIn]: ESTADOS_INTERNADO } }, transaction: t });
+            if (!reactivados) {
+                await t.rollback();
+                return res.status(409).json({ msg: 'El paciente ya fue reingresado' });
+            }
 
             // 2) Crear una cuenta NUEVA (no se reutiliza la anterior).
             const nuevaCuenta = await Cuenta.create({

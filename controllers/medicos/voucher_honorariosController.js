@@ -37,27 +37,28 @@ module.exports = {
             created_by: req.user?.user ?? req.body.user
         };
 
-        await Honorarios.update(
-            { 
-                estado: 0, 
-                updatedAt: restarHoras(new Date(), 6) 
-            },
-            { 
-                where: {
-                    id: { [Op.in]: form.id_paciente },
-                    id_medico: form.medico.id
-                } 
+        // Idempotente: solo se pagan honorarios que siguen pendientes (estado 1), en la misma
+        // transaccion que el voucher. Un segundo clic ya no encuentra pendientes y no crea
+        // otro voucher por el mismo dinero.
+        const ids = Array.isArray(form.id_paciente) ? form.id_paciente : [form.id_paciente];
+        const t = await db.sequelize.transaction();
+        try {
+            const [pagados] = await Honorarios.update(
+                { estado: 0, updatedAt: restarHoras(new Date(), 6) },
+                { where: { id: { [Op.in]: ids }, id_medico: form.medico.id, estado: 1 }, transaction: t }
+            );
+            if (!ids.length || pagados !== ids.length) {
+                await t.rollback();
+                return res.status(409).json({ msg: 'Alguno de los honorarios elegidos ya fue pagado. Actualice la lista e intente de nuevo.' });
             }
-        );
-
-        await VoucherHonorarios.create(datos)
-        .then(tipo => {
-            res.send(tipo);
-        })
-        .catch(error => {
+            const voucher = await VoucherHonorarios.create(datos, { transaction: t });
+            await t.commit();
+            return res.send(voucher);
+        } catch (error) {
+            await t.rollback();
             console.log(error)
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
+        }
     },
 
     async getSearch(req, res) {

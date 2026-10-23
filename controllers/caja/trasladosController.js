@@ -37,6 +37,18 @@ const DetalleHonorarios = db.detalle_honorarios;
 
 module.exports = { 
     async trasladarEmergenciaAHospital(req, res) {
+        // Idempotente: el traslado se "reclama" al inicio pasando el expediente de
+        // Emergencias (5) a su destino en un solo UPDATE condicionado. Un segundo clic ya
+        // no lo encuentra en 5 y no duplica el honorario de Q25 ni el cargo de habitacion.
+        const [reclamado] = await Expediente.update(
+            { estado: req.body.estado },
+            { where: { id: req.body.id, estado: 5 } }
+        );
+        if (!reclamado) {
+            return res.status(409).json({ msg: 'El paciente ya fue trasladado' });
+        }
+        // Las salidas tempranas de abajo antes no movian al paciente: se respeta eso.
+        const volverAEmergencias = () => Expediente.update({ estado: 5 }, { where: { id: req.body.id } });
         try {
             const moment = require('moment');
 
@@ -63,6 +75,7 @@ module.exports = {
                 const registroMasReciente = logs[0];
 
                 if (!registroMasReciente.id_habitacionDestino) {
+                    await volverAEmergencias();
                     return res.status(200).json({ msg: 'No se encontró habitación' });
                 }
 
@@ -71,6 +84,7 @@ module.exports = {
                 });
 
                 if (!habitacionSeleccionada) {
+                    await volverAEmergencias();
                     return res.status(200).json({ msg: 'No se encontró habitación' });
                 }
 
@@ -80,6 +94,7 @@ module.exports = {
                 });
 
                 if (cuentas.length === 0) {
+                    await volverAEmergencias();
                     return res.status(400).json({ msg: 'No se encontró ninguna cuenta activa' });
                 }
 
@@ -157,6 +172,8 @@ module.exports = {
 
         } catch (error) {
             console.error(error);
+            // Si fallo a medias, el paciente vuelve a Emergencias para poder reintentar.
+            await volverAEmergencias().catch(() => {});
             return res.status(500).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         }
     },
