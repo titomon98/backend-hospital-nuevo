@@ -1008,14 +1008,14 @@ module.exports = {
                 where: { id_expediente: id },
                 order: [['createdAt', 'DESC']],
             });
-            // Idempotente: si ya esta en cuenta parcial (estado 9x / cuenta 10), no se vuelve
-            // a sumar 90 (un segundo clic dejaba al paciente en 181 y desaparecia de los listados).
-            const yaParcial = Number(expediente.estado) >= 90;
+            // Idempotente y atomico: el +90 solo se aplica si el expediente aun no esta en
+            // cuenta parcial (estado < 90), en el mismo UPDATE. Un segundo clic, aunque llegue
+            // al mismo tiempo, ya no suma (antes dejaba al paciente en 181 y desaparecia).
             await Promise.all([
-                expediente.update({
-                    estado: yaParcial ? expediente.estado : expediente.estado + 90,
-                    updated_by: req.user?.user ?? expediente.updated_by,
-                }),
+                Expediente.update(
+                    { estado: db.sequelize.literal('estado + 90'), updated_by: req.user?.user ?? expediente.updated_by },
+                    { where: { id, estado: { [Op.lt]: 90 } } }
+                ),
                 ultimaCuenta?.update({
                     estado: 10,
                     updated_by: req.user?.user ?? ultimaCuenta.updated_by,
@@ -1054,16 +1054,19 @@ module.exports = {
             if (!cuentaOriginal) {
                 return res.status(404).json({ msg: 'Cuenta no encontrada' });
             }
-            Cuenta.update(
-                { 
+            // Idempotente y atomico: solo se paga una cuenta que sigue en parcial (estado 10).
+            // Si otro clic ya la pago, no se crea una segunda cuenta ni se resta otra vez 90.
+            const [pagadas] = await Cuenta.update(
+                {
                     estado: 0,
                     total_pagado: req.body.total_pagado,
                     pendiente_de_pago: req.body.pendiente_de_pago
                 },
-                { where: { 
-                    id: id
-                }}
-            )
+                { where: { id, estado: 10 } }
+            );
+            if (pagadas === 0) {
+                return res.status(409).json({ msg: 'Esta cuenta parcial ya fue pagada' });
+            }
 
             const hoy = new Date();
             const fechaHoy = hoy.toISOString().split('T')[0];
@@ -1105,11 +1108,11 @@ module.exports = {
                     created_by:      req.user?.user ?? null,
                     updated_by:      req.user?.user ?? null,
                 }),
-                cuentaOriginal.expediente.update({
-                    // Solo regresa si esta en cuenta parcial (9x); nunca por debajo de eso.
-                    estado:     Number(cuentaOriginal.expediente.estado) >= 90 ? cuentaOriginal.expediente.estado - 90 : cuentaOriginal.expediente.estado,
-                    updated_by: req.user?.user ?? cuentaOriginal.expediente.updated_by,
-                }),
+                // Solo regresa si esta en cuenta parcial (9x), en el mismo UPDATE.
+                Expediente.update(
+                    { estado: db.sequelize.literal('estado - 90'), updated_by: req.user?.user ?? cuentaOriginal.expediente.updated_by },
+                    { where: { id: cuentaOriginal.id_expediente, estado: { [Op.gte]: 90 } } }
+                ),
             ]);
 
             return res.status(201).json({ msg: 'Pago procesado y nueva cuenta creada', data: nuevaCuenta });
