@@ -1008,9 +1008,12 @@ module.exports = {
                 where: { id_expediente: id },
                 order: [['createdAt', 'DESC']],
             });
+            // Idempotente: si ya esta en cuenta parcial (estado 9x / cuenta 10), no se vuelve
+            // a sumar 90 (un segundo clic dejaba al paciente en 181 y desaparecia de los listados).
+            const yaParcial = Number(expediente.estado) >= 90;
             await Promise.all([
                 expediente.update({
-                    estado: expediente.estado + 90,
+                    estado: yaParcial ? expediente.estado : expediente.estado + 90,
                     updated_by: req.user?.user ?? expediente.updated_by,
                 }),
                 ultimaCuenta?.update({
@@ -1103,7 +1106,8 @@ module.exports = {
                     updated_by:      req.user?.user ?? null,
                 }),
                 cuentaOriginal.expediente.update({
-                    estado:     cuentaOriginal.expediente.estado - 90,
+                    // Solo regresa si esta en cuenta parcial (9x); nunca por debajo de eso.
+                    estado:     Number(cuentaOriginal.expediente.estado) >= 90 ? cuentaOriginal.expediente.estado - 90 : cuentaOriginal.expediente.estado,
                     updated_by: req.user?.user ?? cuentaOriginal.expediente.updated_by,
                 }),
             ]);
