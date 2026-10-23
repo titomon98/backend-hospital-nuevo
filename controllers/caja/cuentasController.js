@@ -1042,6 +1042,11 @@ module.exports = {
             if (Number(ultimaCuenta.estado) === 10) {
                 return res.status(200).json({ msg: 'La cuenta ya está en cuenta parcial', data: expediente });
             }
+            // Sin total calculado (la pantalla no genero la cuenta parcial) no se manda nada:
+            // antes dejaba la cuenta en Q0 y no se podia cobrar.
+            if (!(parseFloat(req.body.TotalApagar) > 0)) {
+                return res.status(400).json({ msg: 'Genere primero la cuenta parcial para calcular el total a pagar' });
+            }
 
             const corte = tiempo.ahora().toISOString(); // wall-clock GT
             await Promise.all([
