@@ -1355,8 +1355,8 @@ module.exports = {
         const { limit, offset } = getPagination(page, size);
 
         var condition = busqueda 
-        ? { [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` } }], estado: 3 } 
-        : { estado: 3 };
+        ? { [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` } }], estado: { [Op.in]: [3, 93] } } 
+        : { estado: { [Op.in]: [3, 93] } };
 
         Expediente.findAndCountAll({
             include: [
@@ -1403,9 +1403,6 @@ module.exports = {
         });
     },
 
-    // Los listados de area (hospitalizacion, quirofano, intensivo, emergencia) NO incluyen
-    // los estados 9x: con cuenta parcial pendiente el paciente pasa temporalmente a Caja
-    // (cuentas parciales por cobrar) y vuelve a su area al pagarla (estado - 90).
     async listHospitalizacion(req, res) {
         try {
             const getPagingData = (data, page, limit) => {
@@ -1432,9 +1429,9 @@ module.exports = {
             const condition = busqueda
                 ? {
                     [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` } }],
-                    estado: 1
+                    estado: { [Op.in]: [1, 91] }
                 }
-                : { estado: 1 };
+                : { estado: { [Op.in]: [1, 91] } };
 
             const data = await Expediente.findAndCountAll({
                 include: [
@@ -1520,8 +1517,8 @@ module.exports = {
         const { limit, offset } = getPagination(page, size);
 
         var condition = busqueda 
-        ? { [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` } }], estado: 4 } 
-        : { estado: 4 };
+        ? { [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` } }], estado: { [Op.in]: [4, 94] } } 
+        : { estado: { [Op.in]: [4, 94] } };
 
         Expediente.findAndCountAll({
             include: [
@@ -1605,8 +1602,8 @@ module.exports = {
         const { limit, offset } = getPagination(page, size);
 
         var condition = busqueda 
-        ? { [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` } }], estado: 5 } 
-        : { estado: 5 };
+        ? { [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` } }], estado: { [Op.in]: [5, 95] } } 
+        : { estado: { [Op.in]: [5, 95] } };
 
         Expediente.findAndCountAll({
             include: [
