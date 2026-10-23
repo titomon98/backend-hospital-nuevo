@@ -1,6 +1,7 @@
 'use strict'
 const Sequelize = require('sequelize');
 const db = require("../../models");
+const tiempo = require("../../utils/tiempo");
 const Cuenta = db.cuentas;
 const Expediente = db.expedientes;
 const detallePagoCuentas = db.detalle_pago_cuentas;
@@ -1016,6 +1017,10 @@ module.exports = {
         
     },
 
+    // Manda la cuenta actual a "cuenta parcial": se congela su total (TotalApagar) y se
+    // CORTA el tiempo en este momento (fecha/hora_egreso de la cuenta), para que la
+    // habitacion deje de correr en esta cuenta. Al pagarla, la cuenta nueva arranca
+    // desde este corte. Idempotente: un segundo clic no vuelve a sumar 90 ni mueve el corte.
     async ingresoParcialPago(req, res) {
         const { id } = req.params;
 
@@ -1031,20 +1036,28 @@ module.exports = {
                 where: { id_expediente: id },
                 order: [['createdAt', 'DESC']],
             });
-            // Idempotente y atomico: el +90 solo se aplica si el expediente aun no esta en
-            // cuenta parcial (estado < 90), en el mismo UPDATE. Un segundo clic, aunque llegue
-            // al mismo tiempo, ya no suma (antes dejaba al paciente en 181 y desaparecia).
+            if (!ultimaCuenta) {
+                return res.status(404).json({ msg: 'El paciente no tiene cuenta' });
+            }
+            if (Number(ultimaCuenta.estado) === 10) {
+                return res.status(200).json({ msg: 'La cuenta ya está en cuenta parcial', data: expediente });
+            }
+
+            const corte = tiempo.ahora().toISOString(); // wall-clock GT
             await Promise.all([
+                // El +90 solo se aplica si aun no esta en parcial, en el mismo UPDATE.
                 Expediente.update(
                     { estado: db.sequelize.literal('estado + 90'), updated_by: req.user?.user ?? expediente.updated_by },
                     { where: { id, estado: { [Op.lt]: 90 } } }
                 ),
-                ultimaCuenta?.update({
+                Cuenta.update({
                     estado: 10,
                     updated_by: req.user?.user ?? ultimaCuenta.updated_by,
                     pendiente_de_pago: req.body.TotalApagar,
                     total: req.body.TotalApagar,
-                }),
+                    fecha_egreso: corte.slice(0, 10),
+                    hora_egreso: corte.slice(11, 19),
+                }, { where: { id: ultimaCuenta.id, estado: { [Op.ne]: 10 } } }),
             ]);
 
             return res.status(200).json({ msg: 'Expediente actualizado', data: expediente });
@@ -1054,92 +1067,148 @@ module.exports = {
         }
     },
 
+    // Paga la cuenta parcial y "reingresa" al paciente: la cuenta pagada se cierra con
+    // su pago registrado (corte y metodos de pago) y se abre una cuenta NUEVA en cero,
+    // con la misma habitacion, que arranca en el corte de la parcial. Asi los consumos
+    // y la habitacion empiezan de nuevo (la regla de dias cobra el dia aunque no sea
+    // completo). Todo en una transaccion e idempotente.
     async pagarCuentaParcial(req, res) {
         const { id } = req.params;
-
+        const usuario = req.user?.user ?? req.body.user ?? null;
+        const t = await db.sequelize.transaction();
         try {
-            const cuentaOriginal = await Cuenta.findOne({
-                where: { id },
-                include: [
-                    {
-                        model: Expediente,
-                        required: true,
-                    },
-                    {
-                        model: DetalleHabitacion,
-                        required: false,
-                        order: [['createdAt', 'DESC']],
-                        limit: 1,
-                    }
-                ]
-            });
-
-            if (!cuentaOriginal) {
+            const cuenta = await Cuenta.findByPk(id, { transaction: t, lock: t.LOCK.UPDATE });
+            if (!cuenta) {
+                await t.rollback();
                 return res.status(404).json({ msg: 'Cuenta no encontrada' });
             }
-            // Idempotente y atomico: solo se paga una cuenta que sigue en parcial (estado 10).
-            // Si otro clic ya la pago, no se crea una segunda cuenta ni se resta otra vez 90.
-            const [pagadas] = await Cuenta.update(
-                {
-                    estado: 0,
-                    total_pagado: req.body.total_pagado,
-                    pendiente_de_pago: req.body.pendiente_de_pago
-                },
-                { where: { id, estado: 10 } }
-            );
-            if (pagadas === 0) {
+            if (Number(cuenta.estado) !== 10) {
+                await t.rollback();
                 return res.status(409).json({ msg: 'Esta cuenta parcial ya fue pagada' });
             }
 
-            const hoy = new Date();
-            const fechaHoy = hoy.toISOString().split('T')[0];
+            // Lo que se cobra: hospital + honorarios pendientes (el laboratorio va en su caja).
+            const desglose = await desgloseDe(cuenta);
+            const pendienteH = desglose.hospital.pendiente;
+            const pendienteO = desglose.honorarios.pendiente;
+            const metodos = ['efectivo', 'tarjeta', 'deposito', 'cheque', 'seguro', 'transferencia'];
+            const disponible = Object.fromEntries(metodos.map(m => [m, parseFloat(req.body[m]) || 0]));
+            const pago = metodos.reduce((a, m) => a + disponible[m], 0);
+            if (Math.abs(pago - (pendienteH + pendienteO)) >= 0.01) {
+                await t.rollback();
+                return res.status(400).json({ msg: `El total ingresado (Q${pago.toFixed(2)}) no concuerda con el total a pagar (Q${(pendienteH + pendienteO).toFixed(2)})` });
+            }
 
-            const nuevaCuenta = await Cuenta.create({
-                numero:              cuentaOriginal.numero,
-                fecha_ingreso:       fechaHoy,
-                hora_ingreso:        '12:00:00',
-                fecha_egreso:        cuentaOriginal.fecha_egreso        ?? null,
-                hora_egreso:         cuentaOriginal.hora_egreso         ?? null,
-                motivo:              cuentaOriginal.motivo              ?? null,
-                motivo_egreso:       cuentaOriginal.motivo_egreso       ?? null,
-                descripcion:         cuentaOriginal.descripcion         ?? null,
-                otros:               cuentaOriginal.otros               ?? null,
-                total:               cuentaOriginal.total,
-                estado:              1,
-                total_pagado:        cuentaOriginal.total_pagado        ?? 0,
-                pendiente_de_pago:   cuentaOriginal.pendiente_de_pago   ?? 0,
-                descuento:           cuentaOriginal.descuento           ?? null,
-                solicitud_descuento: cuentaOriginal.solicitud_descuento ?? null,
-                subtotal:            cuentaOriginal.subtotal            ?? 0,
-                tipo:                cuentaOriginal.tipo,
-                id_expediente:       cuentaOriginal.id_expediente,
-                created_by:          req.user?.user ?? null,
-                updated_by:          req.user?.user ?? null,
+            // 1) Pagos: hospital primero, luego honorarios (igual que cobrarCategoria).
+            let recargo = parseFloat(req.body.recargoTarjeta) || 0;
+            const idSeguro = req.body.id_seguro;
+            for (const [categoria, monto] of [['hospital', pendienteH], ['honorarios', pendienteO]]) {
+                if (monto <= 0) continue;
+                let falta = monto;
+                const usa = {};
+                for (const m of metodos) {
+                    const v = Math.min(falta, disponible[m]);
+                    usa[m] = +v.toFixed(2);
+                    disponible[m] -= v;
+                    falta -= v;
+                }
+                const detalle = await detallePagoCuentas.create({
+                    ...usa, recargoTarjeta: recargo, total: +monto.toFixed(2),
+                    tipo: 'finiquito', categoria, id_cuenta: cuenta.id
+                }, { transaction: t });
+                recargo = 0;
+                if (usa.seguro > 0 && idSeguro) {
+                    await Seguro.update({ solvente: 0 }, { where: { id: idSeguro }, transaction: t });
+                    await PagoSeguro.create({
+                        id_detalle_pago_cuenta: detalle.id, monto: usa.seguro, id_seguro: idSeguro,
+                        total: usa.seguro, pagado: 0, por_pagar: usa.seguro
+                    }, { transaction: t });
+                }
+            }
+
+            // 2) Cerrar la cuenta pagada. El corte es el de la parcial (o ahora, si es una
+            //    cuenta parcial vieja sin corte).
+            const ahoraGT = tiempo.ahora().toISOString();
+            const fechaCorte = cuenta.fecha_egreso || ahoraGT.slice(0, 10);
+            const horaCorte = (cuenta.fecha_egreso && cuenta.hora_egreso) || ahoraGT.slice(11, 19);
+            const pagH = (parseFloat(cuenta.pagado_hospital) || 0) + pendienteH;
+            const pagO = (parseFloat(cuenta.pagado_honorarios) || 0) + pendienteO;
+            await cuenta.update({
+                estado: 0,
+                pagado_hospital: pagH.toFixed(2),
+                pagado_honorarios: pagO.toFixed(2),
+                total_pagado: (pagH + pagO + (parseFloat(cuenta.pagado_laboratorio) || 0)).toFixed(2),
+                pendiente_de_pago: 0,
+                fecha_egreso: fechaCorte,
+                hora_egreso: horaCorte,
+                updated_by: usuario
+            }, { transaction: t });
+
+            // La habitacion de la cuenta pagada termina en el corte (salida = wall-clock GT).
+            const salidaCorte = tiempo.desdeFormulario(fechaCorte, horaCorte);
+            const detalleAnterior = await DetalleHabitacion.findOne({
+                where: { id_cuenta: cuenta.id, estado: 1 },
+                order: [['ingreso', 'DESC']],
+                transaction: t
             });
+            await DetalleHabitacion.update(
+                { salida: salidaCorte },
+                { where: { id_cuenta: cuenta.id, estado: 1, salida: null }, transaction: t }
+            );
 
-            const detalleOriginal = cuentaOriginal.detalle_habitaciones?.[0];
+            // 3) Cuenta NUEVA en cero desde el corte.
+            const nuevaCuenta = await Cuenta.create({
+                numero: 1,
+                fecha_ingreso: fechaCorte,
+                hora_ingreso: horaCorte,
+                motivo: cuenta.motivo ?? null,
+                descripcion: null,
+                otros: null,
+                total: 0,
+                estado: 1,
+                total_pagado: 0,
+                pendiente_de_pago: 0,
+                descuento: 0,
+                solicitud_descuento: 3,
+                subtotal: 0,
+                tipo: cuenta.tipo,
+                tipo_paciente: cuenta.tipo_paciente ?? null,
+                id_expediente: cuenta.id_expediente,
+                created_by: usuario,
+                updated_by: usuario,
+            }, { transaction: t });
+            await nuevaCuenta.update({ numero: nuevaCuenta.id }, { transaction: t });
 
-            // Crear detalle y actualizar expediente en paralelo
-            await Promise.all([
-                DetalleHabitacion.create({
-                    id_cuenta:       nuevaCuenta.id,
-                    tipo_habitacion: detalleOriginal?.tipo_habitacion ?? null,
-                    estado:          detalleOriginal?.estado          ?? 1,
-                    costo_base:      detalleOriginal?.costo_base      ?? 0,
-                    ingreso:         hoy,
-                    salida:          null,
-                    created_by:      req.user?.user ?? null,
-                    updated_by:      req.user?.user ?? null,
-                }),
-                // Solo regresa si esta en cuenta parcial (9x), en el mismo UPDATE.
-                Expediente.update(
-                    { estado: db.sequelize.literal('estado - 90'), updated_by: req.user?.user ?? cuentaOriginal.expediente.updated_by },
-                    { where: { id: cuentaOriginal.id_expediente, estado: { [Op.gte]: 90 } } }
-                ),
-            ]);
+            // Misma habitacion y tarifa; ingreso en UTC real (convencion de detalle_habitaciones).
+            if (detalleAnterior) {
+                await DetalleHabitacion.create({
+                    id_cuenta: nuevaCuenta.id,
+                    id_habitacion: detalleAnterior.id_habitacion,
+                    tipo_habitacion: detalleAnterior.tipo_habitacion,
+                    estado: 1,
+                    costo_base: detalleAnterior.costo_base,
+                    ingreso: new Date(salidaCorte.getTime() + 6 * 60 * 60 * 1000),
+                    salida: null,
+                    created_by: usuario,
+                    updated_by: usuario,
+                }, { transaction: t });
+            }
 
+            // 4) El paciente vuelve a su area (solo si esta en parcial, 9x) con el nuevo ingreso.
+            await Expediente.update(
+                {
+                    estado: db.sequelize.literal('estado - 90'),
+                    fecha_ingreso_reciente: fechaCorte,
+                    hora_ingreso_reciente: horaCorte,
+                    updated_by: usuario
+                },
+                { where: { id: cuenta.id_expediente, estado: { [Op.gte]: 90 } }, transaction: t }
+            );
+
+            await t.commit();
             return res.status(201).json({ msg: 'Pago procesado y nueva cuenta creada', data: nuevaCuenta });
         } catch (error) {
+            await t.rollback();
             console.log(error);
             return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         }
