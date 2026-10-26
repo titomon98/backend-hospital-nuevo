@@ -264,7 +264,10 @@ module.exports = {
         const criterio=req.query.criterio;
         const order=req.query.order;
         const { limit, offset } = getPagination(page, size);
-        var condition = { estado:1}
+        // Las emergencias tienen su propia pestaña (?emergencia=1).
+        var condition = req.query.emergencia === '1'
+            ? { estado: 1, tipo_paciente: 'Emergencia' }
+            : { estado: 1, [Op.or]: [{ tipo_paciente: null }, { tipo_paciente: { [Op.ne]: 'Emergencia' } }] }
 
         const estadosExcluidos = [1, 3, 4, 5];
 
