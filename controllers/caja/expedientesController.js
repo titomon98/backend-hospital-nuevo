@@ -81,6 +81,17 @@ async function restaurarInventarioDeCuenta(idsCuentas, t) {
 // 1 - hospitalizacion, 3 - quirofano, 4 - intensivo, 5 - emergencia
 // 91, 93, 94, 95 - mismos anteriores con cuenta parcial por pagar
 const ESTADOS_ACTIVOS_HISTORIAL = [1, 3, 4, 5, 91, 93, 94, 95];
+// Filtro de los 3 de manejo (?tipo=hospitalizados|ambulatorios). Ambulatorio = su cuenta
+// mas reciente es tipo_paciente 'Ambulatorio'; el resto (incluye cuentas viejas sin
+// tipo_paciente) cuenta como hospitalizado.
+function filtroTipoPaciente(tipo) {
+    if (tipo !== 'hospitalizados' && tipo !== 'ambulatorios') return {};
+    const ambulatorios = db.sequelize.literal(`(SELECT c.id_expediente FROM cuentas c
+        WHERE c.tipo_paciente = 'Ambulatorio'
+          AND c.id = (SELECT MAX(c2.id) FROM cuentas c2 WHERE c2.id_expediente = c.id_expediente))`);
+    return { id: { [tipo === 'ambulatorios' ? Op.in : Op.notIn]: ambulatorios } };
+}
+
 async function clasificarHistorial(req, res, soloEmergencia) {
     const getPagingData = (data, page, limit) => {
         const { count: totalItems, rows: referido } = data;
@@ -106,6 +117,7 @@ async function clasificarHistorial(req, res, soloEmergencia) {
         const whereExpediente = busqueda
             ? { [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` } }], estado: { [Op.notIn]: ESTADOS_ACTIVOS_HISTORIAL } }
             : { estado: { [Op.notIn]: ESTADOS_ACTIVOS_HISTORIAL } };
+        Object.assign(whereExpediente, filtroTipoPaciente(req.query.tipo));
 
         // Traemos todos los expedientes históricos que cumplan la búsqueda
         const expedientesCandidatos = await Expediente.findAll({
@@ -2317,6 +2329,7 @@ module.exports = {
             const whereExpediente = busqueda
                 ? { [Op.or]: [{ nombres: { [Op.like]: `%${busqueda}%` } }], estado: { [Op.in]: ESTADOS_ACTIVOS_HISTORIAL } }
                 : { estado: { [Op.in]: ESTADOS_ACTIVOS_HISTORIAL } };
+            Object.assign(whereExpediente, filtroTipoPaciente(req.query.tipo));
 
             const { count, rows } = await Expediente.findAndCountAll({
                 where: whereExpediente,
