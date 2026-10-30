@@ -3,6 +3,7 @@ const Sequelize = require('sequelize');
 const db = require("../../models");
 const tiempo = require("../../utils/tiempo");
 const { montoDescuento } = require("../../utils/descuento");
+const { itemsDeCuenta } = require("./consumosController");
 const Cuenta = db.cuentas;
 const Expediente = db.expedientes;
 const detallePagoCuentas = db.detalle_pago_cuentas;
@@ -1065,10 +1066,6 @@ module.exports = {
     async ingresoParcialPago(req, res) {
         const { id } = req.params; // id del expediente
         const usuario = req.user?.user ?? null;
-        if (!(parseFloat(req.body.TotalApagar) > 0)) {
-            // Sin total calculado no se congela nada (antes dejaba la cuenta en Q0).
-            return res.status(400).json({ msg: 'Genere primero la cuenta parcial para calcular el total a pagar' });
-        }
         const t = await db.sequelize.transaction();
         try {
             const cuenta = await Cuenta.findOne({
@@ -1088,14 +1085,23 @@ module.exports = {
                 await t.rollback();
                 return res.status(200).json({ msg: 'La cuenta ya está en cuenta parcial' });
             }
+            // Sin total del cliente (Panel de administracion) se calcula como la cuenta total.
+            const totalApagar = parseFloat(req.body.TotalApagar) > 0
+                ? parseFloat(req.body.TotalApagar)
+                : +(await itemsDeCuenta(cuenta.id)).reduce((a, i) => a + i.total, 0).toFixed(2);
+            if (!(totalApagar > 0)) {
+                // No se congela una cuenta en Q0.
+                await t.rollback();
+                return res.status(400).json({ msg: 'La cuenta no tiene cargos para enviar a cuenta parcial' });
+            }
 
             const corte = tiempo.ahora().toISOString(); // wall-clock GT
             const fechaCorte = corte.slice(0, 10);
             const horaCorte = corte.slice(11, 19);
             await cuenta.update({
                 estado: 10,
-                total: req.body.TotalApagar,
-                pendiente_de_pago: req.body.TotalApagar,
+                total: totalApagar,
+                pendiente_de_pago: totalApagar,
                 fecha_egreso: fechaCorte,
                 hora_egreso: horaCorte,
                 updated_by: usuario,
