@@ -2,6 +2,7 @@
 const Sequelize = require('sequelize');
 const db = require("../../models");
 const tiempo = require("../../utils/tiempo");
+const { montoDescuento } = require("../../utils/descuento");
 const Cuenta = db.cuentas;
 const Expediente = db.expedientes;
 const detallePagoCuentas = db.detalle_pago_cuentas;
@@ -77,7 +78,9 @@ async function desgloseDe(cuenta) {
         pagado: +(Number(pagado) || 0).toFixed(2),
         pendiente: +Math.max(0, (Number(total) || 0) - (Number(pagado) || 0)).toFixed(2)
     });
-    const hospital = cat(tot.hospital, cuenta.pagado_hospital);
+    // El descuento validado se resta de la parte de hospital (honorarios son del medico).
+    const descuento = +Math.min(montoDescuento(cuenta), tot.hospital).toFixed(2);
+    const hospital = cat(tot.hospital - descuento, cuenta.pagado_hospital);
     const honorarios = cat(tot.honorarios, cuenta.pagado_honorarios);
     const laboratorio = {
         total: +tot.laboratorio.toFixed(2),
@@ -89,7 +92,7 @@ async function desgloseDe(cuenta) {
         ...(honorarios.pendiente > 0 ? ['honorarios'] : []),
         ...(laboratorio.pendiente > 0 ? ['laboratorio'] : [])
     ];
-    return { id_cuenta: cuenta.id, hospital, honorarios, laboratorio, pendientes, solvente: pendientes.length === 0 };
+    return { id_cuenta: cuenta.id, descuento, hospital, honorarios, laboratorio, pendientes, solvente: pendientes.length === 0 };
 }
 
 // Cierra la cuenta (estado 0, expediente solvente) solo si hospital, honorarios y
@@ -299,7 +302,9 @@ module.exports = {
                 await cerrarCuentaSiSolvente(c);
                 continue;
             }
-            filas.push({ ...c.toJSON(), pendientes_pago: d.pendientes });
+            // pendiente_de_pago calculado (con descuento): el campo guardado puede estar desfasado.
+            filas.push({ ...c.toJSON(), pendientes_pago: d.pendientes, descuento_monto: d.descuento,
+                pendiente_de_pago: +(d.hospital.pendiente + d.honorarios.pendiente).toFixed(2) });
         }
         data = { count: data.count - (data.rows.length - filas.length), rows: filas };
         const response = getPagingData(data, page, limit);
@@ -530,8 +535,15 @@ module.exports = {
             limit,
             offset
         })
-            .then(data => {
-                const response = getPagingData(data, page, limit);
+            .then(async data => {
+                // Pendiente real (hospital + honorarios) para que gerencia vea cuanto se debe.
+                const filas = [];
+                for (const c of data.rows) {
+                    const d = await desgloseDe(c);
+                    filas.push({ ...c.toJSON(), descuento_monto: d.descuento,
+                        pendiente_de_pago: +(d.hospital.pendiente + d.honorarios.pendiente).toFixed(2) });
+                }
+                const response = getPagingData({ count: data.count, rows: filas }, page, limit);
                 res.send({
                     total: response.totalItems,
                     last_page: response.totalPages,
@@ -897,68 +909,45 @@ module.exports = {
             })
     },
 
-    DiscountRequest (req,res) {
-        console.log(req.body.form)
-        let form = req.body.form
-        if (form.solicitud_descuento === 0){
-            Cuenta.update(
-                {
-                    solicitud_descuento: 0,
-                    descuento: 0,
-                },
-                { where: { 
-                    id: form.id 
-                } }
-            )
-            .then(cuenta => res.status(200).send('El registro ha sido actualizado'))
-            .catch(error => {
-                console.log(error)
-                return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-            });
-        }
-        else if (form.solicitud_descuento === 2){
-            Cuenta.update(
-                {
-                    solicitud_descuento: 2,
-                    descuento: form.descuento,
-                },
-                { where: { 
-                    id: form.id 
-                } }
-            )
-            .then(cuenta => res.status(200).send('El registro ha sido actualizado'))
-            .catch(error => {
-                console.log(error)
-                return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-            });
-        }
-        else if (form.solicitud_descuento === 1) {
-            Cuenta.findByPk(form.id)
-                .then(cuenta => {
-                    // Porcentaje que valida gerencia (form.descuento); la solicitud previa puede no existir.
-                    const descuentoAplicado = (parseFloat(cuenta.total) * (parseFloat(form.descuento) || 0)) / 100;
-                    const nuevoTotalPagado = parseFloat(cuenta.total_pagado) + descuentoAplicado;
-                    const nuevoPendienteDePago = parseFloat(cuenta.pendiente_de_pago) - descuentoAplicado;                    
-        
-                    // Idempotente: gerencia valida desde cualquier estado salvo ya aplicado (1);
-                    // una segunda aprobacion ya no lo descuenta otra vez.
-                    return Cuenta.update({
-                        solicitud_descuento: 1,
-                        descuento: form.descuento,
-                        total_pagado: parseFloat(nuevoTotalPagado),
-                        pendiente_de_pago: parseFloat(nuevoPendienteDePago)
-                    }, {
-                        where: { id: form.id, [Op.or]: [{ solicitud_descuento: null }, { solicitud_descuento: { [Op.ne]: 1 } }] }
-                    });
-                })
-                .then(([actualizadas]) => actualizadas
-                    ? res.status(200).send('El registro ha sido actualizado')
-                    : res.status(409).json({ msg: 'Este descuento ya fue resuelto' }))
-                .catch(error => {
-                    console.log(error);
-                    return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde'   
-                    });
-                });
+    // Descuento de hospital. solicitud_descuento: 2 = caja lo solicita, 1 = gerencia lo
+    // valida (puede cambiar tipo y valor), 0 = negado. tipo_descuento: 0 = %, 1 = monto Q.
+    // Validar solo guarda el descuento: desgloseDe lo resta de lo que cobra la caja.
+    async DiscountRequest (req, res) {
+        const form = req.body.form || {};
+        const solicitud = Number(form.solicitud_descuento);
+        try {
+            const cuenta = await Cuenta.findByPk(form.id);
+            if (!cuenta) return res.status(404).json({ msg: 'Cuenta no encontrada' });
+
+            if (solicitud === 0) {
+                await cuenta.update({ solicitud_descuento: 0, descuento: 0, tipo_descuento: 0 });
+                return res.status(200).send('El registro ha sido actualizado');
+            }
+            if (solicitud !== 1 && solicitud !== 2) return res.status(400).json({ msg: 'Solicitud de descuento no valida' });
+
+            const tipo = Number(form.tipo_descuento) === 1 ? 1 : 0;
+            const valor = parseFloat(form.descuento);
+            const total = parseFloat(cuenta.total) || 0;
+            if (!(valor > 0)) return res.status(400).json({ msg: 'El descuento debe ser mayor a 0' });
+            if (tipo === 0 && valor > 100) return res.status(400).json({ msg: 'El porcentaje no puede ser mayor a 100' });
+            if (tipo === 1 && valor > total) return res.status(400).json({ msg: `El descuento no puede ser mayor al total de la cuenta (Q${total.toFixed(2)})` });
+
+            // Idempotente: no se vuelve a solicitar ni validar un descuento ya validado (1).
+            const [filas] = await Cuenta.update(
+                { solicitud_descuento: solicitud, descuento: valor, tipo_descuento: tipo },
+                { where: { id: cuenta.id, [Op.or]: [{ solicitud_descuento: null }, { solicitud_descuento: { [Op.ne]: 1 } }] } }
+            );
+            if (!filas) return res.status(409).json({ msg: 'Este descuento ya fue validado' });
+
+            if (solicitud === 1) {
+                await cuenta.reload();
+                const d = await desgloseDe(cuenta);
+                await cuenta.update({ pendiente_de_pago: +(d.hospital.pendiente + d.honorarios.pendiente).toFixed(2) });
+            }
+            return res.status(200).send('El registro ha sido actualizado');
+        } catch (error) {
+            console.log(error);
+            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
         }
     },
 

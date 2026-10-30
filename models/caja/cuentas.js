@@ -97,6 +97,12 @@ module.exports = (sequelize, DataTypes) => {
     solicitud_descuento: {
       type: DataTypes.INTEGER
     },
+    // 0 = descuento en porcentaje, 1 = monto fijo en Q (ver utils/descuento).
+    tipo_descuento: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0
+    },
     subtotal: {
       type: DataTypes.DECIMAL(10,2),
       allowNull: false,

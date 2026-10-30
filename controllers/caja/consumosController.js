@@ -3,6 +3,7 @@ const Sequelize     = require('sequelize');
 const moment = require('moment');
 const db = require("../../models");
 const tiempo = require("../../utils/tiempo");
+const { montoDescuento } = require("../../utils/descuento");
 const Logs = db.log_traslados;
 const Consumo = db.consumos;
 const Servicio = db.servicios;
@@ -186,13 +187,14 @@ async function itemsDeCuenta(id_cuenta) {
     return items;
 }
 
-// Descuento aprobado de una cuenta (solicitud_descuento = 1): porcentaje sobre el total,
-// igual que al aprobarlo en cuentasController.DiscountRequest.
+// Descuento aprobado de una cuenta (solicitud_descuento = 1), porcentaje o monto fijo.
+// Monto fijo: el porcentaje se informa equivalente sobre el total.
 const descuentoDe = (cuenta) => {
-    const pct = cuenta && Number(cuenta.solicitud_descuento) === 1 ? (parseFloat(cuenta.descuento) || 0) : 0;
+    const monto = montoDescuento(cuenta);
+    const total = parseFloat(cuenta && cuenta.total) || 0;
     return {
-        descuentoPorcentaje: pct,
-        descuentoAplicado: Math.round((parseFloat(cuenta && cuenta.total) || 0) * pct) / 100,
+        descuentoPorcentaje: monto && total ? Math.round(monto / total * 10000) / 100 : 0,
+        descuentoAplicado: monto,
     };
 };
 
