@@ -187,6 +187,28 @@ async function itemsDeCuenta(id_cuenta) {
     return items;
 }
 
+
+// --- Detalle de manejo (Gerencia: los 3 de manejo) ---
+// Aplana una fila con sus includes (medicamento.nombre -> medicamento_nombre) y formatea
+// las fechas de auditoria en hora GT. `salida` de habitacion ya es hora GT (fmtGT).
+const FECHAS_UTC = ['createdAt', 'updatedAt', 'ingreso'];
+function filaManejo(fila, primeros = {}) {
+    const out = { ...primeros };
+    const aplanar = (obj, prefijo) => {
+        for (const [k, v] of Object.entries(obj)) {
+            const clave = prefijo ? `${prefijo}_${k}` : k;
+            if (v && typeof v === 'object' && !(v instanceof Date) && !Array.isArray(v)) aplanar(v, clave);
+            else if (Array.isArray(v)) continue;
+            else if (FECHAS_UTC.includes(k)) out[clave] = fmtUTC(v);
+            else if (k === 'salida') out[clave] = fmtGT(v);
+            else out[clave] = v;
+        }
+    };
+    aplanar(fila && fila.toJSON ? fila.toJSON() : fila, '');
+    return out;
+}
+const sinAcentos = (t) => (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
 // Descuento aprobado de una cuenta (solicitud_descuento = 1), porcentaje o monto fijo.
 // Monto fijo: el porcentaje se informa equivalente sobre el total.
 const descuentoDe = (cuenta) => {
@@ -807,6 +829,98 @@ module.exports = {
         } catch (error) {
             console.error('Error al obtener los datos:', error);
             return res.status(500).json({ msg: 'Error al obtener los datos', error: error.message });
+        }
+    },
+
+    // Todo lo registrado en una cuenta, sin resumir, para los 3 de manejo de Gerencia.
+    // ?id_cuenta=X elige la cuenta; sin el, la mas reciente del expediente.
+    async detalleManejo(req, res) {
+        try {
+            const { id } = req.params;
+            const expediente = await Expediente.findByPk(id);
+            if (!expediente) return res.status(404).json({ msg: 'Expediente no encontrado' });
+            const cuentas = await Cuenta.findAll({ where: { id_expediente: id }, order: [['createdAt', 'DESC']] });
+            if (!cuentas.length) return res.status(404).json({ msg: 'El paciente no tiene cuentas' });
+            const cuenta = cuentas.find(c => String(c.id) === String(req.query.id_cuenta)) || cuentas[0];
+            const id_cuenta = cuenta.id;
+            const pres = { model: db.presentaciones, attributes: ['nombre'] };
+            const catalogo = ['nombre', 'precio_costo', 'precio_venta'];
+
+            // Laboratorio: va por cuenta de laboratorio del expediente; se toma el periodo de
+            // esta cuenta (desde que se abrio hasta que se abrio la siguiente).
+            const siguiente = cuentas.filter(c => new Date(c.createdAt) > new Date(cuenta.createdAt)).pop();
+            const periodo = { [Op.gte]: cuenta.createdAt, ...(siguiente ? { [Op.lt]: siguiente.createdAt } : {}) };
+
+            const [medicamentos, quirurgicos, comunes, servicios, sala, honorarios, detalles, examenes, notas, traslados] = await Promise.all([
+                MovimientoMedicamentos.findAll({ where: { id_cuenta }, include: [{ model: Medicamento, attributes: [...catalogo, 'anestesico', 'controlado'], include: [pres] }], order: [['createdAt', 'ASC']] }),
+                MovimientoQuirurgico.findAll({ where: { id_cuenta }, include: [{ model: Quirurgico, attributes: catalogo, include: [pres] }, { model: db.paquetes, attributes: ['nombre', 'total'] }], order: [['createdAt', 'ASC']] }),
+                MovimientoComun.findAll({ where: { id_cuenta }, include: [{ model: Comun, attributes: catalogo, include: [pres] }], order: [['createdAt', 'ASC']] }),
+                Consumo.findAll({ where: { id_cuenta }, include: [{ model: Servicio, attributes: ['descripcion', 'precio'] }], order: [['createdAt', 'ASC']] }),
+                SalaOperaciones.findAll({ where: { id_cuenta }, include: [{ model: Categoria, attributes: ['categoria'] }], order: [['createdAt', 'ASC']] }),
+                Honorario.findAll({ where: { id_cuenta }, include: [{ model: Medico, attributes: ['nombre'] }], order: [['createdAt', 'ASC']] }),
+                DetalleHabitaciones.findAll({ where: { id_cuenta }, include: [{ model: Habitaciones, attributes: ['numero', 'tipo', 'costo_diario', 'costo_ambulatorio', 'costo_estudio_de_sueno', 'costo_quimioterapia'] }], order: [['ingreso', 'ASC']] }),
+                Examenes.findAll({
+                    include: [{ model: Cuenta_Lab, required: true, where: { id_expediente: id }, attributes: ['id', 'estado', 'total_pagado'] }, { model: ExamenAlmacenado, attributes: ['nombre', 'precio_normal', 'precio_sobrecargo'] }, { model: db.encargados, attributes: ['nombres', 'apellidos'] }],
+                    where: { createdAt: periodo }, order: [['createdAt', 'ASC']],
+                }),
+                db.notas.findAll({ where: { id_expediente: id, createdAt: periodo }, include: [{ model: Medico, attributes: ['nombre'] }], order: [['createdAt', 'ASC']] }),
+                Logs.findAll({ where: { id_expediente: id, createdAt: periodo }, order: [['createdAt', 'ASC']] }),
+            ]);
+
+            // Flag invertido del sistema: anestesico = 0 es anestesico.
+            const esAnest = (m) => m.medicamento && Number(m.medicamento.anestesico) === 0;
+            const prod = (m, campo) => ({ producto: m[campo] ? m[campo].nombre : (m.descripcion || ''), presentacion: m[campo]?.presentacione?.nombre ?? '' });
+
+            const opc = await opcionesCosto(cuenta);
+            const habitaciones = detalles.map(d => {
+                const c = costoDetalleHabitacion(d, d.habitacione, opc);
+                return filaManejo(d, {
+                    habitacion: d.habitacione ? d.habitacione.numero : '',
+                    tipo: d.tipo_habitacion || (d.habitacione ? d.habitacione.tipo : ''),
+                    situacion: d.salida ? 'EGRESÓ' : 'SIGUE OCUPADA',
+                    dias_cobrados: c.cantidad, calculo: c.nota, costo_habitacion: c.costo,
+                });
+            });
+
+            const servicio = (c) => filaManejo(c, { servicio: c.servicio ? c.servicio.descripcion : c.descripcion });
+            const grupo = (txt) => servicios.filter(c => sinAcentos(c.servicio ? c.servicio.descripcion : c.descripcion).includes(txt));
+            const calentador = grupo('calent'), oxigeno = grupo('oxig'), ventilador = grupo('ventil');
+            const otros = servicios.filter(c => ![...calentador, ...oxigeno, ...ventilador].includes(c));
+
+            const c = cuenta.toJSON();
+            return res.json({
+                paciente: `${expediente.nombres ?? ''} ${expediente.apellidos ?? ''}`.trim(),
+                expediente: expediente.expediente ?? '',
+                cuentas: cuentas.map(x => ({ id: x.id, numero: x.numero, ingreso: `${x.fecha_ingreso ?? ''} ${x.hora_ingreso ?? ''}`.trim(),
+                    egreso: x.fecha_egreso ? `${x.fecha_egreso} ${x.hora_egreso ?? ''}`.trim() : '', estado: ESTADO_CUENTA[x.estado] ?? String(x.estado) })),
+                id_cuenta,
+                medicamentos: medicamentos.filter(m => !esAnest(m)).map(m => filaManejo(m, prod(m, 'medicamento'))),
+                anestesicos: medicamentos.filter(esAnest).map(m => filaManejo(m, prod(m, 'medicamento'))),
+                quirurgicos: quirurgicos.map(q => filaManejo(q, q.quirurgico ? prod(q, 'quirurgico') : { producto: `PAQUETE ${q.paquete ? q.paquete.nombre : ''}`.trim(), presentacion: 'Paquete' })),
+                comunes: comunes.map(m => filaManejo(m, prod(m, 'comune'))),
+                servicios: {
+                    calentador: calentador.map(servicio), oxigeno: oxigeno.map(servicio),
+                    ventilador: ventilador.map(servicio), otros: otros.map(servicio),
+                },
+                laboratorio: examenes.map(e => filaManejo(e, { examen: e.examenes_almacenado ? e.examenes_almacenado.nombre : '' })),
+                honorarios: honorarios.map(h => filaManejo(h, { medico: h.medico ? h.medico.nombre : '' })),
+                sala: sala.map(o => filaManejo(o, { sala: o.categoria_sala_operacione ? o.categoria_sala_operacione.categoria : '' })),
+                habitaciones,
+                notas: {
+                    ingreso: { fecha_ingreso: c.fecha_ingreso, hora_ingreso: c.hora_ingreso, tipo_paciente: c.tipo_paciente,
+                        motivo_de_consulta: c.motivo, diagnostico: c.descripcion, tratamiento: c.otros,
+                        registrado_por: c.created_by, registrado_el: fmtUTC(c.createdAt) },
+                    egreso: { fecha_egreso: c.fecha_egreso, hora_egreso: c.hora_egreso, observaciones_de_egreso: c.motivo_egreso,
+                        estado_de_la_cuenta: ESTADO_CUENTA[c.estado] ?? String(c.estado),
+                        actualizado_por: c.updated_by, actualizado_el: fmtUTC(c.updatedAt) },
+                    cuenta: filaManejo(cuenta),
+                    enfermeria: notas.map(n => filaManejo(n, { medico: n.medico ? n.medico.nombre : '' })),
+                    traslados: traslados.map(t => filaManejo(t)),
+                },
+            });
+        } catch (error) {
+            console.error('Error en detalleManejo:', error);
+            return res.status(500).json({ msg: 'Error al obtener el detalle', error: error.message });
         }
     },
 
