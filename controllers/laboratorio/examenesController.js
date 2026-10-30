@@ -11,6 +11,26 @@ const Asueto = db.asuetos
 const Op = db.Sequelize.Op;
 const moment = require('moment');
 
+// Hoy (hora de Guatemala) es asueto: la fecha exacta o un asueto perpetuo con el mismo dia y mes.
+async function esAsueto(fecha) {
+  const [anio, mes, dia] = fecha.toLocaleDateString('en-CA', { timeZone: 'America/Guatemala' }).split('-');
+  return !!(await Asueto.findOne({
+    where: {
+      estado: 1,
+      [Op.or]: [
+        { fecha: `${anio}-${mes}-${dia}` },
+        {
+          perpetuo: true,
+          [Op.and]: [
+            db.sequelize.where(db.sequelize.fn('MONTH', db.sequelize.col('fecha')), +mes),
+            db.sequelize.where(db.sequelize.fn('DAY', db.sequelize.col('fecha')), +dia)
+          ]
+        }
+      ]
+    }
+  }));
+}
+
 module.exports = {
 
     async create(req, res) {
@@ -148,10 +168,7 @@ module.exports = {
       const currentDate = new Date();
 
       //VALIDAR SI ES DIA ASUETO
-      const formattedDate = currentDate.toISOString().split("T")[0]; // Formato YYYY-MM-DD
-      const isAsueto = await Asueto.findOne({
-        where: { fecha: formattedDate },
-      });
+      const isAsueto = await esAsueto(currentDate);
       
       //VALIDAR SI ES SABADO DESPUES DE LA 1:00PM
       const isSaturdayAfter1PM =
@@ -191,10 +208,7 @@ module.exports = {
       const currentDate = new Date();
 
       //VALIDAR SI ES DIA ASUETO
-      const formattedDate = currentDate.toISOString().split("T")[0]; // Formato YYYY-MM-DD
-      const isAsueto = await Asueto.findOne({
-        where: { fecha: formattedDate },
-      });
+      const isAsueto = await esAsueto(currentDate);
 
       //VALIDAR SI ES SABADO DESPUES DE LA 1:00PM
       const isSaturdayAfter1PM =

@@ -18,6 +18,12 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: false
       },
+      // 1 = se repite cada año el mismo dia y mes (el año de fecha se ignora).
+      perpetuo: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+      },
       createdAt: {
         type: DataTypes.DATE,
         allowNull: false,

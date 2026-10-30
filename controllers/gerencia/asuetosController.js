@@ -22,10 +22,10 @@ async list(req, res) {
 
 // Crear un nuevo asueto
 async create (req, res){
-  const { nombre, fecha } = req.body;
+  const { nombre, fecha, perpetuo } = req.body;
   const estado = 1
   try {
-    const nuevoAsueto = await Asueto.create({ nombre, fecha, estado });
+    const nuevoAsueto = await Asueto.create({ nombre, fecha, estado, perpetuo: !!perpetuo });
     res.json(nuevoAsueto);
   } catch (error) {
     console.error(error);
