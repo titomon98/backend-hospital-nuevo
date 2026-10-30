@@ -9,8 +9,18 @@ const segurosController = require('../controllers/caja/segurosController')
 const rubrosController = require('../controllers/caja/rubrosController')
 const cajaChicaController = require('../controllers/caja/cajaChicaController')
 const facturaController = require('../controllers/caja/facturaController.js')
+const ventaLibreController = require('../controllers/caja/ventaLibreController')
 
 module.exports = (router) => {
+    //venta libre
+    router.get('/venta_libre/personas', ventaLibreController.personas);
+    router.get('/venta_libre/list', ventaLibreController.list);
+    router.get('/venta_libre/:id', ventaLibreController.get);
+    router.post('/venta_libre/create', ventaLibreController.create);
+    router.put('/venta_libre/:id', ventaLibreController.update);
+    router.put('/venta_libre/:id/anular', ventaLibreController.anular);
+    router.put('/venta_libre/:id/cobrar', ventaLibreController.cobrar);
+
     //contrato
     router.get('/contrato/list', contratosController.list);
     router.post('/contrato/create', contratosController.create);
