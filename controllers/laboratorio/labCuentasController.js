@@ -168,7 +168,7 @@ module.exports = {
         const fechaPago = req.query.fecha_corte;
         var condition = { estado: 0 };
         if (fechaPago) condition.fecha_corte = fechaPago;
-        if (busqueda) condition[Op.or] = [{ '$Expediente.nombres$': { [Op.like]: `%${busqueda}%` } }, { '$Expediente.apellidos$': { [Op.like]: `%${busqueda}%` } }];
+        if (busqueda) condition[Op.or] = [{ '$expediente.nombres$': { [Op.like]: `%${busqueda}%` } }, { '$expediente.apellidos$': { [Op.like]: `%${busqueda}%` } }];
 
         Cuenta.findAndCountAll({ 
             include: [

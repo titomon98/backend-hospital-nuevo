@@ -489,7 +489,7 @@ module.exports = {
 
         let condition = {
             estado: 1,
-            "$Expediente.solvencia$": 0,
+            "$expediente.solvencia$": 0,
             [Op.or]: [
                 { solicitud_descuento: 2 },
                 { solicitud_descuento: 3 },
@@ -498,11 +498,11 @@ module.exports = {
             [Op.and]: [
                 {
                 [Op.or]: [
-                    { "$Expediente.estado$": 0 },
-                    { "$Expediente.estado$": 6 },
-                    { "$Expediente.estado$": 7 },
-                    { "$Expediente.estado$": 8 },
-                    { "$Expediente.estado$": 9 }
+                    { "$expediente.estado$": 0 },
+                    { "$expediente.estado$": 6 },
+                    { "$expediente.estado$": 7 },
+                    { "$expediente.estado$": 8 },
+                    { "$expediente.estado$": 9 }
                 ]
                 }
             ]
@@ -513,8 +513,8 @@ module.exports = {
             condition[Op.and].push({
                 [Op.or]: [
                 { numero: { [Op.like]: `%${busqueda}%` } }, // está en Cuenta
-                { "$Expediente.nombres$": { [Op.like]: `%${busqueda}%` } }, // viene de Expediente
-                { "$Expediente.apellidos$": { [Op.like]: `%${busqueda}%` } } // viene de Expediente
+                { "$expediente.nombres$": { [Op.like]: `%${busqueda}%` } }, // viene de Expediente
+                { "$expediente.apellidos$": { [Op.like]: `%${busqueda}%` } } // viene de Expediente
                 ]
             });
         }
