@@ -133,7 +133,36 @@ async function devolverLineas(venta, t) {
     return anteriores;
 }
 
+// Ventas libres cobradas en `fecha` (YYYY-MM-DD, dia GT) con la forma de las filas del corte de
+// caja (listCortesPerDate): todo es de hospital, categoria 'Venta libre'.
+async function cobradasDelDia(fecha) {
+    const ventas = await Venta.findAll({
+        include: INCLUDE_COMPRADOR,
+        where: {
+            estado: COBRADA,
+            [Op.and]: db.sequelize.where(db.sequelize.fn('DATE', db.sequelize.fn('CONVERT_TZ', db.sequelize.col('fecha_cobro'), '+00:00', '-06:00')), fecha)
+        },
+        order: [['fecha_cobro', 'ASC']]
+    });
+    return ventas.map(fila).map(v => ({
+        id: `VL-${v.id}`,
+        numero: `VL-${v.id}`,
+        expediente: { expediente: '', nombres: v.comprador, apellidos: `(${v.tipo_comprador})`, medico: null },
+        total: v.total,
+        total_pagado: v.total,
+        pendiente_de_pago: 0,
+        total_hospital: Number(v.total).toFixed(2),
+        total_honorarios: '0.00',
+        total_laboratorio: '0.00',
+        categoria: 'Venta libre',
+        numero_factura: null,
+        createdAt: v.fecha_cobro,
+        detalle_pago_cuentas: [{ ...Object.fromEntries(METODOS.map(m => [m, v[m] || 0])), recargoTarjeta: 0, seguro: 0, categoria: 'hospital', total: v.total }]
+    }));
+}
+
 module.exports = {
+    cobradasDelDia,
     // Busqueda de compradores: paciente | medico_interno | medico | cliente -> [{ id, nombre }].
     async personas(req, res) {
         const s = String(req.query.search || '').trim();

@@ -4,6 +4,7 @@ const db = require("../../models");
 const tiempo = require("../../utils/tiempo");
 const { montoDescuento } = require("../../utils/descuento");
 const { itemsDeCuenta } = require("./consumosController");
+const { cobradasDelDia } = require("./ventaLibreController");
 const Cuenta = db.cuentas;
 const Expediente = db.expedientes;
 const detallePagoCuentas = db.detalle_pago_cuentas;
@@ -464,7 +465,7 @@ module.exports = {
                 return plain;
             }));
 
-            res.send(rows);
+            res.send(rows.concat(await cobradasDelDia(fecha)));
         })
         .catch(error => {
             console.log(error)
