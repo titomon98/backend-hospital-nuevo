@@ -935,19 +935,20 @@ module.exports = {
         else if (form.solicitud_descuento === 1) {
             Cuenta.findByPk(form.id)
                 .then(cuenta => {
-                    const descuentoAplicado = (parseFloat(cuenta.total) * parseFloat(cuenta.descuento)) / 100;
+                    // Porcentaje que valida gerencia (form.descuento); la solicitud previa puede no existir.
+                    const descuentoAplicado = (parseFloat(cuenta.total) * (parseFloat(form.descuento) || 0)) / 100;
                     const nuevoTotalPagado = parseFloat(cuenta.total_pagado) + descuentoAplicado;
                     const nuevoPendienteDePago = parseFloat(cuenta.pendiente_de_pago) - descuentoAplicado;                    
         
-                    // Idempotente: solo se aprueba un descuento que sigue pendiente (2); una
-                    // segunda aprobacion ya no lo descuenta otra vez.
+                    // Idempotente: gerencia valida desde cualquier estado salvo ya aplicado (1);
+                    // una segunda aprobacion ya no lo descuenta otra vez.
                     return Cuenta.update({
                         solicitud_descuento: 1,
                         descuento: form.descuento,
                         total_pagado: parseFloat(nuevoTotalPagado),
                         pendiente_de_pago: parseFloat(nuevoPendienteDePago)
                     }, {
-                        where: { id: form.id, solicitud_descuento: 2 }
+                        where: { id: form.id, [Op.or]: [{ solicitud_descuento: null }, { solicitud_descuento: { [Op.ne]: 1 } }] }
                     });
                 })
                 .then(([actualizadas]) => actualizadas
