@@ -850,6 +850,16 @@ module.exports = {
             }));
 
             const dentro = ESTADOS_DENTRO.includes(Number(expediente.estado));
+            // Intensivo (4/94) se distingue; quirofano y emergencia cuentan como hospitalizado.
+            const situacion = !dentro ? 'FUERA DEL HOSPITAL (EGRESADO)'
+                : [4, 94].includes(Number(expediente.estado)) ? 'EN INTENSIVO' : 'HOSPITALIZADO';
+            // Habitacion actual: la que sigue abierta (sin salida) en la cuenta activa.
+            const activa = cuentas.find(c => Number(c.estado) === 1);
+            const detalleAbierto = dentro && activa ? await DetalleHabitaciones.findOne({
+                where: { id_cuenta: activa.id, salida: null },
+                include: [{ model: Habitaciones, attributes: ['numero'] }],
+                order: [['ingreso', 'DESC']],
+            }) : null;
             const ultima = cuentas[0] && todas ? cuentas[cuentas.length - 1] : cuentas[0];
             const totalCuentas = detalleCuentas.reduce((a, c) => a + c.total, 0);
             const totalLab = itemsLab.reduce((a, i) => a + i.total, 0);
@@ -859,7 +869,8 @@ module.exports = {
                     nombre: `${expediente.nombres ?? ''} ${expediente.apellidos ?? ''}`.trim(),
                     expediente: expediente.expediente ?? '',
                     medico: expediente.id_medico ? ((await Medico.findByPk(expediente.id_medico, { attributes: ['nombre'] }))?.nombre ?? '') : '',
-                    situacion: dentro ? 'DENTRO DEL HOSPITAL' : 'FUERA DEL HOSPITAL (EGRESADO)',
+                    situacion,
+                    habitacion: detalleAbierto?.habitacione?.numero ?? '',
                     egreso: !dentro && ultima?.fecha_egreso ? `${ultima.fecha_egreso} ${ultima.hora_egreso ?? ''}`.trim() : '',
                 },
                 generado: moment.utc().utcOffset(-360).format('DD/MM/YYYY HH:mm'),
