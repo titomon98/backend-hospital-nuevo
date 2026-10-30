@@ -391,7 +391,8 @@ module.exports = {
         const condition = {
             [Op.and]: [
                 { estado: 0 },
-                Sequelize.where(Sequelize.fn('DATE', Sequelize.col('cuentas.updatedAt')), fecha)
+                // updatedAt se guarda en UTC; el dia del corte es el de Guatemala (GMT-6).
+                Sequelize.where(Sequelize.fn('DATE', Sequelize.fn('CONVERT_TZ', Sequelize.col('cuentas.updatedAt'), '+00:00', '-06:00')), fecha)
             ]
         };
 

@@ -11,15 +11,20 @@ const cajaChicaController = require('../controllers/caja/cajaChicaController')
 const facturaController = require('../controllers/caja/facturaController.js')
 const ventaLibreController = require('../controllers/caja/ventaLibreController')
 
+const soloRoles = (...roles) => (req, res, next) =>
+    roles.includes(Number(req.user && req.user.id_tipo_usuario))
+        ? next()
+        : res.status(403).json({ msg: 'No tiene permiso para esta acción' });
+
 module.exports = (router) => {
-    //venta libre
+    //venta libre: registra Enfermeria, edita/anula Gerencia, cobra Caja (id_tipo_usuario del token).
     router.get('/venta_libre/personas', ventaLibreController.personas);
     router.get('/venta_libre/list', ventaLibreController.list);
     router.get('/venta_libre/:id', ventaLibreController.get);
-    router.post('/venta_libre/create', ventaLibreController.create);
-    router.put('/venta_libre/:id', ventaLibreController.update);
-    router.put('/venta_libre/:id/anular', ventaLibreController.anular);
-    router.put('/venta_libre/:id/cobrar', ventaLibreController.cobrar);
+    router.post('/venta_libre/create', soloRoles(1, 3, 9, 10, 11), ventaLibreController.create);
+    router.put('/venta_libre/:id', soloRoles(1), ventaLibreController.update);
+    router.put('/venta_libre/:id/anular', soloRoles(1), ventaLibreController.anular);
+    router.put('/venta_libre/:id/cobrar', soloRoles(1, 3, 5, 7), ventaLibreController.cobrar);
 
     //contrato
     router.get('/contrato/list', contratosController.list);

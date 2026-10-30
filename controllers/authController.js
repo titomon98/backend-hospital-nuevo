@@ -13,7 +13,7 @@ module.exports = {
 
             // Validación de backend
             if (!(user && password)) {
-                res.status(400).send("No llenó todos los campos");
+                return res.status(400).send("No llenó todos los campos");
             }
 
             const usuario = await Usuario.findOne({where: {
@@ -48,12 +48,13 @@ module.exports = {
                 }
 
                 // devolver usuario
-                res.status(200).json(autenticado);
+                return res.status(200).json(autenticado);
             }
             // res.status(400).send("Credenciales incorrectas");
-            res.status(401).json({ message: "Credenciales incorrectas"});
+            return res.status(401).json({ message: "Credenciales incorrectas"});
         } catch (err) {
             console.log(err);
+            if (!res.headersSent) return res.status(500).json({ message: "Ha ocurrido un error, por favor intente más tarde" });
         }
     },
 
@@ -91,7 +92,7 @@ module.exports = {
 
             // Validación de backend
             if (!(id_usuario && password)) {
-                res.status(400).send("No llenó todos los campos");
+                return res.status(400).send("No llenó todos los campos");
             }
 
             const usuario = await Usuario.findOne({where: {
@@ -102,12 +103,13 @@ module.exports = {
             if (usuario && (await bcrypt.compare(password, usuario.password))) {
 
                 // devolver usuario
-                res.status(200).json({ message: "Credenciales aprobadas"});
+                return res.status(200).json({ message: "Credenciales aprobadas"});
             }
             // res.status(400).send("Credenciales incorrectas");
-            res.status(401).json({ message: "Contraseña incorrecta"});
+            return res.status(401).json({ message: "Contraseña incorrecta"});
         } catch (err) {
             console.log(err);
+            if (!res.headersSent) return res.status(500).json({ message: "Ha ocurrido un error, por favor intente más tarde" });
         }
     },
 

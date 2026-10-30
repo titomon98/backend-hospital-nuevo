@@ -70,7 +70,8 @@ async function lineasDe(lineas, user, t) {
     if (!Array.isArray(lineas) || !lineas.length) throw error400('Agregue al menos un producto o servicio');
     const filas = [];
     for (const l of lineas) {
-        const cantidad = parseFloat(l.cantidad);
+        // 2 decimales, igual que la columna: el total se calcula con lo que se guarda.
+        const cantidad = Math.round(parseFloat(l.cantidad) * 100) / 100;
         if (!(cantidad > 0)) throw error400('Hay una cantidad inválida');
         let descripcion, precio, inventariado;
         if (l.tipo === 'servicio') {
