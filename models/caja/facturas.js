@@ -17,9 +17,13 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false
     },
+    // Texto: el NIT puede llevar K o ser CF.
     nit: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING,
       allowNull: false
+    },
+    nombre: {
+      type: DataTypes.STRING
     },
     estado: {
       type: DataTypes.INTEGER,
@@ -46,6 +50,7 @@ module.exports = (sequelize, DataTypes) => {
     id_usuario: {
       type: DataTypes.INTEGER
     },
+    // Ya no se usa en el CRUD; queda por los registros historicos.
     serie: {
       type: DataTypes.STRING
     },

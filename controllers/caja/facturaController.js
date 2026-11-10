@@ -4,13 +4,16 @@ const db = require("../../models");
 const Facturas = db.facturas;
 const Op = db.Sequelize.Op;
 
+const mayus = (v) => String(v ?? '').trim().toUpperCase();
+
 module.exports = {
     create(req, res) {
         let form = req.body
         let nuevaFecha = new Date(); // Crear una nueva instancia de fecha
         nuevaFecha.setHours(nuevaFecha.getHours() - 6);
         const datos = {
-            nit: form.nit, 
+            nit: mayus(form.nit),
+            nombre: mayus(form.nombre) || null,
             id_cuenta_hospital: form.id_cuenta_hospital,
             id_cuenta_laboratorio: form.id_cuenta_laboratoio,
             total: form.total,
@@ -19,7 +22,6 @@ module.exports = {
             fecha: nuevaFecha,
             id_usuario: form.id_usuario,
             numero: form.numero, 
-            serie: form.serie,
             referencia_factura: form.referencia_factura,
             created_by: req.user?.user ?? req.body.user,
         };
@@ -37,10 +39,10 @@ module.exports = {
     update(req, res) {
         let form = req.body
         const datos = {
-            nit: form.nit, 
+            nit: mayus(form.nit),
+            nombre: mayus(form.nombre) || null,
             imagen: form.imagen[0],
             numero: form.numero, 
-            serie: form.serie,
             referencia_factura: form.referencia_factura,
             updated_by: req.user?.user ?? req.body.user,
         };
