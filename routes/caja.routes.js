@@ -89,6 +89,7 @@ module.exports = (router) => {
     router.post('/facturas/update', facturaController.update);
     router.post('/facturas/deactivate', facturaController.deactivate);
     router.get('/facturas/getList', facturaController.getList);
+    router.get('/facturas/get', facturaController.get);
 
     //Seguros
     router.post('/seguros/create', segurosController.create);

@@ -1,6 +1,7 @@
 'use strict'
 const Sequelize = require('sequelize');
 const db = require("../../models");
+const { ordenDe } = require("../../utils/ordenLista");
 const tiempo = require("../../utils/tiempo");
 const { montoDescuento } = require("../../utils/descuento");
 const { itemsDeCuenta } = require("./consumosController");
@@ -593,15 +594,18 @@ module.exports = {
         const fechaEgreso = req.query.fecha_egreso;
         var condition = { estado: 0 };
         if (fechaEgreso) condition.fecha_egreso = fechaEgreso;
-        if (busqueda) condition[Op.or] = [{ id: { [Op.like]: `%${busqueda}%` } }];
-        console.log(busqueda)
+        // Busca por numero de cuenta o por nombre del paciente.
+        if (busqueda) condition[Op.or] = [
+            { id: { [Op.like]: `%${busqueda}%` } },
+            Sequelize.where(Sequelize.fn('CONCAT', Sequelize.col('expediente.nombres'), ' ', Sequelize.fn('COALESCE', Sequelize.col('expediente.apellidos'), '')), { [Op.like]: `%${busqueda}%` })
+        ];
         Cuenta.findAndCountAll({
             include: [
                 {
                     model: Expediente,
                 }
             ],
-            where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+            where: condition,order: ordenDe(criterio, order, Expediente, ['id', 'numero', 'motivo', 'total', 'total_pagado', 'pendiente_de_pago', 'fecha_egreso', 'createdAt']),limit,offset})
         .then(async data => {
             const response = getPagingData(data, page, limit);
             // Agregar el desglose (hospital / honorarios / laboratorio) a cada fila.

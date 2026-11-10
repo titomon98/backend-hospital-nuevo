@@ -1,6 +1,7 @@
 'use strict'
 const Sequelize     = require('sequelize');
 const db = require("../../models");
+const { ordenDe } = require("../../utils/ordenLista");
 const Cuenta = db.lab_cuentas;
 const Expediente = db.expedientes;
 const detallePagoCuentas = db.lab_detalle_pago_cuentas;
@@ -223,21 +224,20 @@ module.exports = {
         const order=req.query.order;
         const { limit, offset } = getPagination(page, size);
 
-        var condition = busqueda?{ [Op.or]:[ {id: { [Op.like]: `%${busqueda}%` }}],[Op.and]:[{estado:0}] } : {estado:0}
-        console.log(busqueda)
+        // Busca por numero de cuenta o por nombre del paciente.
+        var condition = busqueda ? { estado: 0, [Op.or]: [
+            { id: { [Op.like]: `%${busqueda}%` } },
+            Sequelize.where(Sequelize.fn('CONCAT', Sequelize.col('expediente.nombres'), ' ', Sequelize.fn('COALESCE', Sequelize.col('expediente.apellidos'), '')), { [Op.like]: `%${busqueda}%` })
+        ] } : { estado: 0 }
         Cuenta.findAndCountAll({ 
             include: [
                 {
                     model: Expediente,
                 }
             ],
-            where: condition,order:[[`${criterio}`,`${order}`]],limit,offset})
+            where: condition,order: ordenDe(criterio, order, Expediente, ['id', 'numero', 'total', 'total_pagado', 'pendiente_de_pago', 'createdAt']),limit,offset})
         .then(data => {
-
-        console.log('data: '+JSON.stringify(data))
         const response = getPagingData(data, page, limit);
-
-        console.log('response: '+JSON.stringify(response))
         res.send({total:response.totalItems,last_page:response.totalPages, current_page: page+1, from:response.currentPage,to:response.totalPages,data:response.referido});
         })
         .catch(error => {
