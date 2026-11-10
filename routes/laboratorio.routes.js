@@ -8,6 +8,8 @@ module.exports = (router) => {
     router.get('/laboratoriosAlmacenados/list', examenesAlmacenadosController.list);
     router.post('/laboratoriosAlmacenados/create', examenesAlmacenadosController.create);
     router.put('/laboratoriosAlmacenados/update', examenesAlmacenadosController.update);
+    router.put('/laboratoriosAlmacenados/activate', examenesAlmacenadosController.activate);
+    router.put('/laboratoriosAlmacenados/deactivate', examenesAlmacenadosController.deactivate);
     router.put('/campoLaboratorio/update', campoExamenController.update);
     router.post('/campoLaboratorio/create', campoExamenController.create);
     router.get('/campoLaboratorio/getByExamen', campoExamenController.getByExamen);

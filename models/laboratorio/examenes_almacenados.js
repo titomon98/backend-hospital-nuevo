@@ -29,7 +29,15 @@ module.exports = (sequelize, DataTypes) => {
     tipo_examen:{
       type: DataTypes.STRING,
       allowNull: false
-    }
+    },
+    // 1 activo, 0 inactivo (borrado lógico)
+    estado: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1
+    },
+    created_by: DataTypes.STRING,
+    updated_by: DataTypes.STRING
   }, {
     sequelize,
     modelName: 'examenes_almacenados',

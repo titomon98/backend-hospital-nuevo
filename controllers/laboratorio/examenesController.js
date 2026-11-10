@@ -59,12 +59,13 @@ module.exports = {
       const t = await db.sequelize.transaction();
       try {
         const examenesAlmacenados = await ExamenAlmacenado.findAll({
-          where: { id: form.id_examenes_almacenados },
+          where: { id: form.id_examenes_almacenados, estado: 1 },
           transaction: t,
         });
-        if (!examenesAlmacenados.length) {
+        const pedidos = new Set([].concat(form.id_examenes_almacenados ?? []).map(Number));
+        if (!examenesAlmacenados.length || examenesAlmacenados.length !== pedidos.size) {
           await t.rollback();
-          return res.status(400).json({ msg: 'No se encontraron los exámenes seleccionados' });
+          return res.status(400).json({ msg: 'Alguno de los exámenes seleccionados no existe o está inactivo' });
         }
 
         // 1) Resolver el expediente: existente (agendado desde enfermería/caja) o
@@ -159,9 +160,11 @@ module.exports = {
 
     async getsearchExaAlmacenados(req, res) {
         const busqueda = req.query.search;
-        const condition = busqueda ? { 
-          nombre: { [Op.like]: `%${busqueda}%` }  // Cambio a Op.like y nombres (plural)
-        } : null;
+        // Solo exámenes activos del catálogo.
+        const condition = busqueda ? {
+          nombre: { [Op.like]: `%${busqueda}%` },
+          estado: 1
+        } : { estado: 1 };
       
         
       // OBTENER DIA ACTUAL
@@ -200,9 +203,11 @@ module.exports = {
       const page = parseInt(req.query.page) || 1; 
       const limit = parseInt(req.query.limit) || 10;
     
-      const condition = busqueda ? { 
-        nombre: { [Op.like]: `%${busqueda}%` } 
-      } : null;
+      // Solo exámenes activos del catálogo.
+      const condition = busqueda ? {
+        nombre: { [Op.like]: `%${busqueda}%` },
+        estado: 1
+      } : { estado: 1 };
 
       // OBTENER DIA ACTUAL
       const currentDate = new Date();

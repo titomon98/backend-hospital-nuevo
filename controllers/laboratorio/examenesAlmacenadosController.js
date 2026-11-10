@@ -4,6 +4,21 @@ const db = require("../../models");
 const Examenes = db.examenes_almacenados;
 const Op = db.Sequelize.Op;
 
+// Borrado lógico de un examen del catálogo: inactivo no se puede elegir, el historial se conserva.
+async function cambiarEstado(req, res, estado) {
+    try {
+        const [n] = await Examenes.update(
+            { estado, updated_by: req.user?.user ?? req.body.user },
+            { where: { id: req.body.id } }
+        );
+        if (!n) return res.status(404).json({ msg: 'No se encontró el examen' });
+        return res.status(200).send(estado ? 'El examen ha sido activado' : 'El examen ha sido desactivado');
+    } catch (error) {
+        console.log(error);
+        return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
+    }
+}
+
 module.exports = {
     create(req, res) {
         let form = req.body
@@ -106,31 +121,11 @@ module.exports = {
     },
 
     activate (req, res) {
-        Contrato.update(
-            { estado: 1 },
-            { where: { 
-                id: req.body.id 
-            } }
-        )
-        .then(marca => res.status(200).send('El registro ha sido activado'))
-        .catch(error => {
-            console.log(error)
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
+        return cambiarEstado(req, res, 1);
     },
 
     deactivate (req, res) {
-        Contrato.update(
-            { estado: 0 },
-            { where: { 
-                id: req.body.id 
-            } }
-        )
-        .then(marca =>res.status(200).send('El registro ha sido desactivado'))
-        .catch(error => {
-            console.log(error)
-            return res.status(400).json({ msg: 'Ha ocurrido un error, por favor intente más tarde' });
-        });
+        return cambiarEstado(req, res, 0);
     },
     get (req, res) {
         Contrato.findAll({attributes: ['id', 'contrato']})
