@@ -1236,16 +1236,15 @@ module.exports = {
     // por categoria con sus metodos. La cuenta se cierra solo si hospital,
     // honorarios y laboratorio quedan pagados.
     async cobrarCategoria(req, res) {
-        const validas = ['hospital', 'honorarios'];
-        const pedidas = Array.isArray(req.body.categorias) ? req.body.categorias : [req.body.categoria];
-        const categorias = validas.filter(c => pedidas.includes(c));
+        // Sin abonos: se cobra todo lo pendiente de hospital + honorarios (igual que laboratorio).
+        const categorias = ['hospital', 'honorarios'];
         const { id, id_seguro } = req.body;
         const monto = parseFloat(req.body.monto) || 0;
-        if (!id || !categorias.length) {
-            return res.status(400).json({ msg: 'Seleccione hospital y/o honorarios para abonar' });
+        if (!id) {
+            return res.status(400).json({ msg: 'Cuenta no indicada' });
         }
         if (monto <= 0) {
-            return res.status(400).json({ msg: 'El monto a abonar debe ser mayor a cero' });
+            return res.status(400).json({ msg: 'El monto a pagar debe ser mayor a cero' });
         }
         const t = await db.sequelize.transaction();
         try {
@@ -1254,9 +1253,9 @@ module.exports = {
 
             const antes = await desgloseDe(cuenta);
             const pendienteElegido = categorias.reduce((a, c) => a + antes[c].pendiente, 0);
-            if (monto > pendienteElegido + 0.001) {
+            if (Math.abs(monto - pendienteElegido) >= 0.01) {
                 await t.rollback();
-                return res.status(400).json({ msg: `El abono (Q${monto.toFixed(2)}) excede lo pendiente (Q${pendienteElegido.toFixed(2)})` });
+                return res.status(400).json({ msg: `El total ingresado (Q${monto.toFixed(2)}) no concuerda con el total a pagar (Q${pendienteElegido.toFixed(2)}). Se debe pagar todo.` });
             }
 
             // Reparto del monto por categoria y de los metodos de pago en el mismo orden.
